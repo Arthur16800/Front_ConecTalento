@@ -8,7 +8,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const Header = () => {
+const Header = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,24 +18,28 @@ const Header = () => {
   const Styles = Style();
 
   return (
-    <Container maxWidth="xs">
-      <Box sx={Styles.container}>
-        <img style={Styles.logo} src={conecTalento} alt="Logo" />
+    <>
+      <Container maxWidth="xs">
+        <Box sx={Styles.container}>
+          <img style={Styles.logo} src={conecTalento} alt="Logo" />
 
-        {mostrarPesquisa && (
-          <Box sx={Styles.searchBox}>
-            <InputBase placeholder="Pesquisar..." sx={Styles.inputBase} />
-            <SearchIcon sx={Styles.searchIcon} />
+          {mostrarPesquisa && (
+            <Box sx={Styles.searchBox}>
+              <InputBase placeholder="Pesquisar..." sx={Styles.inputBase} />
+              <SearchIcon sx={Styles.searchIcon} />
+            </Box>
+          )}
+
+          <Box sx={Styles.userBox}>
+            <AccountCircleIcon sx={Styles.accountIcon} />
+            User
+            <KeyboardArrowDownIcon sx={Styles.arrowIcon} />
           </Box>
-        )}
-
-        <Box sx={Styles.userBox}>
-          <AccountCircleIcon sx={Styles.accountIcon} />
-          User
-          <KeyboardArrowDownIcon sx={Styles.arrowIcon} />
         </Box>
-      </Box>
-    </Container>
+      </Container>
+      
+      <Box sx={{ marginTop: "70px" }}>{children}</Box>
+    </>
   );
 };
 
