@@ -8,6 +8,7 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
+import background from "../assets/background.png";
 
 // Importação dos componentes do Roteador
 import { Link, useNavigate } from "react-router-dom";
@@ -16,7 +17,9 @@ import {
   fontFamily,
   fontSize,
   fontStyle,
+  fontWeight,
   height,
+  margin,
   padding,
   width,
 } from "@mui/system";
@@ -24,54 +27,55 @@ import {
 function Login() {
   const styles = Styles();
   return (
-    <Container style={styles.container} disableGutters>
-      <Box style={styles.box_IMG_02}>
-        <Typography style={styles.style_Font}>
-          Seja bem-vindo de volta!
-        </Typography>
-      </Box>
-      <Box style={styles.box_Login}>
-        <Box style={styles.box_logo_img}>
-          <img style={styles.logo} src={logo} alt="logo site" />
-        </Box>
-        <Box>
-          <Typography>Login</Typography>
-
-          <Typography>
-            Seja bem-vindo(a)! faça seu login na ConecTalento
+    <Box style={styles.main}>
+      <Container style={styles.container} disableGutters>
+        <Box style={styles.box_IMG_02}>
+          <Typography style={styles.style_Font}>
+            Seja bem-vindo de volta!
           </Typography>
+        </Box>
+        <Box style={styles.box_Login}>
+          <Box style={styles.box_logo_img}>
+            <img style={styles.logo} src={logo} alt="logo site" />
+          </Box>
+          <Box style={styles.box_Formulario}>
+            <Typography style={styles.font_Titulo}>Login</Typography>
 
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Digite seu CPF"
-            name="cpf"
-            id="cpf"
-            variant="outlined"
-          />
+            <Typography>Seja bem-vindo(a)!</Typography>
+            <Typography>faça seu login na ConecTalento</Typography>
 
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Digite sua senha"
-            name="senha"
-            id="password"
-            variant="outlined"
-          />
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Digite seu CPF"
+              name="cpf"
+              id="cpf"
+              variant="outlined"
+              style={styles.camposFrom}
+            />
 
-          <Button>
-            Login
-          </Button>
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Digite sua senha"
+              name="senha"
+              id="password"
+              variant="outlined"
+              style={styles.camposFrom}
+            />
 
-          <Box>
-            <Typography>Não possui uma conta?</Typography>
-            <Typography component={Link}> Cadastre-se</Typography>
+            <Button style={styles.button}>Login</Button>
+
+            <Box style={styles.textoCadastro}>
+              <Typography>Não possui uma conta? </Typography>
+              <Typography component={Link}> Cadastre-se</Typography>
+            </Box>
           </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 }
 
@@ -79,6 +83,12 @@ export default Login;
 
 function Styles() {
   return {
+    main: {
+      // backgroundImage: `url(${background})`,
+      // backgroundSize: "cover",
+      width: "100vw",
+      height: "100vh"
+    },
     container: {
       backgroundColor: "rgb(255, 255, 255)",
       width: "55%",
@@ -123,7 +133,40 @@ function Styles() {
       justifyContent: "end",
     },
     logo: {
-      width: "55px",
+      margin: "10px",
+      width: "45px",
+    },
+    font_Titulo: {
+      fontWeight: "600",
+      fontSize: "35px",
+      marginBottom: "5px",
+    },
+    box_Formulario: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      alignContent: "center",
+      justifyContent: "center",
+    },
+    textoCadastro: {
+      display: "flex",
+      gap: "5px",
+    },
+    camposFrom: {
+      width: "80%",
+      height: "20%",
+    },
+    button: {
+      backgroundColor: "#8500C2",
+      color: "#fff",
+      borderRadius: "8px",
+      width: "50%",
+      height: "45px",
+      fontWeight: "bold",
+      fontSize: "16px",
+      textTransform: "none",
+      margin: "15px",
+      cursor: "pointer",
     },
   };
 }
