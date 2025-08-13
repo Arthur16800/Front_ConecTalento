@@ -2,12 +2,14 @@ import { Box, Container, TextField, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
+import background from "../assets/background.png"
 import React from "react";
 import { Link } from "react-router-dom";
 
 function Cadastro() {
   const styles = Styles();
   return (
+    <Box style={styles.principal}>
     <Container style={styles.container}>
       <Box style={styles.box_Cadastro}>
         <Box style={styles.box_logo_img}>
@@ -25,6 +27,7 @@ function Cadastro() {
             name="email"
             id="email"
             variant="outlined"
+            style={styles.camposForm}
           />
 
           <TextField
@@ -35,6 +38,7 @@ function Cadastro() {
             name="email"
             id="email"
             variant="outlined"
+            style={styles.camposForm}
           />
           <TextField
             required
@@ -44,6 +48,7 @@ function Cadastro() {
             name="email"
             id="email"
             variant="outlined"
+            style={styles.camposForm}
           />
           <TextField
             required
@@ -53,8 +58,9 @@ function Cadastro() {
             name="email"
             id="email"
             variant="outlined"
+            style={styles.camposForm}
           />
-          <Button>Cadastrar</Button>
+          <Button style={styles.button}>Cadastrar</Button>
 
           <Box style={styles.textoLogin}>
             <Typography>Já possui uma conta?</Typography>
@@ -69,13 +75,14 @@ function Cadastro() {
         </Typography>
       </Box>
     </Container>
+    </Box>
   );
 }
 
 function Styles() {
   return {
     container: {
-      backgroundColor: "rgb(255, 255, 255)",
+      backgroundColor:"white",
       width: "55%",
       height: "500px",
       borderRadius: "5px",
@@ -120,7 +127,9 @@ function Styles() {
       justifyContent: "start",
     },
     logo: {
-      width: "55px",
+      marginTop: "10px",
+      marginLeft: "10px",
+      width: "45px",
     },
     font_Titulo: {
       fontWeight: "600",
@@ -134,9 +143,27 @@ function Styles() {
       justifyContent: "center",
     },
     textoLogin: {
-        display:"flex",
-        flexDirection:"row"
-    }
+      display: "flex",
+      gap:"5px"
+    },
+    camposForm: {
+        width:"80%",
+        margin:"7px"
+    },
+    button: {
+        backgroundColor:"#8500C2",
+        color:"#fff",
+        borderRadius:"8px",
+        width:"50%",
+        height:"45px",
+        fontWeight:"bold",
+        fontSize:"16px",
+        textTransform:"none",
+        marginTop:"15px",
+        marginBottom:"10px",
+        cursor:"pointer",
+
+    },
   };
 }
 
