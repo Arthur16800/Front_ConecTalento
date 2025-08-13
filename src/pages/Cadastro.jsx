@@ -5,7 +5,6 @@ function Cadastro() {
   return (
     <Container>
       <Typography>Cadastro</Typography>
-
       <TextField
         required
         fullWidth
