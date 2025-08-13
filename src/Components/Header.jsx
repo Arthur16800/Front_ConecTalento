@@ -47,7 +47,7 @@ function Style() {
       justifyContent: "space-between",
       width: "100%",
       height: "70px",
-      backgroundColor: "#8500C2",
+      backgroundColor: "#64058fff",
       position: "absolute",
       top: 0,
       left: 0,
