@@ -1,6 +1,7 @@
 import { Box, Container, TextField, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import background2 from "../assets/background2.png";
+import logo from "../assets/logo_ct.png";
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -9,50 +10,57 @@ function Cadastro() {
   return (
     <Container style={styles.container}>
       <Box style={styles.box_Cadastro}>
-        <Typography>Cadastro</Typography>
+        <Box style={styles.box_logo_img}>
+          <img style={styles.logo} src={logo} alt="Logo site" />
+        </Box>
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Nome"
-          name="email"
-          id="email"
-          variant="standard"
-        />
+        <Box style={styles.box_Formulario}>
+          <Typography style={styles.font_Titulo}>Cadastro</Typography>
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Email"
-          name="email"
-          id="email"
-          variant="standard"
-        />
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Senha"
-          name="email"
-          id="email"
-          variant="standard"
-        />
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Confirme sua senha"
-          name="email"
-          id="email"
-          variant="standard"
-        />
-        <Button>Cadastrar</Button>
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Nome"
+            name="email"
+            id="email"
+            variant="outlined"
+          />
 
-        <Typography component={Link}>
-          Já possui uma conta? Faça login
-        </Typography>
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Email"
+            name="email"
+            id="email"
+            variant="outlined"
+          />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Senha"
+            name="email"
+            id="email"
+            variant="outlined"
+          />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Confirme sua senha"
+            name="email"
+            id="email"
+            variant="outlined"
+          />
+          <Button>Cadastrar</Button>
+
+          <Box style={styles.textoLogin}>
+            <Typography>Já possui uma conta?</Typography>
+            <Typography component={Link}>Faça login</Typography>
+          </Box>
+        </Box>
       </Box>
 
       <Box style={styles.box_IMG_02}>
@@ -92,18 +100,43 @@ function Styles() {
       color: "#fff",
       fontSize: "24px",
       fontWeight: "bold",
-      borderRadius: "5px",
+      borderRadius: "0px 5px 5px 0px",
     },
     box_Cadastro: {
       width: "60%",
       height: "100%",
-      borderRadius: "5px",
+      borderRadius: "5px 0px 0px 5px",
+      display: "flex",
+      flexDirection: "column",
     },
     style_Font: {
       width: "95%",
       fontSize: "33px",
-      fontWeight:"900",
+      fontWeight: "900",
     },
+    box_logo_img: {
+      width: "100%",
+      display: "flex",
+      justifyContent: "start",
+    },
+    logo: {
+      width: "55px",
+    },
+    font_Titulo: {
+      fontWeight: "600",
+      fontSize: "35px",
+    },
+    box_Formulario: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      alignContent: "center",
+      justifyContent: "center",
+    },
+    textoLogin: {
+        display:"flex",
+        flexDirection:"row"
+    }
   };
 }
 
