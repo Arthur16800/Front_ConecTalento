@@ -1,8 +1,19 @@
-function App() {
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
+import Home from "./pages/Home";
 
+function App() {
   return (
-    <h1>teste negrijo</h1>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />}/>   
+        <Route path="/login" element={<Login />}/>   
+        <Route path="/cadastro" element={<Cadastro />}/>   
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
