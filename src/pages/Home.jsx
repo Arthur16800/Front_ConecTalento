@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -8,21 +7,21 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import Grid from "@mui/material/Grid2"; // <- Grid v2
 import Button from "@mui/material/Button";
 
 function Home() {
   return (
     <>
-      <Grid container spacing={1} mb={5}>
+      <Grid container spacing={1} sx={{ mb: 5 }}>
         {Array.from({ length: 50 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
             <Card
               sx={{
-                marginTop: 5,
+                mt: 5,
                 borderRadius: 2,
-                marginLeft: 5,
-                marginRight: 5,
-                backgroundColor: "#D9D9D9",
+                mx: 5,
+                bgcolor: "#D9D9D9",
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
@@ -33,20 +32,20 @@ function Home() {
                 sx={{
                   width: "80%",
                   height: 120,
-                  backgroundColor: "white",
+                  bgcolor: "white",
                   borderRadius: 2,
                   display: "flex",
-                  alignItems: "center", 
+                  alignItems: "center",
                   justifyContent: "center",
-                  mb: 2, 
-                  mt: 2
+                  mb: 2,
+                  mt: 2,
                 }}
               >
                 imagem
               </Box>
 
               <CardContent>
-                <Typography variant="h6" color="#000000">
+                <Typography variant="h6" color="#000">
                   titulo
                 </Typography>
               </CardContent>
