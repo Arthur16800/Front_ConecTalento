@@ -2,7 +2,6 @@ import { Box, Container, TextField, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import background from "../assets/background.png"
 import React from "react";
 import { Link } from "react-router-dom";
 
