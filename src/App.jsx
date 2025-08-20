@@ -5,6 +5,7 @@ import Cadastro from "./pages/Cadastro";
 import Home from "./pages/Home";
 import Header from "./Components/Header";
 import PerfilUser from "./pages/PerfilUser";
+import Portfolio from "./pages/Portifolio";
 
 function App() {
   return (
@@ -23,6 +24,14 @@ function App() {
           element={
             <Header>
               <PerfilUser />
+            </Header>
+          }
+        />
+        <Route
+          path="/portifoliouser"
+          element={
+            <Header>
+              <Portfolio />
             </Header>
           }
         />

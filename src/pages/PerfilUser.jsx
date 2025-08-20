@@ -26,7 +26,6 @@ function PerfilUser() {
         <Button style={styles.editBtn}>Editar Perfil</Button>
       </Box>
 
-      {/* COLUNA DIREITA (painel do formulário) */}
       <Box style={styles.formPanel}>
         <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
@@ -90,28 +89,28 @@ function Styles() {
   return {
     container: {
       display: "flex",
+      justifyContent: "space-between",
       gap: 30,
       padding: "24px 16px",
-      // centraliza e limita a largura como no mock
       maxWidth: "70%",
       margin: "0 auto",
     },
-
-    // Coluna esquerda (card)
     leftCard: {
-      width: 280,
+      maxWidth: 280,
+      minWidth: 100,
+      flex:2,
+      width:"100%",
       height: "10%",
       backgroundColor: "#fff",
       border: "1px solid #E5E5E5",
       borderRadius: 16,
-      padding: 16,
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
     },
     box_IMG: {
-      height: 48,
-      borderRadius: 12,
+      height: 50,
+      borderRadius: "16px 16px 0px 0px",
       marginBottom: 16,
       backgroundImage: `url(${background2})`,
       backgroundSize: "cover",
@@ -139,7 +138,9 @@ function Styles() {
         flexGrow: 1 
     },
     editBtn: {
+      margin: "auto",
       marginTop: 12,
+      marginBottom: 12,
       borderRadius: 5,
       textTransform: "none",
       fontWeight: 700,
@@ -147,6 +148,7 @@ function Styles() {
       background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
       color: "#fff",
       border: "none",
+      width: "90%"
     },
     formPanel: {
       flex: 1,
@@ -157,6 +159,8 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      minWidth: 400,
+      maxWidth: 800,
     },
     formTitle: {
       fontSize: 20,
