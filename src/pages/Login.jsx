@@ -8,21 +8,9 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import background from "../assets/background.png";
 
 // Importação dos componentes do Roteador
-import { Link, useNavigate } from "react-router-dom";
-import {
-  display,
-  fontFamily,
-  fontSize,
-  fontStyle,
-  fontWeight,
-  height,
-  margin,
-  padding,
-  width,
-} from "@mui/system";
+import { Link } from "react-router-dom";
 
 function Login() {
   const styles = Styles();
@@ -48,9 +36,9 @@ function Login() {
               required
               fullWidth
               margin="normal"
-              label="Digite seu CPF"
-              name="cpf"
-              id="cpf"
+              label="Digite seu e-mail"
+              name="email"
+              id="email"
               variant="outlined"
               style={styles.camposFrom}
             />
@@ -78,8 +66,6 @@ function Login() {
     </Box>
   );
 }
-
-export default Login;
 
 function Styles() {
   return {
@@ -170,3 +156,5 @@ function Styles() {
     },
   };
 }
+
+export default Login;
