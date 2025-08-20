@@ -13,7 +13,7 @@ function CriarProjeto() {
           <Typography style={styles.label}>Adicionar imagens:</Typography>
 
           <Box>
-            <Button variant="outlined" component="label">
+            <Button variant="outlined" component="label" style={styles.buttonFile}>
               Files
               <input type="file" hidden multiple />
             </Button>
@@ -30,7 +30,7 @@ function CriarProjeto() {
             style={styles.textfield}
             sx={{
               "& .MuiOutlinedInput-notchedOutline": {
-                border: "none",
+                borderColor: "black",
               },
             }}
           />
@@ -46,7 +46,7 @@ function CriarProjeto() {
             style={styles.textfield}
             sx={{
               "& .MuiOutlinedInput-notchedOutline": {
-                border: "none",
+                borderColor: "black",
               },
             }}
           />
@@ -90,10 +90,17 @@ function Styles() {
     textfield: {
       width: "50%",
       backgroundColor: "#f0f0f0",
-      borderRadius: 8,
+      borderRadius: 5,
       height: 55,
-      paddingLeft: 15,
-      paddingRight: 15,
+    },
+    buttonFile: {
+      backgroundColor: "#f0f0f0",
+      color: "black",
+      borderRadius: "5px",
+      fontSize: "14px",
+      textTransform: "none",
+      padding: "10px 20px",
+      borderColor: "black"
     },
   };
 }
