@@ -280,6 +280,13 @@ function Styles() {
       marginBottom: "10px",
       cursor: "pointer",
     },
+    content: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 1,
+      marginTop: 5
+    },
   };
 }
 

@@ -15,25 +15,25 @@ const Header = ({ children }) => {
   const rotasComPesquisa = ["/"];
   const mostrarPesquisa = rotasComPesquisa.includes(location.pathname);
 
-  const Styles = Style();
+  const styles = Styles();
 
   return (
     <>
       <Container maxWidth="xs">
-        <Box sx={Styles.container}>
-          <img style={Styles.logo} src={conecTalento} alt="Logo" />
+        <Box sx={styles.container}>
+          <img style={styles.logo} src={conecTalento} alt="Logo" />
 
           {mostrarPesquisa && (
-            <Box sx={Styles.searchBox}>
-              <InputBase placeholder="Pesquisar..." sx={Styles.inputBase} />
-              <SearchIcon sx={Styles.searchIcon} />
+            <Box sx={styles.searchBox}>
+              <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
+              <SearchIcon sx={styles.searchIcon} />
             </Box>
           )}
 
-          <Box sx={Styles.userBox}>
-            <AccountCircleIcon sx={Styles.accountIcon} />
+          <Box sx={styles.userBox}>
+            <AccountCircleIcon sx={styles.accountIcon} />
             User
-            <KeyboardArrowDownIcon sx={Styles.arrowIcon} />
+            <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
       </Container>
@@ -43,7 +43,7 @@ const Header = ({ children }) => {
   );
 };
 
-function Style() {
+function Styles() {
   return {
     container: {
       display: "flex",
