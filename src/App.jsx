@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Home from "./pages/Home";
 import Header from "./Components/Header";
+import DetalhesProjeto from "./pages/DetalheProjeto";
 import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
 
@@ -37,6 +38,7 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/detalhes-projeto" element={<Header> <DetalhesProjeto/> </Header>} />
       </Routes>
     </Router>
   );
