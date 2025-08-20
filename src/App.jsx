@@ -20,7 +20,7 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/detalhes" element={<Header> <DetalhesProjeto/> </Header>} />
+        <Route path="/detalhes-projeto" element={<Header> <DetalhesProjeto/> </Header>} />
       </Routes>
     </Router>
   );
