@@ -3,11 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Home from "./pages/Home";
-import Header from "./Components/Header";
 import CriarProjeto from "./pages/CriarProjeto";
 import DetalhesProjeto from "./pages/DetalheProjeto";
 import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
+import DefaultLayout from "./Components/DefaultLayout";
+
 
 function App() {
   return (
@@ -17,38 +18,38 @@ function App() {
         <Route
           path="/"
           element={
-            <Header>
+            <DefaultLayout>
               <Home />
-            </Header>
+            </DefaultLayout>
           }
         />
         <Route
           path="/criarProjeto"
           element={
-            <Header>
+            <DefaultLayout>
               <CriarProjeto />
-            </Header>
+            </DefaultLayout>
           }
         />
         <Route
           path="/perfiluser"
           element={
-            <Header>
+            <DefaultLayout>
               <PerfilUser />
-            </Header>
+            </DefaultLayout>
           }
         />
         <Route
           path="/portifoliouser"
           element={
-            <Header>
+            <DefaultLayout>
               <Portfolio />
-            </Header>
+            </DefaultLayout>
           }
         />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/detalhes-projeto" element={<Header> <DetalhesProjeto/> </Header>} />
+        <Route path="/detalhesprojeto" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
       </Routes>
     </Router>
   );
