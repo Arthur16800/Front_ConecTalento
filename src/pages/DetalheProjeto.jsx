@@ -85,9 +85,6 @@ function DetalhesProjeto() {
 
 function Styles() {
   return {
-    container: {
-      marginTop: "80px",
-    },
     titulo: {
       fontSize: "30px",
       fontWeight: "bold",

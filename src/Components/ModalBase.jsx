@@ -15,7 +15,7 @@ function Styles() {
       borderRadius: 2,
       boxShadow: 24,
       p: 4,
-      overflow: "hidden", // garante que nada vaze do box
+      overflow: "hidden",
     },
     logo: {
       position: "absolute",

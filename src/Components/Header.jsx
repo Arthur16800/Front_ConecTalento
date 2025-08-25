@@ -10,10 +10,6 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const Header = ({ children }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const rotasComPesquisa = ["/"];
-  const mostrarPesquisa = rotasComPesquisa.includes(location.pathname);
 
   const styles = Styles();
 
@@ -23,12 +19,10 @@ const Header = ({ children }) => {
         <Box sx={styles.container}>
           <img style={styles.logo} src={conecTalento} alt="Logo" />
 
-          {mostrarPesquisa && (
-            <Box sx={styles.searchBox}>
-              <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
-              <SearchIcon sx={styles.searchIcon} />
-            </Box>
-          )}
+          <Box sx={styles.searchBox}>
+            <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
+            <SearchIcon sx={styles.searchIcon} />
+          </Box>
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
@@ -37,7 +31,7 @@ const Header = ({ children }) => {
           </Box>
         </Box>
       </Container>
-      
+
       <Box sx={{ marginTop: "70px" }}>{children}</Box>
     </>
   );
