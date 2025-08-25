@@ -42,6 +42,7 @@ api.interceptors.response.use(
 
 const sheets = {
     postCadastro: (user) => api.post("/user", user),
+    postLogin: (user) => api.post("/login", user),
 }
 
 export default sheets;

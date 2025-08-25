@@ -3,7 +3,6 @@ import Button from "@mui/material/Button";
 import { useState } from "react";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -196,7 +195,7 @@ function Cadastro() {
 
             <Box style={styles.textoLogin}>
               <Typography>Já possui uma conta?</Typography>
-              <Typography component={Link}>Faça login</Typography>
+              <Typography component={Link} to="/login" >Faça login</Typography>
             </Box>
           </Box>
         </Box>
