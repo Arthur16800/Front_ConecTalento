@@ -49,8 +49,8 @@ function Cadastro() {
         alert(response.data.message);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("id_usuario", user.cpf);
-        navigate("/home");
+        localStorage.setItem("id_usuario", user.email);
+        navigate("/");
       },
       (error) => {
         alert(error.response.data.error);
@@ -195,7 +195,7 @@ function Cadastro() {
 
             <Box style={styles.textoLogin}>
               <Typography>Já possui uma conta?</Typography>
-              <Typography component={Link} to="/login" >Faça login</Typography>
+              <Typography component={Link} to="/login">Faça login</Typography>
             </Box>
           </Box>
         </Box>
