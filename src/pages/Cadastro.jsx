@@ -3,13 +3,13 @@ import Button from "@mui/material/Button";
 import { useState } from "react";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import IconButton from "@mui/material/IconButton";
 import api from "../axios/axios";
 import InputAdornment from "@mui/material/InputAdornment";
+import ModalBase from "../Components/ModalBase";
 
 function Cadastro() {
   const [user, setUser] = useState({
@@ -31,6 +31,16 @@ function Cadastro() {
   const handleSubmit = (event) => {
     event.preventDefault();
     cadastro();
+  };
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
   };
 
   async function cadastro() {
@@ -175,7 +185,11 @@ function Cadastro() {
               }}
             />
 
-            <Button type="submit" style={styles.button}>
+            <Button
+              type="submit"
+              style={styles.button}
+              onClick={() => handleOpenModal()}
+            >
               Cadastrar
             </Button>
 
@@ -192,6 +206,19 @@ function Cadastro() {
           </Typography>
         </Box>
       </Container>
+
+      <ModalBase open={openModal} onClose={handleCloseModal}>
+        <Box sx={styles.content}>
+          <Typography variant="h5" fontWeight="bold">
+            Quase lá
+          </Typography>
+          <Typography>Digite o código que enviamos no seu email</Typography>
+          <TextField variant="outlined" placeholder="XXX-XXX" />
+          <Button variant="contained" sx={styles.button}>
+            Continuar
+          </Button>
+        </Box>
+      </ModalBase>
     </Box>
   );
 }
@@ -279,6 +306,13 @@ function Styles() {
       marginTop: "15px",
       marginBottom: "10px",
       cursor: "pointer",
+    },
+    content: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 1,
+      marginTop: 5,
     },
   };
 }
