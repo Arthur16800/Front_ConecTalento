@@ -1,80 +1,224 @@
 import { Box, Container, TextField, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
+import { useState } from "react";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import background from "../assets/background.png"
-import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import IconButton from "@mui/material/IconButton";
+import api from "../axios/axios";
+import InputAdornment from "@mui/material/InputAdornment";
+import ModalBase from "../Components/ModalBase";
 
 function Cadastro() {
+  const [user, setUser] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    showPassword: false,
+    showConfirmPassword: false,
+  });
+
+  const navigate = useNavigate();
+
+  const onChange = (event) => {
+    const { name, value } = event.target;
+    setUser({ ...user, [name]: value });
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    cadastro();
+  };
+
+  const [openModal, setOpenModal] = useState(false);
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  async function cadastro() {
+    await api.postCadastro(user).then(
+      (response) => {
+        alert(response.data.message);
+        localStorage.setItem("authenticated", true);
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("id_usuario", user.email);
+        navigate("/");
+      },
+      (error) => {
+        alert(error.response.data.error);
+      }
+    );
+  }
+
   const styles = Styles();
+
   return (
     <Box style={styles.principal}>
-    <Container style={styles.container}>
-      <Box style={styles.box_Cadastro}>
-        <Box style={styles.box_logo_img}>
-          <img style={styles.logo} src={logo} alt="Logo site" />
-        </Box>
+      <Container style={styles.container}>
+        <Box style={styles.box_Cadastro}>
+          <Box style={styles.box_logo_img}>
+            <img style={styles.logo} src={logo} alt="Logo site" />
+          </Box>
 
-        <Box style={styles.box_Formulario}>
-          <Typography style={styles.font_Titulo}>Cadastro</Typography>
+          <Box
+            style={styles.box_Formulario}
+            component="form"
+            onSubmit={handleSubmit}
+          >
+            <Typography style={styles.font_Titulo}>Cadastro</Typography>
 
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Nome"
-            name="email"
-            id="email"
-            variant="outlined"
-            style={styles.camposForm}
-          />
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Nome"
+              name="username"
+              id="username"
+              value={user.username}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+            />
 
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Email"
-            name="email"
-            id="email"
-            variant="outlined"
-            style={styles.camposForm}
-          />
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Senha"
-            name="email"
-            id="email"
-            variant="outlined"
-            style={styles.camposForm}
-          />
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Confirme sua senha"
-            name="email"
-            id="email"
-            variant="outlined"
-            style={styles.camposForm}
-          />
-          <Button style={styles.button}>Cadastrar</Button>
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Email"
+              name="email"
+              id="email"
+              value={user.email}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+            />
 
-          <Box style={styles.textoLogin}>
-            <Typography>Já possui uma conta?</Typography>
-            <Typography component={Link}>Faça login</Typography>
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Senha"
+              name="password"
+              id="password"
+              type={user.showPassword ? "text" : "password"}
+              value={user.password}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() =>
+                          setUser((prev) => ({
+                            ...prev,
+                            showPassword: !prev.showPassword,
+                          }))
+                        }
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {user.showPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  inputProps: { maxLength: 50 },
+                },
+              }}
+              sx={{
+                m: 0,
+              }}
+            />
+
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Confirme sua senha"
+              name="confirmPassword"
+              id="confirmPassword"
+              type={user.showConfirmPassword ? "text" : "password"}
+              value={user.confirmPassword}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() =>
+                          setUser((prev) => ({
+                            ...prev,
+                            showConfirmPassword: !prev.showConfirmPassword,
+                          }))
+                        }
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {user.showConfirmPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  inputProps: { maxLength: 50 },
+                },
+              }}
+              sx={{
+                m: 0,
+              }}
+            />
+
+            <Button
+              type="submit"
+              style={styles.button}
+              onClick={() => handleOpenModal()}
+            >
+              Cadastrar
+            </Button>
+
+            <Box style={styles.textoLogin}>
+              <Typography>Já possui uma conta?</Typography>
+              <Typography component={Link} to="/login">Faça login</Typography>
+            </Box>
           </Box>
         </Box>
-      </Box>
 
-      <Box style={styles.box_IMG_02}>
-        <Typography style={styles.style_Font}>
-          Seja bem-vindo ao ConecTalento!
-        </Typography>
-      </Box>
-    </Container>
+        <Box style={styles.box_IMG_02}>
+          <Typography style={styles.style_Font}>
+            Seja bem-vindo ao ConecTalento!
+          </Typography>
+        </Box>
+      </Container>
+
+      <ModalBase open={openModal} onClose={handleCloseModal}>
+        <Box sx={styles.content}>
+          <Typography variant="h5" fontWeight="bold">
+            Quase lá
+          </Typography>
+          <Typography>Digite o código que enviamos no seu email</Typography>
+          <TextField variant="outlined" placeholder="XXX-XXX" />
+          <Button variant="contained" sx={styles.button}>
+            Continuar
+          </Button>
+        </Box>
+      </ModalBase>
     </Box>
   );
 }
@@ -82,7 +226,7 @@ function Cadastro() {
 function Styles() {
   return {
     container: {
-      backgroundColor:"white",
+      backgroundColor: "white",
       width: "55%",
       height: "500px",
       borderRadius: "5px",
@@ -144,25 +288,31 @@ function Styles() {
     },
     textoLogin: {
       display: "flex",
-      gap:"5px"
+      gap: "5px",
     },
     camposForm: {
-        width:"80%",
-        margin:"7px"
+      width: "80%",
+      margin: "7px",
     },
     button: {
-        backgroundColor:"#8500C2",
-        color:"#fff",
-        borderRadius:"8px",
-        width:"50%",
-        height:"45px",
-        fontWeight:"bold",
-        fontSize:"16px",
-        textTransform:"none",
-        marginTop:"15px",
-        marginBottom:"10px",
-        cursor:"pointer",
-
+      backgroundColor: "#8500C2",
+      color: "#fff",
+      borderRadius: "8px",
+      width: "50%",
+      height: "45px",
+      fontWeight: "bold",
+      fontSize: "16px",
+      textTransform: "none",
+      marginTop: "15px",
+      marginBottom: "10px",
+      cursor: "pointer",
+    },
+    content: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 1,
+      marginTop: 5,
     },
   };
 }

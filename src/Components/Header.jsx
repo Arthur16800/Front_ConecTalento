@@ -10,40 +10,34 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const Header = ({ children }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const rotasComPesquisa = ["/"];
-  const mostrarPesquisa = rotasComPesquisa.includes(location.pathname);
-
-  const Styles = Style();
+  const styles = Styles();
 
   return (
     <>
       <Container maxWidth="xs">
-        <Box sx={Styles.container}>
-          <img style={Styles.logo} src={conecTalento} alt="Logo" />
+        <Box sx={styles.container}>
+          <img style={styles.logo} src={conecTalento} alt="Logo" />
 
-          {mostrarPesquisa && (
-            <Box sx={Styles.searchBox}>
-              <InputBase placeholder="Pesquisar..." sx={Styles.inputBase} />
-              <SearchIcon sx={Styles.searchIcon} />
-            </Box>
-          )}
+          <Box sx={styles.searchBox}>
+            <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
+            <SearchIcon sx={styles.searchIcon} />
+          </Box>
 
-          <Box sx={Styles.userBox}>
-            <AccountCircleIcon sx={Styles.accountIcon} />
+          <Box sx={styles.userBox}>
+            <AccountCircleIcon sx={styles.accountIcon} />
             User
-            <KeyboardArrowDownIcon sx={Styles.arrowIcon} />
+            <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
       </Container>
-      
+
       <Box sx={{ marginTop: "70px" }}>{children}</Box>
     </>
   );
 };
 
-function Style() {
+function Styles() {
   return {
     container: {
       display: "flex",
