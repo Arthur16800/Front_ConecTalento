@@ -17,6 +17,7 @@ function Cadastro() {
     email: "",
     password: "",
     confirmPassword: "",
+    code:"",
     showPassword: false,
     showConfirmPassword: false,
   });
@@ -33,6 +34,12 @@ function Cadastro() {
     cadastro();
   };
 
+  const handleSubmitCode = (event) => {
+    event.preventDefault();
+    cadastroCode();
+  };
+
+
   const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = () => {
@@ -44,6 +51,18 @@ function Cadastro() {
   };
 
   async function cadastro() {
+    await api.postCadastro(user).then(
+      (response) => {
+        alert(response.data.message);
+        
+      },
+      (error) => {
+        alert(error.response.data.error);
+      }
+    );
+  }
+
+  async function cadastroCode() {
     await api.postCadastro(user).then(
       (response) => {
         alert(response.data.message);
@@ -208,13 +227,21 @@ function Cadastro() {
       </Container>
 
       <ModalBase open={openModal} onClose={handleCloseModal}>
-        <Box sx={styles.content}>
-          <Typography variant="h5" fontWeight="bold">
-            Quase lá
-          </Typography>
+        <Box component="form" onSubmit={handleSubmitCode} sx={styles.content}>
+          <Typography variant="h5" fontWeight="bold">Quase lá</Typography>
           <Typography>Digite o código que enviamos no seu email</Typography>
-          <TextField variant="outlined" placeholder="XXX-XXX" />
-          <Button variant="contained" sx={styles.button}>
+
+          <TextField
+            variant="outlined"
+            placeholder="XXX-XXX"
+            name="code"
+            id="code"
+            value={user.code}
+            onChange={onChange}
+            inputProps={{ maxLength: 10 }}
+          />
+
+          <Button variant="contained" sx={styles.button} type="submit">
             Continuar
           </Button>
         </Box>
