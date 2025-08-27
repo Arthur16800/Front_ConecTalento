@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-    baseURL: "http://10.89.240.74:5000/api/v1",
+    baseURL: "http://10.89.240.90:5000/api/v1",
     headers: {
         'accept': 'application/json'
     }
@@ -42,6 +42,8 @@ api.interceptors.response.use(
 
 const sheets = {
     postCadastro: (user) => api.post("/user", user),
+    getUserById: (id) => api.get("/user/"+id),
+    postLogin: (user) => api.post("/login", user),
 }
 
 export default sheets;

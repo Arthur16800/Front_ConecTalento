@@ -3,7 +3,6 @@ import Button from "@mui/material/Button";
 import { useState } from "react";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
-import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
@@ -18,6 +17,7 @@ function Cadastro() {
     email: "",
     password: "",
     confirmPassword: "",
+    code:"",
     showPassword: false,
     showConfirmPassword: false,
   });
@@ -34,6 +34,12 @@ function Cadastro() {
     cadastro();
   };
 
+  const handleSubmitCode = (event) => {
+    event.preventDefault();
+    cadastroCode();
+  };
+
+
   const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = () => {
@@ -48,10 +54,22 @@ function Cadastro() {
     await api.postCadastro(user).then(
       (response) => {
         alert(response.data.message);
+        
+      },
+      (error) => {
+        alert(error.response.data.error);
+      }
+    );
+  }
+
+  async function cadastroCode() {
+    await api.postCadastro(user).then(
+      (response) => {
+        alert(response.data.message);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("id_usuario", user.cpf);
-        navigate("/home");
+        localStorage.setItem("id_usuario", user.email);
+        navigate("/");
       },
       (error) => {
         alert(error.response.data.error);
@@ -196,7 +214,7 @@ function Cadastro() {
 
             <Box style={styles.textoLogin}>
               <Typography>Já possui uma conta?</Typography>
-              <Typography component={Link}>Faça login</Typography>
+              <Typography component={Link} to="/login">Faça login</Typography>
             </Box>
           </Box>
         </Box>
@@ -209,13 +227,21 @@ function Cadastro() {
       </Container>
 
       <ModalBase open={openModal} onClose={handleCloseModal}>
-        <Box sx={styles.content}>
-          <Typography variant="h5" fontWeight="bold">
-            Quase lá
-          </Typography>
+        <Box component="form" onSubmit={handleSubmitCode} sx={styles.content}>
+          <Typography variant="h5" fontWeight="bold">Quase lá</Typography>
           <Typography>Digite o código que enviamos no seu email</Typography>
-          <TextField variant="outlined" placeholder="XXX-XXX" />
-          <Button variant="contained" sx={styles.button}>
+
+          <TextField
+            variant="outlined"
+            placeholder="XXX-XXX"
+            name="code"
+            id="code"
+            value={user.code}
+            onChange={onChange}
+            inputProps={{ maxLength: 10 }}
+          />
+
+          <Button variant="contained" sx={styles.button} type="submit">
             Continuar
           </Button>
         </Box>
