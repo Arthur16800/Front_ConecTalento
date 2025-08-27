@@ -7,6 +7,7 @@ import { InputBase } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { Link } from "react-router-dom";
 
 const Header = ({ children }) => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link to="/login">user</Link>
+            <Link to="/login" >User</Link>
             <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
