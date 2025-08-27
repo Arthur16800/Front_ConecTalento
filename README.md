@@ -18,3 +18,7 @@ Este projeto fornece a estrutura das telas do site ConecTalento.
 2. Instale as dependências:
    ```sh
    npm i
+
+3. Iniciar o projeto:
+   ```sh
+   npm run dev
