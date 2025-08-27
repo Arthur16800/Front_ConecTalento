@@ -7,10 +7,8 @@ import { InputBase } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import { Link } from "react-router-dom";
 
 const Header = ({ children }) => {
-  const navigate = useNavigate();
 
   const styles = Styles();
 
