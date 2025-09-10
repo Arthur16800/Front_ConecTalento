@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ModalBase from "./ModalBase"; // ajuste o caminho conforme seu projeto
@@ -24,21 +24,31 @@ function formatNumber(num) {
   return num.toString();
 }
 
-export default function LikeButton({ initialLikes = 0, isLoggedIn = false }) {
+export default function LikeButton({ initialLikes = 0 }) {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [openModal, setOpenModal] = useState(false);
 
   const navigate = useNavigate();
 
+  // Função para verificar se o usuário está logado (token presente)
+  const isLoggedIn = Boolean(localStorage.getItem("token")); // ou sessionStorage, dependendo de onde o token está armazenado
+
   const toggleLike = () => {
     if (!isLoggedIn) {
-      setOpenModal(true);
+      setOpenModal(true); // Exibe o modal caso não esteja logado
       return;
     }
     setLiked(!liked);
     setLikesCount((prev) => (liked ? prev - 1 : prev + 1));
   };
+
+  // Verificar e fechar o modal se o usuário já estiver logado
+  useEffect(() => {
+    if (isLoggedIn) {
+      setOpenModal(false); // Fecha o modal se estiver logado
+    }
+  }, [isLoggedIn]); // Isso garante que, se o estado de login mudar, o modal será atualizado
 
   return (
     <>
@@ -62,6 +72,7 @@ export default function LikeButton({ initialLikes = 0, isLoggedIn = false }) {
         </span>
       </div>
 
+      {/* Exibe o modal apenas se o usuário não estiver logado */}
       <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
         <h2 style={{ marginBottom: 8 }}>Você precisa estar logado</h2>
         <p style={{ marginBottom: 24 }}>Deseja fazer login ou se cadastrar?</p>

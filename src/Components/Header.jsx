@@ -11,6 +11,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 const Header = ({ children }) => {
 
   const styles = Styles();
+  const handleLogout = () => {localStorage.removeItem('token');};
 
   return (
     <>
@@ -25,7 +26,7 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link to="/login" style={{color:"#ffffff"}}>User</Link>
+            <Link to="/login" style={{color:"#ffffff"}} onClick={handleLogout}>User</Link>
             <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
