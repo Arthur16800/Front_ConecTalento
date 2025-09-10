@@ -101,16 +101,10 @@ function Cadastro() {
         setLoading(false); // Desativa o ícone após erro
       }
     );
-  }
 
-  async function cadastroCode() {
-    await api.postCadastro(user).then(
+    await api.generateCode(user.email).then(
       (response) => {
         showAlert("success", response.data.message);
-        localStorage.setItem("authenticated", true);
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("id_usuario", user.email);
-        navigate("/");
       },
       (error) => {
         showAlert("error", error.response.data.error);
