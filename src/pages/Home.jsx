@@ -8,6 +8,7 @@ import {
   Alert,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2"; // <- Grid v2
+import LikeButton from "../Components/likeButton";
 import Button from "@mui/material/Button";
 
 function Home() {
@@ -34,13 +35,23 @@ function Home() {
                   height: 120,
                   bgcolor: "white",
                   borderRadius: 2,
+                  mb: 2,
+                  mt: 2,
+                  position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  mb: 2,
-                  mt: 2,
                 }}
               >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                  }}
+                >
+                  <LikeButton initialLikes={0} />
+                </Box>
                 imagem
               </Box>
 

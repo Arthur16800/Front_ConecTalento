@@ -25,7 +25,7 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link to="/login" >User</Link>
+            <Link to="/login" style={{color:"#ffffff"}}>User</Link>
             <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
