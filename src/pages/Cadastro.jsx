@@ -1,4 +1,4 @@
-import { Box, Container, TextField, Typography } from "@mui/material";
+import { Box, Container, TextField, Typography, CircularProgress } from "@mui/material";
 import Button from "@mui/material/Button";
 import { useState, useEffect } from "react";
 import background2 from "../assets/background2.png";
@@ -10,6 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import api from "../axios/axios";
 import InputAdornment from "@mui/material/InputAdornment";
 import ModalBase from "../Components/ModalBase";
+import { Alert, Snackbar } from "@mui/material";
 
 function Cadastro() {
   const [user, setUser] = useState({
@@ -26,6 +27,14 @@ function Cadastro() {
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutos em segundos
   const [isTimerActive, setIsTimerActive] = useState(false);
 
+  const [alert, setAlert] = useState({
+    open: false,
+    severity: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false); // Novo estado para ícone de carregamento
+
   useEffect(() => {
     let timer;
 
@@ -38,13 +47,20 @@ function Cadastro() {
     if (timeLeft === 0) {
       clearInterval(timer);
       setIsTimerActive(false);
-      // Aqui pode exibir mensagem que código expirou, ou permitir reenviar, etc.
     }
 
     return () => clearInterval(timer);
   }, [openModal, isTimerActive, timeLeft]);
 
   const navigate = useNavigate();
+
+  const showAlert = (severity, message) => {
+    setAlert({ open: true, severity, message });
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, open: false });
+  };
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -63,7 +79,7 @@ function Cadastro() {
 
   const handleOpenModal = () => {
     setOpenModal(true);
-    setTimeLeft(15 * 60); // Reinicia o timer ao abrir modal
+    setTimeLeft(15 * 60);
     setIsTimerActive(true);
   };
 
@@ -73,13 +89,16 @@ function Cadastro() {
   };
 
   async function cadastro() {
+    setLoading(true); // Ativa o ícone de carregamento
     await api.postCadastro(user).then(
       (response) => {
-        alert(response.data.message);
+        showAlert("success", response.data.message);
         handleOpenModal();
+        setLoading(false); // Desativa o ícone após resposta
       },
       (error) => {
-        alert(error.response.data.error);
+        showAlert("error", error.response.data.error);
+        setLoading(false); // Desativa o ícone após erro
       }
     );
   }
@@ -87,14 +106,14 @@ function Cadastro() {
   async function cadastroCode() {
     await api.postCadastro(user).then(
       (response) => {
-        alert(response.data.message);
+        showAlert("success", response.data.message);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("id_usuario", user.email);
         navigate("/");
       },
       (error) => {
-        alert(error.response.data.error);
+        showAlert("error", error.response.data.error);
       }
     );
   }
@@ -109,6 +128,20 @@ function Cadastro() {
 
   return (
     <Box style={styles.principal}>
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={3000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
       <Container style={styles.container}>
         <Box style={styles.box_Cadastro}>
           <Box style={styles.box_logo_img}>
@@ -232,11 +265,8 @@ function Cadastro() {
               }}
             />
 
-            <Button
-              type="submit"
-              style={styles.button}
-            >
-              Cadastrar
+            <Button type="submit" style={styles.button} disabled={loading}>
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Cadastrar"}
             </Button>
 
             <Box style={styles.textoLogin}>
