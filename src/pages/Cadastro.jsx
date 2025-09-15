@@ -74,7 +74,7 @@ function Cadastro() {
 
   const handleSubmitCode = (event) => {
     event.preventDefault();
-    cadastroCode();
+    validateCode();
   };
 
   const handleOpenModal = () => {
@@ -101,15 +101,22 @@ function Cadastro() {
         setLoading(false); // Desativa o ícone após erro
       }
     );
+  }
 
-    await api.generateCode(user.email).then(
+  async function validateCode(){
+    await api.postValidateCode(user).then(
       (response) => {
         showAlert("success", response.data.message);
+        localStorage.setItem("authenticated", true);
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("id_usuario", user.email);
+        handleCloseModal();
+        navigate("/");
       },
       (error) => {
         showAlert("error", error.response.data.error);
       }
-    );
+    )
   }
 
   const formatTime = (totalSeconds) => {
