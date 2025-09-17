@@ -1,99 +1,71 @@
 import React from "react";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import conecTalento from "../assets/ConecTalento.png";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { InputBase } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import Grid from "@mui/material/Grid2"; // <- Grid v2
+import LikeButton from "../Components/likeButton";
+import Button from "@mui/material/Button";
 
-const Header = ({ children }) => {
-
-  const styles = Styles();
-
+function Home() {
   return (
     <>
-      <Container maxWidth="xs">
-        <Box sx={styles.container}>
-          <img style={styles.logo} src={conecTalento} alt="Logo" />
+      <Grid container spacing={1} sx={{ mb: 5 }}>
+        {Array.from({ length: 50 }).map((_, index) => (
+          <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card
+              sx={{
+                mt: 5,
+                borderRadius: 2,
+                mx: 5,
+                bgcolor: "#D9D9D9",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Box
+                sx={{
+                  width: "80%",
+                  height: 120,
+                  bgcolor: "white",
+                  borderRadius: 2,
+                  mb: 2,
+                  mt: 2,
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                  }}
+                >
+                  <LikeButton initialLikes={0} />
+                </Box>
+                imagem
+              </Box>
 
-          <Box sx={styles.searchBox}>
-            <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
-            <SearchIcon sx={styles.searchIcon} />
-          </Box>
-
-          <Box sx={styles.userBox}>
-            <AccountCircleIcon sx={styles.accountIcon} />
-            <Link to="/login" style={{color:"White"}} >User</Link>
-            <KeyboardArrowDownIcon sx={styles.arrowIcon} />
-          </Box>
-        </Box>
-      </Container>
-
-      <Box sx={{ marginTop: "70px" }}>{children}</Box>
+              <CardContent>
+                <Typography variant="h6" color="#000">
+                  titulo
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     </>
   );
-};
-
-function Styles() {
-  return {
-    container: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      width: "100%",
-      height: "70px",
-      backgroundColor: "#64058fff",
-      position: "absolute",
-      top: 0,
-      left: 0,
-    },
-    logo: {
-      height: "40%",
-      width: "20%",
-      marginLeft: "2%",
-    },
-    searchBox: {
-      display: "flex",
-      alignItems: "center",
-      backgroundColor: "white",
-      borderRadius: "5px",
-      width: "300px",
-      height: "40px",
-      marginRight: "10%",
-    },
-    inputBase: {
-      flex: 1,
-      fontSize: "15px",
-      margin: "10px",
-    },
-    userBox: {
-      display: "flex",
-      alignItems: "center",
-      fontFamily: "Arial",
-      backgroundColor: "transparent",
-      padding: "6px 12px",
-      borderRadius: "5px",
-      cursor: "pointer",
-      transition: "background-color 0.3s ease",
-      "&:hover": {
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
-      },
-      marginRight: "2%",
-      color: "white",
-      gap: "4px",
-    },
-    arrowIcon: {
-      marginLeft: -0.5,
-    },
-    searchIcon: {
-      color: "#555",
-    },
-    accountIcon: {
-      color: "#E5E5E5",
-      fontSize: 28,
-    },
-  };
 }
-export default Header;
+
+export default Home;
