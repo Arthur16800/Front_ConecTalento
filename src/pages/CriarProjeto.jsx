@@ -1,60 +1,91 @@
 import { Box, Container, TextField, Typography } from "@mui/material";
 import Button from "@mui/material/Button";
+import { useState } from "react";
+import api from "../axios/axios";
 
 function CriarProjeto() {
   const styles = Styles();
+  const id_usuario = localStorage.getItem("id_usuario");
+
+  const [form, setForm] = useState({
+    titulo: "",
+    descricao: "",
+    ID_user: id_usuario || "",
+  });
+  const [imagens, setImagens] = useState([]);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    setImagens(e.target.files); // pega todas as imagens selecionadas
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.createProjeto(form, imagens);
+      alert(response.data.message);
+    } catch (error) {
+      console.error(error);
+      const msg = error.response?.data?.error || "Erro ao criar projeto";
+      alert(msg);
+      console.log(form)
+    }
+  };
 
   return (
-    <>
-      <Container maxWidth="sx">
-        <Box style={styles.box_principal}>
-          <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
+    <Container maxWidth="sx">
+      <form style={styles.box_principal} onSubmit={handleSubmit}>
+        <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
 
-          <Typography style={styles.label}>Adicionar imagens:</Typography>
+        <Typography style={styles.label}>Adicionar imagens:</Typography>
 
-          <Box>
-            <Button variant="outlined" component="label" style={styles.buttonFile}>
-              Files
-              <input type="file" hidden multiple />
-            </Button>
-          </Box>
-
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Título"
-            name="titulo"
-            id="titulo"
-            variant="outlined"
-            style={styles.textfield}
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-            }}
-          />
-
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Descrição"
-            name="descricao"
-            id="descricao"
-            variant="outlined"
-            style={styles.textfield}
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-            }}
-          />
-
-          <Button style={styles.button}>Criar</Button>
+        <Box>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+            />
         </Box>
-      </Container>
-    </>
+
+        <TextField
+          required
+          fullWidth
+          margin="normal"
+          label="Título"
+          name="titulo"
+          id="titulo"
+          variant="outlined"
+          onChange={handleChange}
+          style={styles.textfield}
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
+          }}
+        />
+
+        <TextField
+          required
+          fullWidth
+          margin="normal"
+          label="Descrição"
+          name="descricao"
+          id="descricao"
+          variant="outlined"
+          onChange={handleChange}
+          style={styles.textfield}
+          sx={{
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
+          }}
+        />
+
+        <Button type="submit" style={styles.button}>
+          Criar
+        </Button>
+      </form>
+    </Container>
   );
 }
 
@@ -100,7 +131,7 @@ function Styles() {
       fontSize: "14px",
       textTransform: "none",
       padding: "10px 20px",
-      borderColor: "black"
+      borderColor: "black",
     },
   };
 }
