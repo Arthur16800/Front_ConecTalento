@@ -1,4 +1,10 @@
-import { Box, Container, TextField, Typography, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Container,
+  TextField,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import Button from "@mui/material/Button";
 import { useState, useEffect } from "react";
 import background2 from "../assets/background2.png";
@@ -15,6 +21,7 @@ import { Alert, Snackbar } from "@mui/material";
 function Cadastro() {
   const [user, setUser] = useState({
     username: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -103,8 +110,8 @@ function Cadastro() {
     );
   }
 
-  async function validateCode(){
-    await api.postValidateCode(user).then(
+  async function validateCode() {
+    await api.postCadastro(user).then(
       (response) => {
         showAlert("success", response.data.message);
         localStorage.setItem("authenticated", true);
@@ -116,7 +123,7 @@ function Cadastro() {
       (error) => {
         showAlert("error", error.response.data.error);
       }
-    )
+    );
   }
 
   const formatTime = (totalSeconds) => {
@@ -161,6 +168,19 @@ function Cadastro() {
               fullWidth
               margin="normal"
               label="Nome"
+              name="name"
+              id="name"
+              value={user.name}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+            />
+
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Username"
               name="username"
               id="username"
               value={user.username}
@@ -267,7 +287,11 @@ function Cadastro() {
             />
 
             <Button type="submit" style={styles.button} disabled={loading}>
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Cadastrar"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Cadastrar"
+              )}
             </Button>
 
             <Box style={styles.textoLogin}>
@@ -389,6 +413,7 @@ function Styles() {
       fontSize: "35px",
     },
     box_Formulario: {
+      margin:"-25px",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -400,9 +425,9 @@ function Styles() {
       gap: "5px",
     },
     camposForm: {
-      width: "80%",
-      margin: "7px",
-    },
+      width: "75%",   // diminui a largura para caber melhor
+      margin: "3.5px 0",
+    },    
     button: {
       backgroundColor: "#8500C2",
       color: "#fff",

@@ -24,7 +24,7 @@ function Portfolio() {
     <Box style={styles.container}>
       <Box style={styles.box_user}>
         <AccountCircleIcon sx={styles.accountIcon} />
-        <Typography style={styles.userName}>TESTE NAME USER</Typography>
+        <Typography style={styles.userName}>Claudio ramos</Typography>
 
         <Typography style={styles.bio}>
           Biografia: Lorem Ipsum is simply dummy text of the printing and

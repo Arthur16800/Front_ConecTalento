@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import conecTalento from "../assets/ConecTalento.png";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { InputBase } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { InputBase, Menu, MenuItem, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -11,7 +11,27 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 const Header = ({ children }) => {
   const navigate = useNavigate();
   const styles = Styles();
-  const handleLogout = () => {localStorage.removeItem('token')};
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuOpen = (event) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login"); // redireciona se não estiver logado
+      return; // não abre o menu
+    }
+    setAnchorEl(event.currentTarget); // abre o menu se estiver logado
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
     <>
@@ -31,14 +51,25 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link
-              to="/login"
-              style={{ color: "#ffffff" }}
-              onClick={handleLogout}
+            <span>User</span>
+            <IconButton
+              onClick={handleMenuOpen}
+              sx={{ color: "#ffffff", padding: 0 }}
             >
-              User
-            </Link>
-            <KeyboardArrowDownIcon sx={styles.arrowIcon} />
+              <KeyboardArrowDownIcon sx={styles.arrowIcon} />
+            </IconButton>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem onClick={()=> navigate("/perfiluser")}>User Area</MenuItem>
+              <MenuItem onClick={()=> navigate("/portifoliouser")}>My portfolio</MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </Menu>
           </Box>
         </Box>
       </Container>
@@ -109,4 +140,5 @@ function Styles() {
     },
   };
 }
+
 export default Header;
