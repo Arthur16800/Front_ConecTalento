@@ -13,6 +13,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
+import { Snackbar, Alert, CircularProgress } from "@mui/material"; // Import do Snackbar e CircularProgress
 
 function Login() {
   const styles = Styles();
@@ -24,9 +25,24 @@ function Login() {
     showPassword: false,
   });
 
+  const [loading, setLoading] = useState(false); // Para o ícone de carregamento
+  const [alert, setAlert] = useState({
+    open: false,
+    severity: "",
+    message: "",
+  }); // Para o Snackbar
+
   const onChange = (event) => {
     const { name, value } = event.target;
     setUser((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const showAlert = (severity, message) => {
+    setAlert({ open: true, severity, message });
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, open: false });
   };
 
   const handleSubmit = async (event) => {
@@ -35,25 +51,40 @@ function Login() {
   };
 
   async function loginUser() {
-    try {
-      const { email, password } = user;
-      const response = await api.postLogin({ email, password });
-      alert(response.data.message);
-      localStorage.setItem("authenticated", "true");
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("id_usuario", email);
-      navigate("/");
-    } catch (error) {
-      const msg =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        "Falha ao entrar. Verifique suas credenciais.";
-      alert(msg);
-    }
+    setLoading(true);
+    await api.postLogin(user).then(
+      (response) => {
+        showAlert("success", response.data.message);
+        setLoading(false);
+        localStorage.setItem("authenticated", true);
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("id_usuario", user.email);
+        navigate("/");
+      },
+      (error) => {
+        showAlert("error", error.response.data.error);
+        setLoading(false);
+      }
+    );
   }
 
   return (
     <Box style={styles.main}>
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={3000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
+
       <Container style={styles.container} disableGutters>
         <Box style={styles.box_IMG_02}>
           <Typography style={styles.style_Font}>
@@ -127,8 +158,8 @@ function Login() {
               sx={{ m: 0 }}
             />
 
-            <Button type="submit" style={styles.button}>
-              Login
+            <Button type="submit" style={styles.button} disabled={loading}>
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
             </Button>
 
             <Box style={styles.textoCadastro}>
