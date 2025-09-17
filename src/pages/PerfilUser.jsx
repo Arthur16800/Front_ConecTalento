@@ -14,7 +14,8 @@ function PerfilUser() {
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nome: "",
+    name: "",
+    username:"",
     email: "",
     senha: "",
     confirmSenha: "",
@@ -66,7 +67,20 @@ function PerfilUser() {
           margin="normal"
           label="Nome"
           variant="outlined"
-          name="nome"
+          name="name"
+          value={formData.nome}
+          onChange={handleInputChange}
+          disabled={!editing}
+          style={styles.camposForm}
+        />
+
+        <TextField
+          required
+          fullWidth
+          margin="normal"
+          label="Username"
+          variant="outlined"
+          name="username"
           value={formData.nome}
           onChange={handleInputChange}
           disabled={!editing}

@@ -8,6 +8,7 @@ const api = axios.create({
   },
 });
 
+// Interceptador de request → adiciona token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -19,6 +20,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Interceptador de response → trata erros de auth
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -45,22 +47,21 @@ api.interceptors.response.use(
 const sheets = {
   postCadastro: (user) => api.post("/user", user),
   postLogin: (user) => api.post("/login", user),
-  createProjeto: (form, imagens) => {
+
+  createProjeto: (ID_user, form, imagens) => {
     const data = new FormData();
 
-    // adiciona campos do formulário
     for (let key in form) {
       data.append(key, form[key]);
     }
 
-    // adiciona arquivos, um por um
     if (imagens) {
       for (let i = 0; i < imagens.length; i++) {
-        data.append("imagens", imagens[i]); // note o [] se o backend espera múltiplos
+        data.append("imagens", imagens[i]);
       }
     }
 
-    return api.post("/project", data, {
+    return api.post(`/project/${ID_user}`, data, {
       headers: {
         "Content-Type": "multipart/form-data",
         Accept: "application/json",

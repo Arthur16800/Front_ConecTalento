@@ -5,12 +5,11 @@ import api from "../axios/axios";
 
 function CriarProjeto() {
   const styles = Styles();
-  const id_usuario = localStorage.getItem("id_usuario");
+  const ID_user = localStorage.getItem("id_usuario");
 
   const [form, setForm] = useState({
     titulo: "",
     descricao: "",
-    ID_user: id_usuario || "",
   });
   const [imagens, setImagens] = useState([]);
 
@@ -19,19 +18,18 @@ function CriarProjeto() {
   };
 
   const handleFileChange = (e) => {
-    setImagens(e.target.files); // pega todas as imagens selecionadas
+    setImagens(e.target.files); 
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.createProjeto(form, imagens);
+      const response = await api.createProjeto(ID_user, form, imagens);
       alert(response.data.message);
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.error || "Erro ao criar projeto";
+      const msg = error.response?.data?.error;
       alert(msg);
-      console.log(form)
     }
   };
 
