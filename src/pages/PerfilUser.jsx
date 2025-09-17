@@ -12,6 +12,33 @@ import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 function PerfilUser() {
   const styles = Styles();
 
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    confirmSenha: "",
+    bio: "",
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleEditClick = () => {
+    setEditing(true);
+  };
+
+  const handleSaveClick = () => {
+ 
+   
+    setEditing(false);
+  };
+
   return (
     <Box style={styles.container}>
       <Box style={styles.leftCard}>
@@ -23,7 +50,11 @@ function PerfilUser() {
           <RemoveCircleIcon style={styles.removeIcon} />
         </Box>
 
-        <Button style={styles.editBtn}>Editar Perfil</Button>
+        {!editing && (
+          <Button style={styles.editBtn} onClick={handleEditClick}>
+            Editar Perfil
+          </Button>
+        ) }
       </Box>
 
       <Box style={styles.formPanel}>
@@ -35,6 +66,10 @@ function PerfilUser() {
           margin="normal"
           label="Nome"
           variant="outlined"
+          name="nome"
+          value={formData.nome}
+          onChange={handleInputChange}
+          disabled={!editing}
           style={styles.camposForm}
         />
 
@@ -45,6 +80,10 @@ function PerfilUser() {
           label="E-mail"
           type="email"
           variant="outlined"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          disabled={!editing}
           style={styles.camposForm}
         />
 
@@ -55,6 +94,10 @@ function PerfilUser() {
           label="Senha"
           type="password"
           variant="outlined"
+          name="senha"
+          value={formData.senha}
+          onChange={handleInputChange}
+          disabled={!editing}
           style={styles.camposForm}
         />
 
@@ -65,6 +108,10 @@ function PerfilUser() {
           label="Confirme sua senha"
           type="password"
           variant="outlined"
+          name="confirmSenha"
+          value={formData.confirmSenha}
+          onChange={handleInputChange}
+          disabled={!editing}
           style={styles.camposForm}
         />
 
@@ -76,10 +123,18 @@ function PerfilUser() {
           multiline
           rows={3}
           variant="outlined"
+          name="bio"
+          value={formData.bio}
+          onChange={handleInputChange}
+          disabled={!editing}
           style={styles.camposForm}
         />
 
-        <Button style={styles.saveBtn}>Salvar</Button>
+        {editing && (
+          <Button style={styles.saveBtn} onClick={handleSaveClick}>
+            Salvar
+          </Button>
+        )}
       </Box>
     </Box>
   );
@@ -98,8 +153,8 @@ function Styles() {
     leftCard: {
       maxWidth: 280,
       minWidth: 100,
-      flex:2,
-      width:"100%",
+      flex: 2,
+      width: "100%",
       height: "10%",
       backgroundColor: "#fff",
       border: "1px solid #E5E5E5",
@@ -125,17 +180,19 @@ function Styles() {
       color: "#333",
       marginBottom: 12,
     },
-    accountIcon: { 
-        color: "#CFCFCF", fontSize: 32 
+    accountIcon: {
+      color: "#CFCFCF",
+      fontSize: 32,
     },
-    arrowIcon: { 
-        marginLeft: -4 
+    arrowIcon: {
+      marginLeft: -4,
     },
-    removeIcon: { 
-        color: "#FF4B4B", cursor: "pointer" 
+    removeIcon: {
+      color: "#FF4B4B",
+      cursor: "pointer",
     },
-    user_name: { 
-        flexGrow: 1 
+    user_name: {
+      flexGrow: 1,
     },
     editBtn: {
       margin: "auto",
@@ -148,7 +205,7 @@ function Styles() {
       background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
       color: "#fff",
       border: "none",
-      width: "90%"
+      width: "90%",
     },
     formPanel: {
       flex: 1,
