@@ -42,8 +42,6 @@ api.interceptors.response.use(
 
 const sheets = {
     postCadastro: (user) => api.post("/user", user),
-    postValidateCode: (user) => api.post("user/validatecode", user),
-    getUserById: (id) => api.get("/user/"+id),
     postLogin: (user) => api.post("/login", user),
 }
 
