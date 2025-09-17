@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import ModalBase from "./ModalBase"; // ajuste o caminho conforme seu projeto
-import { Button } from "@mui/material";
+import ModalBase from "./ModalBase";
+import { Button, Box, Badge } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 function formatNumber(num) {
@@ -30,49 +30,40 @@ export default function LikeButton({ initialLikes = 0 }) {
   const [openModal, setOpenModal] = useState(false);
 
   const navigate = useNavigate();
-
-  // Função para verificar se o usuário está logado (token presente)
-  const isLoggedIn = Boolean(localStorage.getItem("token")); // ou sessionStorage, dependendo de onde o token está armazenado
+  const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   const toggleLike = () => {
     if (!isLoggedIn) {
-      setOpenModal(true); // Exibe o modal caso não esteja logado
+      setOpenModal(true);
       return;
     }
     setLiked(!liked);
     setLikesCount((prev) => (liked ? prev - 1 : prev + 1));
   };
 
-  // Verificar e fechar o modal se o usuário já estiver logado
   useEffect(() => {
     if (isLoggedIn) {
-      setOpenModal(false); // Fecha o modal se estiver logado
+      setOpenModal(false);
     }
-  }, [isLoggedIn]); // Isso garante que, se o estado de login mudar, o modal será atualizado
+  }, [isLoggedIn]);
 
   return (
     <>
-      <div
-        onClick={toggleLike}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          cursor: "pointer",
-          userSelect: "none",
-        }}
+      <Badge
+        badgeContent={formatNumber(likesCount)}
+        color="secondary"
+        overlap="circular"
+        style={styles.badgeWrapper}
       >
-        {liked ? (
-          <FavoriteIcon style={{ color: "red" }} />
-        ) : (
-          <FavoriteBorderIcon style={{ color: "blue" }} />
-        )}
-        <span style={{ fontSize: "13px", marginTop: 2 }}>
-          {formatNumber(likesCount)}
-        </span>
-      </div>
+        <Box onClick={toggleLike} style={styles.likeBox}>
+          {liked ? (
+            <FavoriteIcon sx={{ color: "red" }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ color: "purple" }} />
+          )}
+        </Box>
+      </Badge>
 
-      {/* Exibe o modal apenas se o usuário não estiver logado */}
       <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
         <h2 style={{ marginBottom: 8 }}>Você precisa estar logado</h2>
         <p style={{ marginBottom: 24 }}>Deseja fazer login ou se cadastrar?</p>
@@ -81,7 +72,7 @@ export default function LikeButton({ initialLikes = 0 }) {
           variant="contained"
           color="primary"
           fullWidth
-          sx={{ mb: 1 }}
+          style={styles.modalButton}
           onClick={() => navigate("/login")}
         >
           Login
@@ -91,6 +82,7 @@ export default function LikeButton({ initialLikes = 0 }) {
           variant="outlined"
           color="primary"
           fullWidth
+          style={styles.modalButton}
           onClick={() => navigate("/cadastro")}
         >
           Cadastrar
@@ -99,3 +91,37 @@ export default function LikeButton({ initialLikes = 0 }) {
     </>
   );
 }
+
+const styles = {
+  badgeWrapper: {
+    position: "absolute",
+    bottom: -15,
+    transform: "translateX(-35%)",
+    "& .MuiBadge-badge": {
+      backgroundColor: "purple",
+      color: "white",
+      fontSize: "0.7rem",
+      height: 18,
+      minWidth: 18,
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  },
+  likeBox: {
+    width: 50,
+    height: 50,
+    borderRadius: "50%",
+    backgroundColor: "white",
+    border: "2px solid #FFFCFC",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    userSelect: "none",
+  },
+  modalButton: {
+    marginBottom: 8,
+  },
+};
