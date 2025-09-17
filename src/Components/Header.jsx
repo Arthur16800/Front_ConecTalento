@@ -9,14 +9,20 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const Header = ({ children }) => {
-
+  const navigate = useNavigate();
   const styles = Styles();
+  const handleLogout = () => {localStorage.removeItem('token')};
 
   return (
     <>
       <Container maxWidth="xs">
         <Box sx={styles.container}>
-          <img style={styles.logo} src={conecTalento} alt="Logo" />
+          <img
+            style={styles.logo}
+            src={conecTalento}
+            alt="Logo"
+            onClick={() => navigate("/")}
+          />
 
           <Box sx={styles.searchBox}>
             <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
@@ -25,7 +31,13 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link to="/login" style={{color:"White"}} >User</Link>
+            <Link
+              to="/login"
+              style={{ color: "#ffffff" }}
+              onClick={handleLogout}
+            >
+              User
+            </Link>
             <KeyboardArrowDownIcon sx={styles.arrowIcon} />
           </Box>
         </Box>
@@ -53,6 +65,7 @@ function Styles() {
       height: "40%",
       width: "20%",
       marginLeft: "2%",
+      cursor: "pointer",
     },
     searchBox: {
       display: "flex",
