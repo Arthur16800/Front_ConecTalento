@@ -26,10 +26,12 @@ function CriarProjeto() {
     try {
       const response = await api.createProjeto(ID_user, form, imagens);
       alert(response.data.message);
+      console.log(imagens)
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error;
       alert(msg);
+      console.log(imagens)
     }
   };
 
