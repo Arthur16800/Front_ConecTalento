@@ -1,4 +1,4 @@
-import { Box, Container, TextField, Typography } from "@mui/material";
+import { Box, Container, TextField, Typography, Snackbar, Alert } from "@mui/material";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 import api from "../axios/axios";
@@ -13,6 +13,14 @@ function CriarProjeto() {
   });
   const [imagens, setImagens] = useState([]);
 
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -25,12 +33,12 @@ function CriarProjeto() {
     e.preventDefault();
     try {
       const response = await api.createProjeto(ID_user, form, imagens);
-      alert(response.data.message);
+      setSnackbar({ open: true, message: response.data.message, severity: 'success' });
       console.log(imagens);
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.error;
-      alert(msg);
+      const msg = error.response?.data?.error || 'Erro ao criar projeto';
+      setSnackbar({ open: true, message: msg, severity: 'error' });
       console.log(imagens);
     }
   };
@@ -98,6 +106,16 @@ function CriarProjeto() {
           Criar
         </Button>
       </form>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
