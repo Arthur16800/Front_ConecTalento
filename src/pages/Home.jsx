@@ -15,7 +15,7 @@ function Home() {
   return (
     <>
       <Grid container spacing={1} sx={{ mb: 5 }}>
-        {Array.from({ length: 50 }).map((_, index) => (
+        {Array.from({ length: 1 }).map((_, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
             <Card
               sx={{

@@ -18,7 +18,7 @@ function CriarProjeto() {
   };
 
   const handleFileChange = (e) => {
-    setImagens(e.target.files); 
+    setImagens(Array.from(e.target.files)); // converte FileList em array
   };
 
   const handleSubmit = async (e) => {
@@ -26,12 +26,12 @@ function CriarProjeto() {
     try {
       const response = await api.createProjeto(ID_user, form, imagens);
       alert(response.data.message);
-      console.log(imagens)
+      console.log(imagens);
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.error;
       alert(msg);
-      console.log(imagens)
+      console.log(imagens);
     }
   };
 
@@ -43,12 +43,25 @@ function CriarProjeto() {
         <Typography style={styles.label}>Adicionar imagens:</Typography>
 
         <Box>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileChange}
-            />
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+        </Box>
+
+        {/* lista de nomes das imagens */}
+        <Box mt={2}>
+          {imagens.length > 0 && (
+            <Box>
+              {imagens.map((img, index) => (
+                <Typography key={index} variant="body2">
+                  {index + 1}. {img.name}
+                </Typography>
+              ))}
+            </Box>
+          )}
         </Box>
 
         <TextField
@@ -92,8 +105,9 @@ function CriarProjeto() {
 function Styles() {
   return {
     box_principal: {
-      marginTop: "10%",
+      marginTop: "3%",
       marginLeft: "3%",
+      marginBottom: "3%",
       display: "flex",
       flexDirection: "column",
       alignItems: "flex-start",
