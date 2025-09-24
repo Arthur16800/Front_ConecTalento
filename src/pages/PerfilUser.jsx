@@ -4,12 +4,14 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import ModalBase from "../Components/ModalBase";
 import { Alert, Snackbar } from "@mui/material";
+import api from "../axios/axios";
 
 function PerfilUser() {
   const styles = Styles();
@@ -27,6 +29,8 @@ function PerfilUser() {
     severity: "",
     message: "",
   });
+
+  const [loading, setLoading] = useState(false);
 
 
   const handleInputChange = (e) => {
@@ -50,17 +54,21 @@ function PerfilUser() {
   };
 
   const handleSaveClick = () => {
-    setEditing(false);
+    // keep editing state until update completes successfully
     updateUser();
   };
 
   async function updateUser() {
-    await api.updateUser(user).then(
+    setLoading(true);
+    await api.updateUser(formData).then(
       (response) => {
         showAlert("success", response.data.message);
+        setEditing(false);
+        setLoading(false);
       },
       (error) => {
-        showAlert("error", error.response.data.error);
+        showAlert("error", error.response?.data?.error || "Erro ao atualizar");
+        setLoading(false);
       }
     );
   }
@@ -156,8 +164,12 @@ function PerfilUser() {
         />
 
         {editing && (
-          <Button style={styles.saveBtn} onClick={handleSaveClick}>
-            Salvar
+          <Button style={styles.saveBtn} onClick={handleSaveClick} disabled={loading}>
+            {loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Salvar"
+            )}
           </Button>
         )}
       </Box>

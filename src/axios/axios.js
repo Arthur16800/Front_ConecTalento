@@ -49,7 +49,7 @@ const sheets = {
   postValidateCode: (user) => api.post("user/validatecode", user),
   getUserById: (id) => api.get("/user/" + id),
   postLogin: (user) => api.post("/login", user),
-  updateUser: (user) => api.post("/login", user),
+  updateUser: (user) => api.put("/user", user),
 
   createProjeto: (ID_user, form, imagens) => {
     const data = new FormData();
