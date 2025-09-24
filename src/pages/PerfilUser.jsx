@@ -8,18 +8,26 @@ import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
+import ModalBase from "../Components/ModalBase";
+import { Alert, Snackbar } from "@mui/material";
 
 function PerfilUser() {
   const styles = Styles();
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nome: "",
+    name: "",
+    username:"",
     email: "",
-    senha: "",
-    confirmSenha: "",
     bio: "",
   });
+
+  const [alert, setAlert] = useState({
+    open: false,
+    severity: "",
+    message: "",
+  });
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,18 +37,50 @@ function PerfilUser() {
     }));
   };
 
+  const showAlert = (severity, message) => {
+    setAlert({ open: true, severity, message });
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, open: false });
+  };
+
   const handleEditClick = () => {
     setEditing(true);
   };
 
   const handleSaveClick = () => {
- 
-   
     setEditing(false);
+    updateUser();
   };
+
+  async function updateUser() {
+    await api.updateUser(user).then(
+      (response) => {
+        showAlert("success", response.data.message);
+      },
+      (error) => {
+        showAlert("error", error.response.data.error);
+      }
+    );
+  }
 
   return (
     <Box style={styles.container}>
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={3000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
       <Box style={styles.leftCard}>
         <Box style={styles.box_IMG} />
         <Box style={styles.user_perfil}>
@@ -66,7 +106,20 @@ function PerfilUser() {
           margin="normal"
           label="Nome"
           variant="outlined"
-          name="nome"
+          name="name"
+          value={formData.nome}
+          onChange={handleInputChange}
+          disabled={!editing}
+          style={styles.camposForm}
+        />
+
+        <TextField
+          required
+          fullWidth
+          margin="normal"
+          label="Username"
+          variant="outlined"
+          name="username"
           value={formData.nome}
           onChange={handleInputChange}
           disabled={!editing}
@@ -82,34 +135,6 @@ function PerfilUser() {
           variant="outlined"
           name="email"
           value={formData.email}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
-
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Senha"
-          type="password"
-          variant="outlined"
-          name="senha"
-          value={formData.senha}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
-
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Confirme sua senha"
-          type="password"
-          variant="outlined"
-          name="confirmSenha"
-          value={formData.confirmSenha}
           onChange={handleInputChange}
           disabled={!editing}
           style={styles.camposForm}

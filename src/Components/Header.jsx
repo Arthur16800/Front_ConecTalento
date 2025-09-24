@@ -101,7 +101,6 @@ const Header = ({ children }) => {
           </Box>
         </Box>
       </Container>
-
       <Box sx={{ marginTop: "70px" }}>{children}</Box>
     </>
   );
@@ -168,5 +167,4 @@ function Styles() {
     },
   };
 }
-
 export default Header;
