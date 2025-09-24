@@ -49,7 +49,8 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/detalhesprojeto" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
+  <Route path="/detalhesprojeto" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
+  <Route path="/detalhesprojeto/:id" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
       </Routes>
     </Router>
   );

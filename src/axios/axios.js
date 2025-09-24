@@ -71,6 +71,8 @@ const sheets = {
       },
     });
   },
+  // Get project details including imagens array
+  getProjectDetails: (id) => api.get(`/detalhes_project/${id}`),
 };
 
 export default sheets;
