@@ -72,7 +72,5 @@ const sheets = {
         Accept: "application/json",
       },
     });
-  },
-};
-
+  }
 export default sheets;
