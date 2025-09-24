@@ -37,6 +37,7 @@ function Home() {
                   borderRadius: 2,
                   mb: 2,
                   mt: 2,
+                  bottom:"-20px",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -50,11 +51,11 @@ function Home() {
                     right: 8,
                   }}
                 >
-                  <LikeButton initialLikes={0} />
+                   <LikeButton initialLikes={0} />
                 </Box>
                 imagem
               </Box>
-
+                  
               <CardContent>
                 <Typography variant="h6" color="#000">
                   titulo

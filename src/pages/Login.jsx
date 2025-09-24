@@ -58,6 +58,7 @@ function Login() {
         setLoading(false);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("username", response.data.user.username);
         localStorage.setItem("id_usuario", response.data.user.ID_user);
         navigate("/");
       },

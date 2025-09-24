@@ -117,6 +117,8 @@ function Cadastro() {
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("id_usuario", response.data.user.ID_user);
+        localStorage.setItem("username", response.data.user.username);
+        
         handleCloseModal();
         navigate("/");
       },

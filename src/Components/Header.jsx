@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import conecTalento from "../assets/ConecTalento.png";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { InputBase } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { InputBase, Menu, MenuItem, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -11,7 +11,41 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 const Header = ({ children }) => {
   const navigate = useNavigate();
   const styles = Styles();
-  const handleLogout = () => {localStorage.removeItem('token')};
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const [isLogged, setIsLogged] = useState(false);
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUsername = localStorage.getItem("username");
+    setIsLogged(!!token);
+    if (token && storedUsername) {
+      setUsername(storedUsername); 
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setIsLogged(false);
+    setUsername("");
+    navigate("/login");
+  };
+
+  const handleMenuOpen = (event) => {
+    if (!isLogged) {
+      navigate("/login"); 
+      return;
+    }
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
     <>
@@ -31,18 +65,42 @@ const Header = ({ children }) => {
 
           <Box sx={styles.userBox}>
             <AccountCircleIcon sx={styles.accountIcon} />
-            <Link
-              to="/login"
-              style={{ color: "#ffffff" }}
-              onClick={handleLogout}
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                if (!isLogged) navigate("/login");
+              }}
             >
-              User
-            </Link>
-            <KeyboardArrowDownIcon sx={styles.arrowIcon} />
+              {isLogged ? username : "Login"}
+            </span>
+
+            {isLogged && (
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{ color: "#ffffff", padding: 0 }}
+              >
+                <KeyboardArrowDownIcon sx={styles.arrowIcon} />
+              </IconButton>
+            )}
+
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem onClick={() => navigate("/perfiluser")}>
+                User Area
+              </MenuItem>
+              <MenuItem onClick={() => navigate("/portifoliouser")}>
+                My portfolio
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </Menu>
           </Box>
         </Box>
       </Container>
-
       <Box sx={{ marginTop: "70px" }}>{children}</Box>
     </>
   );
