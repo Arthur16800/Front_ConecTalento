@@ -23,7 +23,7 @@ const Header = ({ children }) => {
     const storedUsername = localStorage.getItem("username");
     setIsLogged(!!token);
     if (token && storedUsername) {
-      setUsername(storedUsername); 
+      setUsername(storedUsername);
     }
   }, []);
 
@@ -37,7 +37,7 @@ const Header = ({ children }) => {
 
   const handleMenuOpen = (event) => {
     if (!isLogged) {
-      navigate("/login"); 
+      navigate("/login");
       return;
     }
     setAnchorEl(event.currentTarget);
@@ -62,15 +62,15 @@ const Header = ({ children }) => {
             <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
             <SearchIcon sx={styles.searchIcon} />
           </Box>
-
-          <Box sx={styles.userBox}>
+          
+          <Box
+            sx={styles.userBox}
+            onClick={() => {
+              if (!isLogged) navigate("/login");
+            }}
+          >
             <AccountCircleIcon sx={styles.accountIcon} />
-            <span
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                if (!isLogged) navigate("/login");
-              }}
-            >
+            <span style={{ cursor: "pointer" }}>
               {isLogged ? username : "Login"}
             </span>
 

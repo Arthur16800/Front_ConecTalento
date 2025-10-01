@@ -1,4 +1,11 @@
-import { Box, Container, TextField, Typography, Snackbar, Alert } from "@mui/material";
+import {
+  Box,
+  Container,
+  TextField,
+  Typography,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 import api from "../axios/axios";
@@ -14,10 +21,14 @@ function CriarProjeto() {
   const [imagens, setImagens] = useState([]);
 
   // Snackbar state
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') return;
+    if (reason === "clickaway") return;
     setSnackbar({ ...snackbar, open: false });
   };
 
@@ -33,12 +44,16 @@ function CriarProjeto() {
     e.preventDefault();
     try {
       const response = await api.createProjeto(ID_user, form, imagens);
-      setSnackbar({ open: true, message: response.data.message, severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: response.data.message,
+        severity: "success",
+      });
       console.log(imagens);
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.error || 'Erro ao criar projeto';
-      setSnackbar({ open: true, message: msg, severity: 'error' });
+      const msg = error.response?.data?.error || "Erro ao criar projeto";
+      setSnackbar({ open: true, message: msg, severity: "error" });
       console.log(imagens);
     }
   };
@@ -110,9 +125,13 @@ function CriarProjeto() {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
