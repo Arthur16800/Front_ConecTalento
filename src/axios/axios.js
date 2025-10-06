@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-  baseURL: "http://10.89.240.65:5000/api/v1",
+  baseURL: "http://10.89.240.134:5000/api/v1",
   headers: {
     accept: "application/json",
   },
@@ -71,6 +71,30 @@ const sheets = {
       },
     });
   },
+
+  updateProjeto: (ID_projeto, { titulo, descricao, ID_user }, imagens) => {
+    const data = new FormData();
+
+    data.append("titulo", titulo);
+    data.append("descricao", descricao);
+    data.append("ID_user", ID_user);
+
+    // imagens (mesma estrutura do create)
+    if (imagens) {
+      for (let i = 0; i < imagens.length; i++) {
+        data.append("imagens", imagens[i]);
+      }
+    }
+
+    // use PUT; se seu backend aceitar PATCH, troque aqui
+    return api.put(`/project/${ID_projeto}`, data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Accept: "application/json",
+      },
+    });
+  },
+
   // Get project details including imagens array
   getProjectDetails: (id) => api.get(`/detalhes_project/${id}`),
 };

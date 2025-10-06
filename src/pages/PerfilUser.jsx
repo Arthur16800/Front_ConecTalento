@@ -8,7 +8,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
+import DeleteIcon from "@mui/icons-material/Delete";
 import ModalBase from "../Components/ModalBase";
 import { Alert, Snackbar } from "@mui/material";
 import api from "../axios/axios";
@@ -54,7 +54,6 @@ function PerfilUser() {
   };
 
   const handleSaveClick = () => {
-    // keep editing state until update completes successfully
     updateUser();
   };
 
@@ -93,9 +92,11 @@ function PerfilUser() {
         <Box style={styles.box_IMG} />
         <Box style={styles.user_perfil}>
           <AccountCircleIcon style={styles.accountIcon} />
-          <span style={styles.user_name}>Claudio Ramos</span>
-          <KeyboardArrowDownIcon style={styles.arrowIcon} />
-          <RemoveCircleIcon style={styles.removeIcon} />
+          <Box style={styles.name_user}>
+            <span style={styles.user_name}>Claudio Ramos</span>
+            <DeleteIcon style={styles.removeIcon} />
+          </Box>
+          
         </Box>
 
         {!editing && (
@@ -210,26 +211,32 @@ function Styles() {
     },
     user_perfil: {
       display: "flex",
-      alignItems: "center",
+      flexDirection: "column", 
+      alignItems: "center", 
+      justifyContent: "center",
       gap: 8,
-      padding: "0 8px",
+      padding: "0 90px",
       fontFamily: "Arial, sans-serif",
       color: "#333",
       marginBottom: 12,
     },
+    name_user: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8, 
+      flexDirection: "row",
+    },
     accountIcon: {
       color: "#CFCFCF",
-      fontSize: 32,
+      fontSize: 50,
     },
     arrowIcon: {
       marginLeft: -4,
     },
     removeIcon: {
-      color: "#FF4B4B",
+      color: "#7e7e7ea9",
       cursor: "pointer",
-    },
-    user_name: {
-      flexGrow: 1,
     },
     editBtn: {
       margin: "auto",
