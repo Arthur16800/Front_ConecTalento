@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { Badge } from "@mui/material";
@@ -41,15 +41,13 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
       return;
     }
 
-    if (!id_usuario) {
-      console.error("id do usuario não encontrado no localStorage");
+    if (!userId) {
+      console.error("ID do usuário não encontrado no localStorage");
       return;
     }
 
     try {
       const res = await sheets.likeProject(projectId, userId);
-      console.log("Resposta do like:", res.data);
-
       if (res.data.curtido) {
         setLiked(true);
         setLikesCount((prev) => prev + 1);
@@ -63,13 +61,14 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
     }
   };
 
-  useEffect(() => {
-    if (isLoggedIn) setOpenModal(false);
-  }, [isLoggedIn]);
-
   return (
     <>
-      <Badge badgeContent={formatNumber(likesCount)} color="secondary" overlap="circular" sx={styles.badgeWrapper}>
+      <Badge
+        badgeContent={formatNumber(likesCount)}
+        color="secondary"
+        overlap="circular"
+        sx={styles.badgeWrapper}
+      >
         <motion.div
           whileTap={{ scale: 0.7 }}
           animate={liked ? { scale: [1, 1.3, 1] } : {}}
