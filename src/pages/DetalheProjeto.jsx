@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import api from "../axios/axios";
-import { useParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -9,172 +7,152 @@ import {
   CardContent,
   Avatar,
   Button,
+  Grid,
+  CircularProgress,
 } from "@mui/material";
-import background from "../assets/background2.png";
-import Grid from "@mui/material/Grid2";
+import { useParams } from "react-router-dom";
+import api from "../axios/axios";
 
-function DetalhesProjeto({ imagesCount: propCount }) {
+function DetalhesProjeto({ imagesCount = 4 }) {
   const styles = Styles();
+  const { id, id_projeto, projectId } = useParams();
 
-  const params = useParams();
-  const idParam = params.id || params.id_projeto || params.projectId || null;
-  const projetoId = idParam ? Number(idParam) : 1;
-  const imagesCount = propCount;
-
+  const projetoId = Number(id || id_projeto || projectId || 1);
+  const [imagens, setImagens] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [images, setImages] = useState([]);
-  const [loadingImages, setLoadingImages] = useState(false);
-  const [imagesError, setImagesError] = useState(null);
 
+  // 🔹 Buscar imagens do projeto
   useEffect(() => {
-    let mounted = true;
-    const fetchImages = async () => {
-      setLoadingImages(true);
-      setImagesError(null);
+    let ativo = true;
+
+    async function carregarImagens() {
+      setLoading(true);
+      setErro(null);
       try {
         const res = await api.getProjectDetails(projetoId);
-        if (!mounted) return;
+        if (!ativo) return;
         const imgs = res.data?.projeto?.imagens || [];
-        setImages(imgs);
+        setImagens(imgs);
       } catch (err) {
         console.error("Erro ao buscar imagens:", err);
-        if (!mounted) return;
-        setImagesError(err);
-        setImages([]);
+        if (ativo) setErro(err);
+      } finally {
+        if (ativo) setLoading(false);
       }
-      if (mounted) setLoadingImages(false);
-    };
+    }
 
-    fetchImages();
-
+    carregarImagens();
     return () => {
-      mounted = false;
+      ativo = false;
     };
   }, [projetoId]);
 
-  const origin = "http://10.89.240.65:5000";
+  // 🔹 Converter formatos de imagem
+  const origin = "http://10.89.240.71:5000";
   const imageUrls =
-    images && images.length > 0
-      ? images.map((img) => {
+    imagens && imagens.length > 0
+      ? imagens.map((img) => {
           if (!img) return null;
-          if (typeof img === "object") {
+          if (typeof img === "object" && img.imagem) {
             const base64 = img.imagem;
             const tipo = img.tipo_imagem || "image/jpeg";
-            if (base64) return `data:${tipo};base64,${base64}`;
-            return null;
+            return `data:${tipo};base64,${base64}`;
           }
           if (typeof img === "string") {
-            if (img.startsWith("http://") || img.startsWith("https://"))
-              return img;
+            if (img.startsWith("http")) return img;
             if (img.startsWith("/")) return `${origin}${img}`;
             return `${origin}/${img}`;
           }
           return null;
         })
       : Array.from({ length: imagesCount }).map(
-          (_, i) =>
-            `http://10.89.240.65:5000/api/v1/detalhes_project/${projetoId}?index=${i}`
+          (_, i) => `${origin}/api/v1/projectdetail/${projetoId}?index=${i}`
         );
 
+  // 🔹 Garantir índice válido
   useEffect(() => {
-    if (imageUrls.length === 0) return;
     if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
-  }, [imageUrls, selectedIndex]);
+  }, [imageUrls]);
 
   return (
-    <Container style={styles.container}>
+    <Container sx={styles.container}>
       <Grid container spacing={4}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Typography style={styles.titulo}>Título do portifólio</Typography>
+        {/* 🔹 Coluna Esquerda - Projeto */}
+        <Grid item xs={12} md={8}>
+          <Typography sx={styles.titulo}>Título do Portfólio</Typography>
 
-          <Card style={styles.cardPrincipal}>
-            {loadingImages ? (
-              <Box style={styles.imagemPrincipal}>Carregando imagens...</Box>
-            ) : imagesError ? (
-              <Box style={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
+          <Card sx={styles.cardPrincipal}>
+            {loading ? (
+              <Box sx={styles.loaderBox}>
+                <CircularProgress />
+              </Box>
+            ) : erro ? (
+              <Box sx={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
             ) : imageUrls.length > 0 ? (
-              <img
-                src={imageUrls[selectedIndex]}
-                alt={`imagem ${selectedIndex + 1}`}
-                style={styles.imagemPrincipalImg}
-              />
+              <Box sx={styles.imagemContainer}>
+                <img
+                  src={imageUrls[selectedIndex]}
+                  alt={`Imagem ${selectedIndex + 1}`}
+                  style={styles.imagemPrincipalImg}
+                />
+              </Box>
             ) : (
-              <Box style={styles.imagemPrincipal}>Imagem Principal</Box>
+              <Box sx={styles.imagemPrincipal}>Nenhuma imagem disponível</Box>
             )}
           </Card>
 
-          <Grid container spacing={2} style={styles.gridMiniaturas}>
+          {/* 🔹 Miniaturas */}
+          <Grid container spacing={2} sx={styles.gridMiniaturas}>
             {imageUrls.map((src, index) => (
-              <Grid key={index} size={{ xs: 6, sm: 3 }}>
-                <Card style={styles.cardMini}>
-                  <button
-                    onClick={() => setSelectedIndex(index)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      padding: 0,
-                      cursor: "pointer",
-                    }}
-                    aria-label={`Selecionar imagem ${index + 1}`}
-                  >
-                    <img
-                      src={src}
-                      alt={`miniatura ${index + 1}`}
-                      style={{
-                        ...styles.boxMiniImg,
-                        boxShadow:
-                          index === selectedIndex
-                            ? "0 0 0 3px #7A2CF6 inset"
-                            : "none",
-                        transform:
-                          index === selectedIndex ? "scale(1.02)" : "none",
-                      }}
-                    />
-                  </button>
+              <Grid item xs={6} sm={3} key={index}>
+                <Card
+                  sx={{
+                    p: 0.5,
+                    cursor: "pointer",
+                    border:
+                      index === selectedIndex
+                        ? "2px solid #7A2CF6"
+                        : "1px solid #e0e0e0",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": { transform: "scale(1.03)" },
+                    boxShadow:
+                      index === selectedIndex
+                        ? "0 0 8px rgba(122,44,246,0.3)"
+                        : "none",
+                  }}
+                  onClick={() => setSelectedIndex(index)}
+                >
+                  <img
+                    src={src}
+                    alt={`miniatura ${index + 1}`}
+                    style={styles.boxMiniImg}
+                  />
                 </Card>
               </Grid>
             ))}
           </Grid>
 
-          <Typography style={styles.tituloDesc}>Descrição:</Typography>
-          <Typography style={styles.descricao}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Pellentesque vitae mollis velit. Phasellus imperdiet ex sed quam
-            vestibulum, sed dignissim magna ornare. Curabitur maximus consequat
-            aliquet. In mollis tellus sapien, ac ultricies neque euismod at.
-            Suspendisse sagittis turpis eget facilisis pellentesque. In posuere
-            lorem vel purus porttitor gravida. Orci varius natoque penatibus et
-            magnis dis parturient montes, nascetur ridiculus mus. Vestibulum
-            sodales facilisis nulla, ac rhoncus odio. Praesent condimentum augue
-            velit, ut posuere sem tristique in. Nam ut blandit ante. Nam eget
-            magna erat. Class aptent taciti sociosqu ad litora torquent per
-            conubia nostra, per inceptos himenaeos. Curabitur aliquet interdum
-            orci a venenatis. Vivamus id libero tempor, gravida metus in,
-            iaculis lacus. Curabitur est est, rutrum non vestibulum nec,
-            imperdiet non ligula. Vestibulum et sem a mauris fringilla luctus ac
-            id eros. Ut volutpat rutrum odio, ac posuere leo malesuada
-            convallis. Aenean suscipit felis neque, id mattis lacus scelerisque
-            eu. Aenean sed commodo odio, sed molestie lorem. Curabitur non enim
-            odio. Suspendisse potenti. Nam condimentum aliquam sem at pharetra.
-            Quisque ultricies massa ligula, vel facilisis odio tempus quis.
-            Proin quis orci in odio pretium varius. Aliquam erat volutpat.
-            Mauris condimentum dolor a massa molestie, nec commodo nisi commodo.
-            Mauris accumsan fermentum ultricies. Morbi tempor, turpis eu aliquet
-            imperdiet, sapien nunc tristique nisi, quis lacinia sapien dolor sed
-            nulla. Aenean sem turpis, sagittis non neque eget, aliquet egestas
-            arcu.
+          {/* 🔹 Descrição */}
+          <Typography sx={styles.tituloDesc}>Descrição:</Typography>
+          <Typography sx={styles.descricao}>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
+            vitae mollis velit. Phasellus imperdiet ex sed quam vestibulum, sed
+            dignissim magna ornare. Curabitur maximus consequat aliquet. In mollis
+            tellus sapien, ac ultricies neque euismod at.
           </Typography>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card style={styles.cardPerfil}>
-            <Box style={styles.imgPerfil}></Box>
-            <Avatar style={styles.avatar} />
+        {/* 🔹 Coluna Direita - Perfil do Autor */}
+        <Grid item xs={12} md={4}>
+          <Card sx={styles.cardPerfil}>
+            <Avatar sx={styles.avatar} />
             <CardContent>
-              <Typography variant="h6" style={styles.nome}>
+              <Typography variant="h6" sx={styles.nome}>
                 Carlos
               </Typography>
-              <Button variant="contained" style={styles.button}>
+              <Button variant="contained" sx={styles.button}>
                 Visualizar perfil
               </Button>
             </CardContent>
@@ -185,102 +163,101 @@ function DetalhesProjeto({ imagesCount: propCount }) {
   );
 }
 
+/* 🎨 Estilos */
 function Styles() {
   return {
     container: {
-      padding: "24px",
+      py: 4,
       maxWidth: "100%",
-      margin: "0 auto",
     },
     titulo: {
-      fontSize: "30px",
-      fontWeight: "bold",
-      marginBottom: "20px",
-      marginTop: "20px",
-    },
-    tituloDesc: {
-      marginTop: "40px",
-      fontSize: "18px",
-      fontWeight: "bold",
+      fontSize: 28,
+      fontWeight: 700,
+      mb: 2,
+      color: "#222",
     },
     cardPrincipal: {
-      height: "300px",
-      marginTop: "20px",
-      padding: "16px",
       display: "flex",
       justifyContent: "center",
+      alignItems: "center",
+      p: 2,
+      mb: 3,
+      borderRadius: 3,
+      boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+      backgroundColor: "#fafafa",
     },
-    imagemPrincipal: {
-      width: "100%",
-      height: "250px",
-      borderRadius: "8px",
+    loaderBox: {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      height: 250,
+    },
+    imagemContainer: {
+      width: "100%",
+      borderRadius: 3,
+      overflow: "hidden",
+      backgroundColor: "#fff",
+      border: "1px solid #ddd",
     },
     imagemPrincipalImg: {
       width: "100%",
-      height: "250px",
-      objectFit: "cover",
-      borderRadius: "8px",
+      height: "auto",
       display: "block",
+      objectFit: "contain", // 👈 sem corte nem zoom
+      maxHeight: 500,
+      margin: "0 auto",
+    },
+    imagemPrincipal: {
+      textAlign: "center",
+      color: "#777",
+      py: 5,
     },
     gridMiniaturas: {
-      marginTop: "16px",
-      marginBottom: "40px",
-    },
-    cardMini: {
-      padding: "8px",
-      display: "flex",
-      justifyContent: "center",
-    },
-    boxMini: {
-      width: "100%",
-      height: "80px",
-      borderRadius: "4px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      mt: 2,
+      mb: 4,
     },
     boxMiniImg: {
-      width: "80px",
-      height: "80px",
+      width: "100%",
+      height: 90,
       objectFit: "cover",
-      borderRadius: "4px",
+      borderRadius: 4,
       display: "block",
+    },
+    tituloDesc: {
+      mt: 4,
+      fontSize: 18,
+      fontWeight: 600,
+    },
+    descricao: {
+      mb: 6,
+      textAlign: "justify",
+      color: "#444",
     },
     cardPerfil: {
       textAlign: "center",
-      padding: "16px",
-      marginTop: "85px",
-    },
-    imgPerfil: {
-      width: "100%",
-      height: "100px",
-      backgroundColor: "#dcdcdc",
-      backgroundImage: `url(${background})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      borderRadius: "8px",
-      marginBottom: "-48px",
+      p: 3,
+      mt: { xs: 4, md: 8 },
+      borderRadius: 3,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+      backgroundColor: "#fff",
     },
     avatar: {
-      width: "80px",
-      height: "80px",
-      margin: "0 auto",
-      border: "3px solid white",
+      width: 90,
+      height: 90,
+      mx: "auto",
+      mb: 1.5,
     },
     nome: {
-      marginTop: "12px",
-      fontWeight: "bold",
+      mt: 1,
+      fontWeight: 700,
+      color: "#222",
     },
     button: {
-      marginTop: "16px",
-      borderRadius: "20px",
+      mt: 2,
+      borderRadius: 3,
       textTransform: "none",
-    },
-    descricao: {
-      marginBottom: "30px",
+      fontWeight: 600,
+      background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
     },
   };
 }

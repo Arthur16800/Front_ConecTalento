@@ -126,7 +126,7 @@ const sheets = {
   },
 
   // Get project details including imagens array
-  getProjectDetails: (id) => api.get(`/detalhes_project/${id}`),
+  getProjectDetails: (id) => api.get(`/projectdetail/${id}`),
 };
 
 export default sheets;
