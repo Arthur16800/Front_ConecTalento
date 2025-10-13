@@ -6,7 +6,7 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import LogoBranca from "../assets/logo_branca.png";
 
 const Membros = [
-  { name: "Arthur", url: "https://instagram.com/arthurcaramori_" },
+  { name: "Arthur", url: "https://instagram.com/arthur.caramori" },
   { name: "Negrijo", url: "https://instagram.com/negrij0" },
   { name: "Bonini", url: "https://instagram.com/boninipedro_" },
   { name: "Rhuan", url: "https://instagram.com/rhuan" },

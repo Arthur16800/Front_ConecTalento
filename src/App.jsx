@@ -49,7 +49,7 @@ function App() {
           }
         />
         <Route
-          path="/portifoliouser"
+          path="/portifoliouser/:username"
           element={
             <DefaultLayout>
               <Portfolio />

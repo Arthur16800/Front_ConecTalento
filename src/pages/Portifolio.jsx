@@ -1,42 +1,112 @@
 import * as React from "react";
-import { useState } from "react";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import { useState, useEffect } from "react";
+import { Box, Typography, Avatar } from "@mui/material";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import EmailIcon from "@mui/icons-material/Email";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import { useParams } from "react-router-dom";
+import api from "../axios/axios";
 
 function Portfolio() {
+  const Params = useParams();
   const styles = Styles();
+
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   const projects = [
     { id: 1, title: "design sapato" },
     { id: 2, title: "design sapato" },
     { id: 3, title: "design sapato" },
   ];
 
+  useEffect(() => {
+    async function getByUsername() {
+      if (!Params.username) return;
+
+      setLoading(true);
+      setError(null);
+      setUser(null);
+
+      try {
+        const response = await api.getByUsername(Params.username);
+        const data = response.data.profile;
+
+        const isBase64 = data.imagem?.startsWith("data:image");
+        const base64Src = data.imagem
+          ? isBase64
+            ? data.imagem
+            : `data:image/jpeg;base64,${data.imagem}`
+          : null;
+
+        setUser({
+          name: data.name,
+          email: data.email,
+          biografia: data.biografia || "Nenhuma biografia cadastrada.",
+          imagem: base64Src,
+        });
+      } catch (error) {
+        console.log("error:", error?.response?.data?.error);
+        setError("Página Não Encontrada");
+      }
+      setLoading(false);
+    }
+
+    getByUsername();
+  }, [Params.username]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "80vh",
+        }}
+      >
+        <Typography variant="h6">Carregando...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "80vh",
+          textAlign: "center",
+        }}
+      >
+        <AccountCircleIcon sx={{ fontSize: 120, color: "#ccc" }} />
+        <Typography variant="h5" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!user) return null;
+
   return (
     <Box style={styles.container}>
       <Box style={styles.box_user}>
-        <AccountCircleIcon sx={styles.accountIcon} />
-        <Typography style={styles.userName}>Claudio ramos</Typography>
+        {user.imagem ? (
+          <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
+        ) : (
+          <AccountCircleIcon sx={styles.accountIcon} />
+        )}
 
-        <Typography style={styles.bio}>
-          Biografia: Lorem Ipsum is simply dummy text of the printing and
-          typesetting industry. Lorem Ipsum has been the industry's standard
-          dummy text ever since the 1500s, when an unknown printer took a galley
-          of type and scrambled it to make a type specimen book. It has survived
-          not only five centuries, but also the leap into electronic
-          typesetting, remaining essentially unchanged. It was popularised in
-          the 1960s with the release of Letraset sheets containing Lorem Ipsum
-          passages, and more recently with desktop publishing software like
-          Aldus PageMaker including versions of Lorem Ipsum.
-        </Typography>
+        <Typography style={styles.userName}>{user.name}</Typography>
+
+        <Typography style={styles.bio}>{user.biografia}</Typography>
 
         <Box style={styles.box_contatos}>
           <Box style={styles.contato}>
@@ -45,7 +115,7 @@ function Portfolio() {
           </Box>
           <Box style={styles.contato}>
             <EmailIcon />
-            <Typography>teste02</Typography>
+            <Typography>{user.email}</Typography>
           </Box>
         </Box>
       </Box>
@@ -85,11 +155,6 @@ function Styles() {
       width: "90%",
       margin: "0 auto",
       alignItems: "flex-start",
-
-    },
-    accountIcon: {
-      color: "#E5E5E5",
-      fontSize: 250,
     },
     box_user: {
       padding: 10,
@@ -101,6 +166,17 @@ function Styles() {
       flexDirection: "column",
       alignItems: "center",
       gap: 10,
+    },
+    accountIcon: {
+      color: "#E5E5E5",
+      fontSize: 250,
+    },
+    avatar: {
+      width: 200,
+      height: 200,
+      borderRadius: "50%",
+      border: "4px solid #E5E5E5",
+      objectFit: "cover",
     },
     userName: {
       fontWeight: 600,
