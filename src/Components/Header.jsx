@@ -8,24 +8,43 @@ import SearchIcon from "@mui/icons-material/Search";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
-const Header = ({ children }) => {
+const Header = ({ children, onSearch }) => {
   const navigate = useNavigate();
   const styles = Styles();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
   const [isLogged, setIsLogged] = useState(false);
   const [username, setUsername] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Estado para mostrar/ocultar header
+  const [showHeader, setShowHeader] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUsername = localStorage.getItem("username");
     setIsLogged(!!token);
-    if (token && storedUsername) {
-      setUsername(storedUsername); 
-    }
+    if (token && storedUsername) setUsername(storedUsername);
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setShowHeader(false);
+      } else {
+        setShowHeader(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -37,71 +56,104 @@ const Header = ({ children }) => {
 
   const handleMenuOpen = (event) => {
     if (!isLogged) {
-      navigate("/login"); 
+      navigate("/login");
       return;
     }
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchQuery(value);
+    if (onSearch) onSearch(value);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    if (onSearch) onSearch(searchQuery.trim());
   };
 
   return (
     <>
-      <Container maxWidth="xs">
-        <Box sx={styles.container}>
-          <img
-            style={styles.logo}
-            src={conecTalento}
-            alt="Logo"
-            onClick={() => navigate("/")}
-          />
+      {/* Header fixo */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: showHeader ? 0 : -70,
+          left: 0,
+          width: "100%",
+          height: "70px",
+          transition: "top 0.3s ease",
+          zIndex: 1000,
+        }}
+      >
+        <Container maxWidth={false} disableGutters sx={{ height: "100%" }}>
+          <Box sx={{ ...styles.container, height: "100%" }}>
+            <img
+              style={styles.logo}
+              src={conecTalento}
+              alt="Logo"
+              onClick={() => navigate("/")}
+            />
 
-          <Box sx={styles.searchBox}>
-            <InputBase placeholder="Pesquisar..." sx={styles.inputBase} />
-            <SearchIcon sx={styles.searchIcon} />
-          </Box>
+            {/* Barra de pesquisa */}
+            <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
+              <InputBase
+                placeholder="Pesquisar projetos..."
+                sx={styles.inputBase}
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+              <IconButton type="submit" sx={styles.searchIcon}>
+                <SearchIcon />
+              </IconButton>
+            </form>
 
-          <Box sx={styles.userBox}>
-            <AccountCircleIcon sx={styles.accountIcon} />
-            <span
-              style={{ cursor: "pointer" }}
+            {/* Login / usuário */}
+            <Box
+              sx={styles.userBox}
               onClick={() => {
                 if (!isLogged) navigate("/login");
               }}
             >
-              {isLogged ? username : "Login"}
-            </span>
+              <AccountCircleIcon sx={styles.accountIcon} />
+              <span style={{ cursor: "pointer" }}>
+                {isLogged ? username : "Login"}
+              </span>
 
-            {isLogged && (
-              <IconButton
-                onClick={handleMenuOpen}
-                sx={{ color: "#ffffff", padding: 0 }}
+              {isLogged && (
+                <IconButton
+                  onClick={handleMenuOpen}
+                  sx={{ color: "#ffffff", padding: 0 }}
+                >
+                  <KeyboardArrowDownIcon sx={styles.arrowIcon} />
+                </IconButton>
+              )}
+
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <KeyboardArrowDownIcon sx={styles.arrowIcon} />
-              </IconButton>
-            )}
-
-            <Menu
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleMenuClose}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-              <MenuItem onClick={() => navigate("/perfiluser")}>
-                User Area
-              </MenuItem>
-              <MenuItem onClick={() => navigate("/portifoliouser")}>
-                My portfolio
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>Logout</MenuItem>
-            </Menu>
+                <MenuItem onClick={() => navigate("/perfiluser")}>
+                  User Area
+                </MenuItem>
+                <MenuItem onClick={() => navigate("/portifoliouser")}>
+                  My portfolio
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+              </Menu>
+            </Box>
           </Box>
-        </Box>
-      </Container>
-      <Box sx={{ marginTop: "70px" }}>{children}</Box>
+        </Container>
+      </Box>
+
+      {/* Espaço para o conteúdo não ficar atrás do header */}
+      <Box sx={{ pt: "70px", pb: 2 }}>{children}</Box>
     </>
   );
 };
@@ -113,16 +165,13 @@ function Styles() {
       alignItems: "center",
       justifyContent: "space-between",
       width: "100%",
-      height: "70px",
+      height: "100%",
       backgroundColor: "#64058fff",
-      position: "absolute",
-      top: 0,
-      left: 0,
+      px: 2, // padding horizontal leve para o conteúdo não encostar nas bordas
     },
     logo: {
       height: "40%",
       width: "20%",
-      marginLeft: "2%",
       cursor: "pointer",
     },
     searchBox: {
@@ -132,7 +181,6 @@ function Styles() {
       borderRadius: "5px",
       width: "300px",
       height: "40px",
-      marginRight: "10%",
     },
     inputBase: {
       flex: 1,
@@ -151,7 +199,7 @@ function Styles() {
       "&:hover": {
         backgroundColor: "rgba(255, 255, 255, 0.15)",
       },
-      marginRight: "2%",
+      marginRight: "2%", // <- aqui você controla a distância da borda direita
       color: "white",
       gap: "4px",
     },
@@ -167,4 +215,5 @@ function Styles() {
     },
   };
 }
+
 export default Header;
