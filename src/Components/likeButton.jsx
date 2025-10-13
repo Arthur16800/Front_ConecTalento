@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { Badge } from "@mui/material";
@@ -15,7 +15,8 @@ function formatNumber(num) {
     { value: 1e3, symbol: "K" },
   ];
   for (let i = 0; i < units.length; i++) {
-    if (num >= units[i].value) return (num / units[i].value).toFixed(1).replace(/\.0$/, "") + units[i].symbol;
+    if (num >= units[i].value)
+      return (num / units[i].value).toFixed(1).replace(/\.0$/, "") + units[i].symbol;
   }
   return num.toString();
 }
@@ -29,12 +30,26 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
   const isLoggedIn = Boolean(localStorage.getItem("token"));
   const userId = localStorage.getItem("id_usuario");
 
+  // ✅ Ao carregar o componente, verifica se o usuário já curtiu
+  useEffect(() => {
+    if (isLoggedIn && userId) {
+      sheets.getProjectsLikedUser(userId)
+        .then(res => {
+          const likedProjects = res.data.profile_projeto.map(p => p.ID_projeto);
+          if (likedProjects.includes(projectId)) setLiked(true);
+        })
+        .catch(err => console.error("Erro ao verificar curtidas:", err));
+    }
+  }, [projectId, isLoggedIn, userId]);
+
+  // ❤️ Animação do coração flutuante
   const triggerHeartAnimation = () => {
     const id = Date.now();
     setHearts((prev) => [...prev, id]);
     setTimeout(() => setHearts((prev) => prev.filter((h) => h !== id)), 1000);
   };
 
+  // 🔄 Curtir / Descurtir
   const toggleLike = async () => {
     if (!isLoggedIn) {
       setOpenModal(true);
@@ -48,16 +63,21 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
 
     try {
       const res = await sheets.likeProject(projectId, userId);
+
       if (res.data.curtido) {
         setLiked(true);
         setLikesCount((prev) => prev + 1);
         triggerHeartAnimation();
       } else {
         setLiked(false);
-        setLikesCount((prev) => prev - 1);
+        setLikesCount((prev) => Math.max(prev - 1, 0));
       }
     } catch (err) {
       console.error("Erro ao curtir:", err);
+      if (err.response) {
+        console.log("Status:", err.response.status);
+        console.log("Dados do erro:", err.response.data);
+      }
     }
   };
 
@@ -76,7 +96,12 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
           onClick={toggleLike}
           style={styles.likeBox}
         >
-          {liked ? <FavoriteIcon sx={{ color: "red" }} /> : <FavoriteBorderIcon sx={{ color: "purple" }} />}
+          {liked ? (
+            <FavoriteIcon sx={{ color: "red" }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ color: "purple" }} />
+          )}
+
           <AnimatePresence>
             {hearts.map((id) => (
               <motion.div
@@ -99,6 +124,7 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
   );
 }
 
+// 🎨 Estilos
 const styles = {
   badgeWrapper: {
     position: "absolute",

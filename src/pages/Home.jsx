@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Typography, Box, Grid } from "@mui/material";
-import LikeButton from "../Components/LikeButton";
+import LikeButton from "../Components/likeButton";
 import LoginPromptModal from "../Components/LoginPromptModal";
 import sheets from "../axios/axios";
 
-// Função para embaralhar array
 const shuffleArray = (array) => {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]]; // Troca de lugar
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
 };
@@ -17,21 +16,12 @@ const shuffleArray = (array) => {
 function Home() {
   const [projects, setProjects] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const response = await sheets.getAllProjects();
         let rawProjects = response?.data?.profile_projeto ?? [];
-
-        if (rawProjects.length === 0) {
-          rawProjects = [
-            { ID_projeto: -1, titulo: "Projeto Exemplo 1", total_curtidas: 3 },
-            { ID_projeto: -2, titulo: "Projeto Exemplo 2", total_curtidas: 7 },
-            { ID_projeto: -3, titulo: "Projeto Exemplo 3", total_curtidas: 1 },
-          ];
-        }
 
         const formattedProjects = rawProjects.map((p) => ({
           ID_projeto: p.ID_projeto,
@@ -43,24 +33,15 @@ function Home() {
         setProjects(shuffleArray(formattedProjects));
       } catch (err) {
         console.error("Erro ao buscar projetos:", err);
-        setProjects([
-          { ID_projeto: -10, titulo: "Offline 1", total_curtidas: 2 },
-          { ID_projeto: -11, titulo: "Offline 2", total_curtidas: 5 },
-        ]);
       }
     };
 
     fetchProjects();
   }, []);
 
-  const handleLikeClick = (e) => {
-    // Verifica se o usuário está logado
-    if (!isLoggedIn) {
-      setOpenModal(true);  // Exibe o modal de login
-    } else {
-      // Caso esteja logado, o botão de like é acionado
-      e.stopPropagation(); // Impede o clique no card
-    }
+  const handleCardClick = () => {
+    const token = localStorage.getItem("token");
+    if (!token) setOpenModal(true);
   };
 
   return (
@@ -80,17 +61,11 @@ function Home() {
                 alignItems: "center",
                 position: "relative",
                 transition: "transform 0.3s",
-                overflow: "visible", // garante que o botão não seja cortado
-                "&:hover": {
-                  transform: "scale(1.03)",
-                },
+                overflow: "visible",
+                "&:hover": { transform: "scale(1.03)" },
               }}
-              onClick={() => {
-                // Impede que o clique no card acione o modal de login
-                if (!isLoggedIn) setOpenModal(true);
-              }}
+              onClick={handleCardClick}
             >
-              {/* Box da Imagem */}
               <Box
                 sx={{
                   width: "100%",
@@ -107,7 +82,6 @@ function Home() {
                   backgroundRepeat: "no-repeat",
                 }}
               >
-                {/* Botão de Like */}
                 <Box
                   sx={{
                     position: "absolute",
@@ -119,16 +93,15 @@ function Home() {
                     padding: 0.5,
                     boxShadow: 1,
                   }}
-                  onClick={handleLikeClick}
                 >
                   <LikeButton
                     projectId={project.ID_projeto}
+                    userId={localStorage.getItem("id_usuario")}
                     initialLikes={project.total_curtidas}
                     onRequireLogin={() => setOpenModal(true)}
                   />
                 </Box>
 
-                {/* Texto se não houver imagem */}
                 {!project.imagem && (
                   <Typography
                     variant="body2"
@@ -145,7 +118,6 @@ function Home() {
                 )}
               </Box>
 
-              {/* Conteúdo do Card */}
               <CardContent
                 sx={{
                   padding: 2,
@@ -166,7 +138,6 @@ function Home() {
         ))}
       </Grid>
 
-      {/* Modal de login */}
       <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
     </>
   );
