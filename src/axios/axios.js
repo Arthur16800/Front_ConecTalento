@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-  baseURL: "http://10.89.240.134:5000/api/v1",
+  baseURL: "http://10.89.240.71:5000/api/v1",
   headers: {
     accept: "application/json",
   },
@@ -47,9 +47,41 @@ api.interceptors.response.use(
 const sheets = {
   postCadastro: (user) => api.post("/user", user),
   postValidateCode: (user) => api.post("user/validatecode", user),
-  getUserById: (id) => api.get("/user/" + id),
+  getUserById: (id_user) => api.get(`/userId/${id_user}`),
   postLogin: (user) => api.post("/login", user),
-  updateUser: (user) => api.put("/user", user),
+  deleteUser: (id_user) => api.delete(`/user/${id_user}`),
+  getByUsername: (username) => api.get(`/user/${username}`),
+
+  updateUser: (id_user, user) => {
+    const isForm = typeof FormData !== "undefined" && user instanceof FormData;
+    const config = {
+      headers: {
+        ...(isForm ? { "Content-Type": "multipart/form-data" } : {}),
+        Accept: "application/json",
+      },
+    };
+    return api.put(`/user/${id_user}`, user, config);
+  },
+
+  updateImgUser: (id_user, img) => {
+    const data = new FormData();
+    for (let key in img) {
+      data.append(key, img[key]);
+    }
+
+    if (img) {
+      for (let i = 0; i < img.length; i++) {
+        data.append("imagens", img[i]);
+      }
+    }
+
+    return api.put(`/user/img/${id_user}`, data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Accept: "application/json",
+      },
+    });
+  },
 
   createProjeto: (ID_user, form, imagens) => {
     const data = new FormData();
@@ -79,14 +111,12 @@ const sheets = {
     data.append("descricao", descricao);
     data.append("ID_user", ID_user);
 
-    // imagens (mesma estrutura do create)
     if (imagens) {
       for (let i = 0; i < imagens.length; i++) {
         data.append("imagens", imagens[i]);
       }
     }
 
-    // use PUT; se seu backend aceitar PATCH, troque aqui
     return api.put(`/project/${ID_projeto}`, data, {
       headers: {
         "Content-Type": "multipart/form-data",
