@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import api from "../axios/axios";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Container,
@@ -11,8 +13,73 @@ import {
 import background from "../assets/background2.png";
 import Grid from "@mui/material/Grid2";
 
-function DetalhesProjeto() {
+function DetalhesProjeto({ imagesCount: propCount }) {
   const styles = Styles();
+
+  const params = useParams();
+  const idParam = params.id || params.id_projeto || params.projectId || null;
+  const projetoId = idParam ? Number(idParam) : 1;
+  const imagesCount = propCount;
+
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [images, setImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [imagesError, setImagesError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchImages = async () => {
+      setLoadingImages(true);
+      setImagesError(null);
+      try {
+        const res = await api.getProjectDetails(projetoId);
+        if (!mounted) return;
+        const imgs = res.data?.projeto?.imagens || [];
+        setImages(imgs);
+      } catch (err) {
+        console.error("Erro ao buscar imagens:", err);
+        if (!mounted) return;
+        setImagesError(err);
+        setImages([]);
+      }
+      if (mounted) setLoadingImages(false);
+    };
+
+    fetchImages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [projetoId]);
+
+  const origin = "http://10.89.240.65:5000";
+  const imageUrls =
+    images && images.length > 0
+      ? images.map((img) => {
+          if (!img) return null;
+          if (typeof img === "object") {
+            const base64 = img.imagem;
+            const tipo = img.tipo_imagem || "image/jpeg";
+            if (base64) return `data:${tipo};base64,${base64}`;
+            return null;
+          }
+          if (typeof img === "string") {
+            if (img.startsWith("http://") || img.startsWith("https://"))
+              return img;
+            if (img.startsWith("/")) return `${origin}${img}`;
+            return `${origin}/${img}`;
+          }
+          return null;
+        })
+      : Array.from({ length: imagesCount }).map(
+          (_, i) =>
+            `http://10.89.240.65:5000/api/v1/detalhes_project/${projetoId}?index=${i}`
+        );
+
+  useEffect(() => {
+    if (imageUrls.length === 0) return;
+    if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
+  }, [imageUrls, selectedIndex]);
 
   return (
     <Container style={styles.container}>
@@ -21,14 +88,49 @@ function DetalhesProjeto() {
           <Typography style={styles.titulo}>Título do portifólio</Typography>
 
           <Card style={styles.cardPrincipal}>
-            <Box style={styles.imagemPrincipal}>Imagem Principal</Box>
+            {loadingImages ? (
+              <Box style={styles.imagemPrincipal}>Carregando imagens...</Box>
+            ) : imagesError ? (
+              <Box style={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
+            ) : imageUrls.length > 0 ? (
+              <img
+                src={imageUrls[selectedIndex]}
+                alt={`imagem ${selectedIndex + 1}`}
+                style={styles.imagemPrincipalImg}
+              />
+            ) : (
+              <Box style={styles.imagemPrincipal}>Imagem Principal</Box>
+            )}
           </Card>
 
           <Grid container spacing={2} style={styles.gridMiniaturas}>
-            {Array.from({ length: 4 }).map((_, index) => (
+            {imageUrls.map((src, index) => (
               <Grid key={index} size={{ xs: 6, sm: 3 }}>
                 <Card style={styles.cardMini}>
-                  <Box style={styles.boxMini}>Mini {index + 1}</Box>
+                  <button
+                    onClick={() => setSelectedIndex(index)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
+                    aria-label={`Selecionar imagem ${index + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`miniatura ${index + 1}`}
+                      style={{
+                        ...styles.boxMiniImg,
+                        boxShadow:
+                          index === selectedIndex
+                            ? "0 0 0 3px #7A2CF6 inset"
+                            : "none",
+                        transform:
+                          index === selectedIndex ? "scale(1.02)" : "none",
+                      }}
+                    />
+                  </button>
                 </Card>
               </Grid>
             ))}
@@ -85,6 +187,11 @@ function DetalhesProjeto() {
 
 function Styles() {
   return {
+    container: {
+      padding: "24px",
+      maxWidth: "100%",
+      margin: "0 auto",
+    },
     titulo: {
       fontSize: "30px",
       fontWeight: "bold",
@@ -111,6 +218,13 @@ function Styles() {
       alignItems: "center",
       justifyContent: "center",
     },
+    imagemPrincipalImg: {
+      width: "100%",
+      height: "250px",
+      objectFit: "cover",
+      borderRadius: "8px",
+      display: "block",
+    },
     gridMiniaturas: {
       marginTop: "16px",
       marginBottom: "40px",
@@ -127,6 +241,13 @@ function Styles() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+    },
+    boxMiniImg: {
+      width: "80px",
+      height: "80px",
+      objectFit: "cover",
+      borderRadius: "4px",
+      display: "block",
     },
     cardPerfil: {
       textAlign: "center",

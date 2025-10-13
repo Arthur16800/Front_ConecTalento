@@ -8,6 +8,7 @@ import DetalhesProjeto from "./pages/DetalheProjeto";
 import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
 import DefaultLayout from "./Components/DefaultLayout";
+import UpdateProjeto from "./pages/updateProjeto";
 
 
 function App() {
@@ -40,7 +41,15 @@ function App() {
           }
         />
         <Route
-          path="/portifoliouser"
+          path="/updateprojeto/:ID_projeto"
+          element={
+            <DefaultLayout>
+              <UpdateProjeto />
+            </DefaultLayout>
+          }
+        />
+        <Route
+          path="/portifoliouser/:username"
           element={
             <DefaultLayout>
               <Portfolio />
@@ -50,6 +59,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/detalhesprojeto" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
+        <Route path="/detalhesprojeto/:id" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
       </Routes>
     </Router>
   );
