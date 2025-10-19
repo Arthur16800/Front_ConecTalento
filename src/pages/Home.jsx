@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Typography, Box, Grid } from "@mui/material";
+import { useNavigate } from "react-router-dom"; // Import necessário
 import LikeButton from "../Components/likeButton";
 import LoginPromptModal from "../Components/LoginPromptModal";
 import sheets from "../axios/axios";
@@ -16,6 +17,7 @@ const shuffleArray = (array) => {
 function Home() {
   const [projects, setProjects] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const navigate = useNavigate(); // Hook para navegação
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -39,9 +41,13 @@ function Home() {
     fetchProjects();
   }, []);
 
-  const handleCardClick = () => {
+  const handleCardClick = (projectId) => {
     const token = localStorage.getItem("token");
-    if (!token) setOpenModal(true);
+    if (!token) {
+      setOpenModal(true);
+    } else {
+      navigate(`/detalhesprojeto/${projectId}`);
+    }
   };
 
   return (
@@ -64,7 +70,7 @@ function Home() {
                 overflow: "visible",
                 "&:hover": { transform: "scale(1.03)" },
               }}
-              onClick={handleCardClick}
+              onClick={() => handleCardClick(project.ID_projeto)} // Passa o ID
             >
               <Box
                 sx={{
@@ -93,6 +99,7 @@ function Home() {
                     padding: 0.5,
                     boxShadow: 1,
                   }}
+                  onClick={(e) => e.stopPropagation()} // Impede que clique no like redirecione
                 >
                   <LikeButton
                     projectId={project.ID_projeto}

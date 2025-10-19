@@ -7,8 +7,7 @@ const DefaultLayout = ({ children }) => {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100px" }}>
       <Header />
-
-    
+      
         {children}
 
       <Footer />

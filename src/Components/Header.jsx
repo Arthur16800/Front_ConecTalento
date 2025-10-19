@@ -3,54 +3,71 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import conecTalento from "../assets/ConecTalento.png";
 import { useNavigate } from "react-router-dom";
-import { InputBase, Menu, MenuItem, IconButton } from "@mui/material";
+import { InputBase, Menu, MenuItem, IconButton, Avatar } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import api from "../axios/axios"; // 👈 usa o mesmo axios do PerfilUser
 
 const Header = ({ children, onSearch }) => {
   const navigate = useNavigate();
   const styles = Styles();
 
   const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
   const [isLogged, setIsLogged] = useState(false);
-  const [username, setUsername] = useState("");
+  const [userData, setUserData] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Estado para mostrar/ocultar header
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  const open = Boolean(anchorEl);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const storedUsername = localStorage.getItem("username");
+    const id_usuario = localStorage.getItem("id_usuario");
     setIsLogged(!!token);
-    if (token && storedUsername) setUsername(storedUsername);
+
+    if (token && id_usuario) {
+      api
+        .getUserById(id_usuario)
+        .then((res) => {
+          const data = res.data.profile;
+          const isBase64 = data.imagem?.startsWith("data:image");
+          const base64Src = data.imagem
+            ? isBase64
+              ? data.imagem
+              : `data:image/jpeg;base64,${data.imagem}`
+            : null;
+
+          setUserData({
+            ...data,
+            imagem: base64Src,
+          });
+        })
+        .catch((err) => {
+          console.error("Erro ao buscar dados do usuário:", err);
+        });
+    }
   }, []);
 
+  // Oculta header ao rolar
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
       if (currentScrollY > lastScrollY && currentScrollY > 50) {
         setShowHeader(false);
       } else {
         setShowHeader(true);
       }
-
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
+    localStorage.clear();
     setIsLogged(false);
-    setUsername("");
+    setUserData(null);
     navigate("/login");
   };
 
@@ -77,7 +94,6 @@ const Header = ({ children, onSearch }) => {
 
   return (
     <>
-      {/* Header fixo */}
       <Box
         sx={{
           position: "fixed",
@@ -98,7 +114,6 @@ const Header = ({ children, onSearch }) => {
               onClick={() => navigate("/")}
             />
 
-            {/* Barra de pesquisa */}
             <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
               <InputBase
                 placeholder="Pesquisar projetos..."
@@ -111,16 +126,28 @@ const Header = ({ children, onSearch }) => {
               </IconButton>
             </form>
 
-            {/* Login / usuário */}
             <Box
               sx={styles.userBox}
               onClick={() => {
                 if (!isLogged) navigate("/login");
               }}
             >
-              <AccountCircleIcon sx={styles.accountIcon} />
-              <span style={{ cursor: "pointer" }}>
-                {isLogged ? username : "Login"}
+              {isLogged && userData?.imagem ? (
+                <Avatar
+                  src={userData.imagem}
+                  alt={userData.username}
+                  sx={{ width: 32, height: 32 }}
+                />
+              ) : (
+                <Avatar sx={{ bgcolor: "#888", width: 32, height: 32 }}>
+                  {!isLogged ? "?" : userData?.username?.[0]?.toUpperCase() || "U"}
+                </Avatar>
+              )}
+
+              <span style={{ cursor: "pointer", marginLeft: "8px" }}>
+                {isLogged
+                  ? userData?.username || userData?.name || "Usuário"
+                  : "Login"}
               </span>
 
               {isLogged && (
@@ -142,8 +169,8 @@ const Header = ({ children, onSearch }) => {
                 <MenuItem onClick={() => navigate("/perfiluser")}>
                   User Area
                 </MenuItem>
-                <MenuItem onClick={() => navigate("/portifoliouser")}>
-                  My portfolio
+                <MenuItem onClick={() => navigate("/portifoliouser/" + userData?.username)}>
+                  My Portfolio
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
@@ -152,7 +179,6 @@ const Header = ({ children, onSearch }) => {
         </Container>
       </Box>
 
-      {/* Espaço para o conteúdo não ficar atrás do header */}
       <Box sx={{ pt: "70px", pb: 2 }}>{children}</Box>
     </>
   );
@@ -167,7 +193,7 @@ function Styles() {
       width: "100%",
       height: "100%",
       backgroundColor: "#64058fff",
-      px: 2, // padding horizontal leve para o conteúdo não encostar nas bordas
+      px: 2,
     },
     logo: {
       height: "40%",
@@ -199,7 +225,7 @@ function Styles() {
       "&:hover": {
         backgroundColor: "rgba(255, 255, 255, 0.15)",
       },
-      marginRight: "2%", // <- aqui você controla a distância da borda direita
+      marginRight: "2%",
       color: "white",
       gap: "4px",
     },
@@ -208,10 +234,6 @@ function Styles() {
     },
     searchIcon: {
       color: "#555",
-    },
-    accountIcon: {
-      color: "#E5E5E5",
-      fontSize: 28,
     },
   };
 }

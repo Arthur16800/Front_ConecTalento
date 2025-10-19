@@ -21,6 +21,7 @@ function PerfilUser() {
   const id_user = localStorage.getItem("id_usuario");
   const fileInputRef = useRef(null);
   const [openModal, setOpenModal] = useState(false);
+  const [openModalSenha, setOpenModalSenha] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false); // estado de hover no avatar
@@ -30,6 +31,12 @@ function PerfilUser() {
     email: "",
     biografia: "",
     imagem: null,
+  });
+
+  const [senhas, setSenhas] = useState({
+    senha_atual: "",
+    nova_senha: "",
+    confirmar_senha: "",
   });
 
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -75,6 +82,19 @@ function PerfilUser() {
     getUserById();
   }, [id_user]);
 
+  async function updatePassword() {
+    setLoading(true);
+    try {
+      const response = await api.updatePassword(id_user, senhas);
+      showAlert("success", response.data.message);
+      setLoading(false);
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      showAlert("error", error.response?.data?.error);
+      setLoading(false);
+    }
+  }
+
   // Função de delete do usuário
   async function deleteUser() {
     setLoading(true);
@@ -82,7 +102,7 @@ function PerfilUser() {
       const response = await api.deleteUser(id_user);
       showAlert(
         "success",
-        response.data.message || "Usuário deletado com sucesso!"
+        response.data.message
       );
       localStorage.clear();
       window.location.href = "/";
@@ -90,9 +110,8 @@ function PerfilUser() {
       console.error("Erro ao deletar usuário:", error);
       showAlert(
         "error",
-        error.response?.data?.error || "Erro ao deletar usuário."
+        error.response?.data?.error 
       );
-    } finally {
       setLoading(false);
     }
   }
@@ -111,6 +130,8 @@ function PerfilUser() {
     deleteUser();
     handleCloseModal();
   };
+  const handleOpenModalSenha = () => setOpenModalSenha(true);
+  const handleCloseModalSenha = () => setOpenModalSenha(false);
 
   const handleEditClick = () => setEditing(true);
   const handleSaveClick = () => updateUser();
@@ -161,6 +182,7 @@ function PerfilUser() {
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
       );
+      setLoading(false);
       setEditing(false);
     } catch (error) {
       console.error("Erro no updateUser:", error);
@@ -168,7 +190,6 @@ function PerfilUser() {
         "error",
         error.response?.data?.error || "Erro inesperado ao atualizar perfil."
       );
-    } finally {
       setLoading(false);
     }
   }
@@ -331,6 +352,20 @@ function PerfilUser() {
         {editing && (
           <Button
             style={styles.saveBtn}
+            onClick={handleOpenModalSenha}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Alterar Senha"
+            )}
+          </Button>
+        )}
+
+        {editing && (
+          <Button
+            style={styles.saveBtn}
             onClick={handleSaveClick}
             disabled={loading}
           >
@@ -405,6 +440,82 @@ function PerfilUser() {
               )}
             </Button>
           </Box>
+        </Box>
+      </ModalBase>
+      <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "80%",
+            padding: 3.5,
+            textAlign: "center",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "#222", mb: 1 }}
+          >
+            Alterar Senha
+          </Typography>
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Senha Atual"
+            type="password"
+            variant="outlined"
+            name="senha_atual"
+            value={senhas.senha_atual}
+            onChange={(e) =>
+              setSenhas({ ...senhas, senha_atual: e.target.value })
+            }
+            style={styles.camposForm}
+          />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Nova Senha"
+            type="password"
+            variant="outlined"
+            name="nova_senha"
+            value={senhas.nova_senha}
+            onChange={(e) =>
+              setSenhas({ ...senhas, nova_senha: e.target.value })
+            }
+            style={styles.camposForm}
+          />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Confirmar Nova Senha"
+            type="password"
+            variant="outlined"
+            name="confirmar_senha"
+            value={senhas.confirmar_senha}
+            onChange={(e) =>
+              setSenhas({ ...senhas, confirmar_senha: e.target.value })
+            }
+            style={styles.camposForm}
+          />
+          <Button
+            style={styles.saveBtn}
+            onClick={() => {
+              handleCloseModalSenha();
+              updatePassword();
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              "Salvar Senha"
+            )}
+          </Button>
         </Box>
       </ModalBase>
     </Box>
@@ -498,7 +609,7 @@ function Styles() {
       maxWidth: 560,
     },
     saveBtn: {
-      width: "20%",
+      width: "40%",
       marginTop: 16,
       borderRadius: 5,
       textTransform: "none",

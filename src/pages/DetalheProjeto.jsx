@@ -50,7 +50,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   }, [projetoId]);
 
   // 🔹 Converter formatos de imagem
-  const origin = "http://10.89.240.71:5000";
+  const origin = "http://192.168.100.6:5000";
   const imageUrls =
     imagens && imagens.length > 0
       ? imagens.map((img) => {
