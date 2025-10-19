@@ -22,6 +22,7 @@ function PerfilUser() {
   const fileInputRef = useRef(null);
   const [openModal, setOpenModal] = useState(false);
   const [openModalSenha, setOpenModalSenha] = useState(false);
+  const [openModalRedes, setOpenModalRedes] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false); // estado de hover no avatar
@@ -37,6 +38,14 @@ function PerfilUser() {
     senha_atual: "",
     nova_senha: "",
     confirmar_senha: "",
+  });
+
+  const [redes, setRedes] = useState({
+    facebook: "",
+    github: "",
+    insta: "",
+    pinterest: "",
+    numero_telefone: "",
   });
 
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -110,7 +119,7 @@ function PerfilUser() {
       console.error("Erro ao deletar usuário:", error);
       showAlert(
         "error",
-        error.response?.data?.error 
+        error.response?.data?.error
       );
       setLoading(false);
     }
@@ -132,6 +141,9 @@ function PerfilUser() {
   };
   const handleOpenModalSenha = () => setOpenModalSenha(true);
   const handleCloseModalSenha = () => setOpenModalSenha(false);
+
+  const handleOpenModalRedesSociais = () => setOpenModalRedes(true);
+  const handleCloseModalRedesSociais = () => setOpenModalRedes(false);
 
   const handleEditClick = () => setEditing(true);
   const handleSaveClick = () => updateUser();
@@ -289,9 +301,13 @@ function PerfilUser() {
             Editar Perfil
           </Button>
         )}
+        {!editing && (
+          <Button style={styles.editBtn} onClick={handleOpenModalRedesSociais}>
+            Informações de Contato
+          </Button>
+        )}
       </Box>
 
-      {/* Painel de formulário */}
       <Box style={styles.formPanel}>
         <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
@@ -518,6 +534,84 @@ function PerfilUser() {
           </Button>
         </Box>
       </ModalBase>
+      <ModalBase open={openModalRedes} onClose={handleCloseModalRedesSociais}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: -2,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "#222", mb: 2 }}
+          >
+            Editar Redes Sociais
+          </Typography>
+
+          <TextField
+            required
+            label="Link do Facebook"
+            variant="outlined"
+            size="small"
+            name="facebook"
+            value={redes.facebook}
+            onChange={(e) => setRedes({ ...redes, facebook: e.target.value })}
+            sx={{ width: "90%", mb: 1 }}
+          />
+          <TextField
+            required
+            label="Link do GitHub"
+            variant="outlined"
+            size="small"
+            name="github"
+            value={redes.github}
+            onChange={(e) => setRedes({ ...redes, github: e.target.value })}
+            sx={{ width: "90%", mb: 1 }}
+          />
+          <TextField
+            required
+            label="Link do Instagram"
+            variant="outlined"
+            size="small"
+            name="insta"
+            value={redes.insta}
+            onChange={(e) => setRedes({ ...redes, insta: e.target.value })}
+            sx={{ width: "90%", mb: 1 }}
+          />
+          <TextField
+            required
+            label="Link do Pinterest"
+            variant="outlined"
+            size="small"
+            name="pinterest"
+            value={redes.pinterest}
+            onChange={(e) => setRedes({ ...redes, pinterest: e.target.value })}
+            sx={{ width: "90%", mb: 1 }}
+          />
+          <TextField
+            required
+            label="Número de Telefone"
+            variant="outlined"
+            size="small"
+            name="numero_telefone"
+            value={redes.numero_telefone}
+            onChange={(e) => setRedes({ ...redes, numero_telefone: e.target.value })}
+            sx={{ width: "90%", mb: 1 }}
+          />
+
+          <Button
+            variant="contained"
+            sx={{ width: "40%", borderRadius: 2 }}
+            onClick={handleCloseModalRedesSociais}
+          >
+            Salvar
+          </Button>
+        </Box>
+      </ModalBase>
+
     </Box>
   );
 }
@@ -531,6 +625,10 @@ function Styles() {
       padding: "24px 16px",
       maxWidth: "70%",
       margin: "0 auto",
+    },
+    camposStyle: {
+      width: "90%",
+      mb: 0.5
     },
     leftCard: {
       maxWidth: 280,

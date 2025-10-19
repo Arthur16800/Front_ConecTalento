@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Container,
@@ -10,18 +10,19 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
 
 function DetalhesProjeto({ imagesCount = 4 }) {
   const styles = Styles();
   const { id, id_projeto, projectId } = useParams();
-
+  const navigate = useNavigate();
   const projetoId = Number(id || id_projeto || projectId || 1);
   const [imagens, setImagens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [projeto, setProjeto] = useState(null);
 
   // 🔹 Buscar imagens do projeto
   useEffect(() => {
@@ -33,6 +34,8 @@ function DetalhesProjeto({ imagesCount = 4 }) {
       try {
         const res = await api.getProjectDetails(projetoId);
         if (!ativo) return;
+        const dadosProjeto = res.data?.projeto;
+        setProjeto(dadosProjeto);
         const imgs = res.data?.projeto?.imagens || [];
         setImagens(imgs);
       } catch (err) {
@@ -50,7 +53,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   }, [projetoId]);
 
   // 🔹 Converter formatos de imagem
-  const origin = "http://192.168.100.6:5000";
+  const origin = "http://localhost:5000";
   const imageUrls =
     imagens && imagens.length > 0
       ? imagens.map((img) => {
@@ -74,14 +77,44 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   // 🔹 Garantir índice válido
   useEffect(() => {
     if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
-  }, [imageUrls]);
+  }, [imageUrls, selectedIndex]);
+
+  // 🔹 URL segura para o Avatar (evita usar imagem do projeto por engano)
+  const avatarUrl = useMemo(() => {
+    const autor = projeto?.autor;
+    if (!autor) return undefined;
+
+    const candidato =
+      autor.imagem ?? autor.foto ?? autor.avatar ?? autor.imagem_perfil;
+
+    if (!candidato) return undefined;
+
+    const tipo = autor.tipo_imagem || "image/jpeg";
+
+    const build = (val) => {
+      if (typeof val !== "string") return undefined;
+      if (val.startsWith("http")) return val;
+      if (val.startsWith("/")) return `${origin}${val}`;
+      // assume base64
+      return `data:${tipo};base64,${val}`;
+    };
+
+    const url = build(candidato);
+
+    // Se por algum motivo o "avatar" for igual a alguma imagem do projeto, ignora.
+    if (url && imageUrls?.includes(url)) return undefined;
+
+    return url;
+  }, [projeto, imageUrls]);
 
   return (
     <Container sx={styles.container}>
       <Grid container spacing={4}>
         {/* 🔹 Coluna Esquerda - Projeto */}
         <Grid item xs={12} md={8}>
-          <Typography sx={styles.titulo}>Título do Portfólio</Typography>
+          <Typography sx={styles.titulo}>
+            {projeto?.titulo || "Título do Portfólio"}
+          </Typography>
 
           <Card sx={styles.cardPrincipal}>
             {loading ? (
@@ -137,22 +170,35 @@ function DetalhesProjeto({ imagesCount = 4 }) {
           {/* 🔹 Descrição */}
           <Typography sx={styles.tituloDesc}>Descrição:</Typography>
           <Typography sx={styles.descricao}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-            vitae mollis velit. Phasellus imperdiet ex sed quam vestibulum, sed
-            dignissim magna ornare. Curabitur maximus consequat aliquet. In mollis
-            tellus sapien, ac ultricies neque euismod at.
+            {projeto?.descricao || "Sem descrição disponível."}
           </Typography>
         </Grid>
 
         {/* 🔹 Coluna Direita - Perfil do Autor */}
         <Grid item xs={12} md={4}>
           <Card sx={styles.cardPerfil}>
-            <Avatar sx={styles.avatar} />
+            <Avatar
+              sx={styles.avatar}
+              src={avatarUrl}
+              alt={projeto?.autor?.nome || "Autor"}
+              imgProps={{ referrerPolicy: "no-referrer" }}
+            >
+              {projeto?.autor?.nome?.[0]?.toUpperCase() || ""}
+            </Avatar>
+
             <CardContent>
               <Typography variant="h6" sx={styles.nome}>
-                Carlos
+                {projeto?.autor?.nome || "Sem Autor disponível."}
               </Typography>
-              <Button variant="contained" sx={styles.button}>
+              <Button
+                variant="contained"
+                sx={styles.button}
+                onClick={() => {
+                  if (projeto?.autor?.username) {
+                    navigate(`/${projeto.autor.username}`);
+                  }
+                }}
+              >
                 Visualizar perfil
               </Button>
             </CardContent>
@@ -203,7 +249,7 @@ function Styles() {
       width: "100%",
       height: "auto",
       display: "block",
-      objectFit: "contain", // 👈 sem corte nem zoom
+      objectFit: "contain",
       maxHeight: 500,
       margin: "0 auto",
     },

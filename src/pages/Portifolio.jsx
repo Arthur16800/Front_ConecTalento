@@ -1,62 +1,82 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Avatar } from "@mui/material";
+import { Box, Typography, Avatar, IconButton } from "@mui/material";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import InstagramIcon from "@mui/icons-material/Instagram";
 import EmailIcon from "@mui/icons-material/Email";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import { useParams } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
 
 function Portfolio() {
-  const Params = useParams();
+  const { username } = useParams();
+  const navigate = useNavigate();
   const styles = Styles();
 
   const [user, setUser] = useState(null);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const projects = [
-    { id: 1, title: "design sapato" },
-    { id: 2, title: "design sapato" },
-    { id: 3, title: "design sapato" },
-  ];
+  const usernameLocal = localStorage.getItem("username");
+  const isOwner = usernameLocal === username;
 
   useEffect(() => {
-    async function getByUsername() {
-      if (!Params.username) return;
+    async function fetchUserAndProjects() {
+      if (!username) return;
 
       setLoading(true);
       setError(null);
-      setUser(null);
 
       try {
-        const response = await api.getByUsername(Params.username);
-        const data = response.data.profile;
+        const responseUser = await api.getByUsername(username);
+        const dataUser = responseUser.data.profile;
 
-        const isBase64 = data.imagem?.startsWith("data:image");
-        const base64Src = data.imagem
+        if (!dataUser) {
+          setError("Página Não Encontrada");
+          setLoading(false);
+          return;
+        }
+
+        const isBase64 = dataUser.imagem?.startsWith("data:image");
+        const base64Src = dataUser.imagem
           ? isBase64
-            ? data.imagem
-            : `data:image/jpeg;base64,${data.imagem}`
+            ? dataUser.imagem
+            : `data:image/jpeg;base64,${dataUser.imagem}`
           : null;
 
         setUser({
-          name: data.name,
-          email: data.email,
-          biografia: data.biografia || "Nenhuma biografia cadastrada.",
+          name: dataUser.name,
+          email: dataUser.email,
+          biografia: dataUser.biografia || "Nenhuma biografia cadastrada.",
           imagem: base64Src,
         });
+
+        const responseProjects = await api.getProjectsByUserName(username);
+        const dataProjects = responseProjects.data.profile_projeto || [];
+
+        setProjects(
+          dataProjects.map((p) => ({
+            id: p.ID_projeto,
+            title: p.titulo,
+            total_curtidas: p.total_curtidas,
+            imagem: p.imagem
+              ? `data:${p.tipo_imagem};base64,${p.imagem}`
+              : null,
+          }))
+        );
       } catch (error) {
         console.log("error:", error?.response?.data?.error);
         setError("Página Não Encontrada");
       }
+
       setLoading(false);
     }
 
-    getByUsername();
-  }, [Params.username]);
+    fetchUserAndProjects();
+  }, [username]);
 
   if (loading) {
     return (
@@ -97,6 +117,7 @@ function Portfolio() {
 
   return (
     <Box style={styles.container}>
+      {/* Perfil do usuário */}
       <Box style={styles.box_user}>
         {user.imagem ? (
           <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
@@ -104,15 +125,24 @@ function Portfolio() {
           <AccountCircleIcon sx={styles.accountIcon} />
         )}
 
-        <Typography style={styles.userName}>{user.name}</Typography>
+        <Box style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Typography style={styles.userName}>{user.name}</Typography>
+          {isOwner && (
+            <IconButton
+              color="primary"
+              size="small"
+              onClick={() => navigate("/perfiluser")}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
 
         <Typography style={styles.bio}>{user.biografia}</Typography>
 
+        {/* Contatos */}
         <Box style={styles.box_contatos}>
-          <Box style={styles.contato}>
-            <InstagramIcon />
-            <Typography>teste</Typography>
-          </Box>
+          <Box style={styles.contato}></Box>
           <Box style={styles.contato}>
             <EmailIcon />
             <Typography>{user.email}</Typography>
@@ -122,23 +152,82 @@ function Portfolio() {
 
       <Box style={styles.divider} />
 
+      {/* Projetos */}
       <Box style={styles.box_projeto}>
         <Box style={styles.grid}>
           {projects.map((p) => (
-            <Box key={p.id} style={styles.card}>
+            <Box
+              key={p.id}
+              style={styles.card}
+            >
               <Box
                 style={{
                   ...styles.preview,
-                  backgroundImage: `url(${background2})`,
+                  backgroundImage: `url(${p.imagem || background2})`,
                 }}
+                onClick={() => navigate(`/detalhesprojeto/${p.id}`)}
               >
                 <Box style={styles.likeBtn}>
                   <FavoriteBorderIcon fontSize="small" />
                 </Box>
               </Box>
-              <Typography style={styles.caption}>{p.title}</Typography>
+              <Box
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                }}
+              >
+                <Typography style={styles.caption}>{p.title}</Typography>
+                {isOwner && (
+                  <IconButton
+                    size="small"
+                    onClick={() => navigate(`/updateprojeto/${p.id}`)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
             </Box>
           ))}
+
+          {isOwner && (
+            <Box
+              onClick={() => navigate("/criarProjeto")}
+              sx={{
+                ...styles.card, // seu estilo de card quadrado
+                display: "flex",
+                marginTop: 6,
+                justifyContent: "center",
+                alignItems: "center",
+                cursor: "pointer",
+                backgroundColor: "#E0E0E0",
+                width: 150, // tamanho do card
+                height: 150,
+                borderRadius: 2, // borda levemente arredondada do card
+              }}
+            >
+              {/* Círculo dentro do card */}
+              <Box
+                sx={{
+                  width: 60, // tamanho do círculo
+                  height: 60,
+                  borderRadius: "50%",
+                  backgroundColor: "#BDBDBD",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  transition: "0.2s",
+                  "&:hover": {
+                    backgroundColor: "#A0A0A0",
+                  },
+                }}
+              >
+                <AddIcon sx={{ fontSize: 30, color: "#fff" }} />
+              </Box>
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>
@@ -167,10 +256,7 @@ function Styles() {
       alignItems: "center",
       gap: 10,
     },
-    accountIcon: {
-      color: "#E5E5E5",
-      fontSize: 250,
-    },
+    accountIcon: { color: "#E5E5E5", fontSize: 250 },
     avatar: {
       width: 200,
       height: 200,
@@ -178,11 +264,7 @@ function Styles() {
       border: "4px solid #E5E5E5",
       objectFit: "cover",
     },
-    userName: {
-      fontWeight: 600,
-      fontSize: 18,
-      marginTop: 8,
-    },
+    userName: { fontWeight: 600, fontSize: 18, marginTop: 8 },
     bio: {
       maxWidth: 560,
       lineHeight: 1.6,
@@ -197,11 +279,7 @@ function Styles() {
       gap: 6,
       marginTop: 8,
     },
-    contato: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    },
+    contato: { display: "flex", alignItems: "center", gap: 8 },
     divider: {
       width: 1,
       background: "#D9D9D9",
@@ -213,6 +291,7 @@ function Styles() {
       width: "100%",
       padding: "0 0 24px 0",
       display: "flex",
+      flexDirection: "column",
     },
     grid: {
       display: "grid",
@@ -228,11 +307,12 @@ function Styles() {
       borderRadius: 8,
       padding: 0,
       overflow: "hidden",
+      cursor: "pointer",
     },
     preview: {
       position: "relative",
       width: "100%",
-      paddingTop: "56.25%", // 16:9
+      paddingTop: "56.25%",
       backgroundSize: "cover",
       backgroundPosition: "center",
     },
@@ -249,11 +329,7 @@ function Styles() {
       justifyContent: "center",
       boxShadow: "0 1px 6px rgba(0,0,0,0.15)",
     },
-    caption: {
-      textAlign: "center",
-      padding: "10px 12px 14px",
-      fontSize: 14,
-    },
+    caption: { textAlign: "center", fontSize: 14 },
   };
 }
 

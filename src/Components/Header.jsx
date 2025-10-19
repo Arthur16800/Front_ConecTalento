@@ -2,14 +2,21 @@ import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import conecTalento from "../assets/ConecTalento.png";
-import { useNavigate } from "react-router-dom";
-import { InputBase, Menu, MenuItem, IconButton, Avatar } from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  InputBase,
+  Menu,
+  MenuItem,
+  IconButton,
+  Avatar,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import api from "../axios/axios"; // 👈 usa o mesmo axios do PerfilUser
+import api from "../axios/axios";
 
 const Header = ({ children, onSearch }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const styles = Styles();
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -21,6 +28,7 @@ const Header = ({ children, onSearch }) => {
 
   const open = Boolean(anchorEl);
 
+  // 🔹 Busca os dados do usuário
   useEffect(() => {
     const token = localStorage.getItem("token");
     const id_usuario = localStorage.getItem("id_usuario");
@@ -43,13 +51,11 @@ const Header = ({ children, onSearch }) => {
             imagem: base64Src,
           });
         })
-        .catch((err) => {
-          console.error("Erro ao buscar dados do usuário:", err);
-        });
+        .catch((err) => console.error("Erro ao buscar dados do usuário:", err));
     }
   }, []);
 
-  // Oculta header ao rolar
+  // 🔹 Oculta o header ao rolar
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -64,6 +70,14 @@ const Header = ({ children, onSearch }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  // 🔹 Sincroniza searchQuery com o state da rota
+  useEffect(() => {
+    if (location.state?.search) {
+      setSearchQuery(location.state.search);
+    }
+  }, [location.state]);
+
+  // 🔹 Logout
   const handleLogout = () => {
     localStorage.clear();
     setIsLogged(false);
@@ -81,15 +95,22 @@ const Header = ({ children, onSearch }) => {
 
   const handleMenuClose = () => setAnchorEl(null);
 
+  // 🔹 Lógica de pesquisa
   const handleSearchChange = (event) => {
-    const value = event.target.value;
-    setSearchQuery(value);
-    if (onSearch) onSearch(value);
+    setSearchQuery(event.target.value);
   };
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    if (onSearch) onSearch(searchQuery.trim());
+    const trimmedQuery = searchQuery.trim();
+    
+    if (location.pathname === "/") {
+      // Se já está na Home, executa a pesquisa diretamente
+      if (onSearch) onSearch(trimmedQuery);
+    } else {
+      // Se está em outra página, navega para Home com o termo de pesquisa
+      navigate("/", { state: { search: trimmedQuery } });
+    }
   };
 
   return (
@@ -107,6 +128,7 @@ const Header = ({ children, onSearch }) => {
       >
         <Container maxWidth={false} disableGutters sx={{ height: "100%" }}>
           <Box sx={{ ...styles.container, height: "100%" }}>
+            {/* LOGO */}
             <img
               style={styles.logo}
               src={conecTalento}
@@ -114,18 +136,21 @@ const Header = ({ children, onSearch }) => {
               onClick={() => navigate("/")}
             />
 
+            {/* CAMPO DE PESQUISA */}
             <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
               <InputBase
                 placeholder="Pesquisar projetos..."
                 sx={styles.inputBase}
                 value={searchQuery}
                 onChange={handleSearchChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit(e)}
               />
               <IconButton type="submit" sx={styles.searchIcon}>
                 <SearchIcon />
               </IconButton>
             </form>
 
+            {/* PERFIL / LOGIN */}
             <Box
               sx={styles.userBox}
               onClick={() => {
@@ -167,12 +192,16 @@ const Header = ({ children, onSearch }) => {
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
                 <MenuItem onClick={() => navigate("/perfiluser")}>
-                  User Area
+                  Área do Usuário
                 </MenuItem>
-                <MenuItem onClick={() => navigate("/portifoliouser/" + userData?.username)}>
-                  My Portfolio
+                <MenuItem
+                  onClick={() =>
+                    navigate("/" + userData?.username)
+                  }
+                >
+                  Meu Portifólio
                 </MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <MenuItem onClick={handleLogout}>Sair</MenuItem>
               </Menu>
             </Box>
           </Box>

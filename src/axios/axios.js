@@ -108,20 +108,10 @@ const sheets = {
     });
   },
 
-  updateProjeto: (ID_projeto, { titulo, descricao, ID_user }, imagens) => {
-    const data = new FormData();
-
-    data.append("titulo", titulo);
-    data.append("descricao", descricao);
-    data.append("ID_user", ID_user);
-
-    if (imagens) {
-      for (let i = 0; i < imagens.length; i++) {
-        data.append("imagens", imagens[i]);
-      }
-    }
-
-    return api.put(`/project/${ID_projeto}`, data, {
+  // 🔧 Mantido para casar com: router.put("/project/:id", verifyJWT, upload.array("imagens"), ...)
+  // O back exige multipart/form-data com a chave "imagens" SEMPRE presente.
+  updateProjeto: (ID_projeto, formData) => {
+    return api.put(`/project/${ID_projeto}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Accept: "application/json",
@@ -132,12 +122,12 @@ const sheets = {
   getProjectDetails: (id) => api.get(`/projectdetail/${id}`),
   getAllProjects: () => api.get("/projects"),
   getAllProjectsOrderByLikes: () => api.get("/projects?order=likes"),
+  updateExtrainfo: (ID_user, redes) => api.put(`/extrainfo/${ID_user}`, redes),
 
   likeProject: (projectId, userId) => {
     if (!projectId || !userId) {
       return Promise.reject(new Error("Project ID ou User ID ausente"));
     }
-
     return api.post("/like_dislike_projects", {
       ID_projeto: Number(projectId),
       ID_user: Number(userId),
@@ -148,6 +138,8 @@ const sheets = {
     if (!userId) return Promise.reject(new Error("User ID ausente"));
     return api.get(`/projectsliked/${userId}`);
   },
+
+  getProjectsByUserName: (username) => api.get(`/projects/${username}`),
 };
 
 export default sheets;
