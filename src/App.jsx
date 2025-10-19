@@ -9,7 +9,8 @@ import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
 import DefaultLayout from "./Components/DefaultLayout";
 import UpdateProjeto from "./pages/updateProjeto";
-
+import Pagamento from "./pages/Pagameto";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -58,8 +59,30 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
-        <Route path="/detalhesprojeto" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
-        <Route path="/detalhesprojeto/:id" element={<DefaultLayout> <DetalhesProjeto/> </DefaultLayout>} />
+
+        <Route
+          path="/detalhesprojeto/:id"
+          element={
+            <DefaultLayout>
+              <DetalhesProjeto />
+            </DefaultLayout>
+          } />
+        <Route
+          path="/pagamento/:id"
+          element={
+            <DefaultLayout>
+              <Pagamento />
+            </DefaultLayout>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <DefaultLayout>
+              <NotFound />
+            </DefaultLayout>
+          }
+        />
       </Routes>
     </Router>
   );

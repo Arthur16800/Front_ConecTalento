@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import api from "../axios/axios";
+import BottonUpgrade from "../Components/BottonUpgrade";
 
 function DetalhesProjeto({ imagesCount = 4 }) {
   const styles = Styles();
@@ -22,6 +23,10 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [userPlan, setUserPlan] = useState({
+    plan: null,
+    authenticated: null,
+  });
 
   // 🔹 Buscar imagens do projeto
   useEffect(() => {
@@ -50,116 +55,143 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   }, [projetoId]);
 
   // 🔹 Converter formatos de imagem
-  const origin = "http://10.89.240.71:5000";
+  const origin = "http://localhost:5000";
   const imageUrls =
     imagens && imagens.length > 0
       ? imagens.map((img) => {
-          if (!img) return null;
-          if (typeof img === "object" && img.imagem) {
-            const base64 = img.imagem;
-            const tipo = img.tipo_imagem || "image/jpeg";
-            return `data:${tipo};base64,${base64}`;
-          }
-          if (typeof img === "string") {
-            if (img.startsWith("http")) return img;
-            if (img.startsWith("/")) return `${origin}${img}`;
-            return `${origin}/${img}`;
-          }
-          return null;
-        })
+        if (!img) return null;
+        if (typeof img === "object" && img.imagem) {
+          const base64 = img.imagem;
+          const tipo = img.tipo_imagem || "image/jpeg";
+          return `data:${tipo};base64,${base64}`;
+        }
+        if (typeof img === "string") {
+          if (img.startsWith("http")) return img;
+          if (img.startsWith("/")) return `${origin}${img}`;
+          return `${origin}/${img}`;
+        }
+        return null;
+      })
       : Array.from({ length: imagesCount }).map(
-          (_, i) => `${origin}/api/v1/projectdetail/${projetoId}?index=${i}`
-        );
+        (_, i) => `${origin}/api/v1/projectdetail/${projetoId}?index=${i}`
+      );
 
   // 🔹 Garantir índice válido
   useEffect(() => {
     if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
   }, [imageUrls]);
 
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+  useEffect(() => {
+    getUserById();
+  }, []);
+
   return (
-    <Container sx={styles.container}>
-      <Grid container spacing={4}>
-        {/* 🔹 Coluna Esquerda - Projeto */}
-        <Grid item xs={12} md={8}>
-          <Typography sx={styles.titulo}>Título do Portfólio</Typography>
+    <>
+      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
-          <Card sx={styles.cardPrincipal}>
-            {loading ? (
-              <Box sx={styles.loaderBox}>
-                <CircularProgress />
-              </Box>
-            ) : erro ? (
-              <Box sx={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
-            ) : imageUrls.length > 0 ? (
-              <Box sx={styles.imagemContainer}>
-                <img
-                  src={imageUrls[selectedIndex]}
-                  alt={`Imagem ${selectedIndex + 1}`}
-                  style={styles.imagemPrincipalImg}
-                />
-              </Box>
-            ) : (
-              <Box sx={styles.imagemPrincipal}>Nenhuma imagem disponível</Box>
-            )}
-          </Card>
+      <Container sx={styles.container}>
+        <Grid container spacing={4}>
+          {/* 🔹 Coluna Esquerda - Projeto */}
+          <Grid item xs={12} md={8}>
+            <Typography sx={styles.titulo}>Título do Portfólio</Typography>
 
-          {/* 🔹 Miniaturas */}
-          <Grid container spacing={2} sx={styles.gridMiniaturas}>
-            {imageUrls.map((src, index) => (
-              <Grid item xs={6} sm={3} key={index}>
-                <Card
-                  sx={{
-                    p: 0.5,
-                    cursor: "pointer",
-                    border:
-                      index === selectedIndex
-                        ? "2px solid #7A2CF6"
-                        : "1px solid #e0e0e0",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover": { transform: "scale(1.03)" },
-                    boxShadow:
-                      index === selectedIndex
-                        ? "0 0 8px rgba(122,44,246,0.3)"
-                        : "none",
-                  }}
-                  onClick={() => setSelectedIndex(index)}
-                >
+            <Card sx={styles.cardPrincipal}>
+              {loading ? (
+                <Box sx={styles.loaderBox}>
+                  <CircularProgress />
+                </Box>
+              ) : erro ? (
+                <Box sx={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
+              ) : imageUrls.length > 0 ? (
+                <Box sx={styles.imagemContainer}>
                   <img
-                    src={src}
-                    alt={`miniatura ${index + 1}`}
-                    style={styles.boxMiniImg}
+                    src={imageUrls[selectedIndex]}
+                    alt={`Imagem ${selectedIndex + 1}`}
+                    style={styles.imagemPrincipalImg}
                   />
-                </Card>
-              </Grid>
-            ))}
+                </Box>
+              ) : (
+                <Box sx={styles.imagemPrincipal}>Nenhuma imagem disponível</Box>
+              )}
+            </Card>
+
+            {/* 🔹 Miniaturas */}
+            <Grid container spacing={2} sx={styles.gridMiniaturas}>
+              {imageUrls.map((src, index) => (
+                <Grid item xs={6} sm={3} key={index}>
+                  <Card
+                    sx={{
+                      p: 0.5,
+                      cursor: "pointer",
+                      border:
+                        index === selectedIndex
+                          ? "2px solid #7A2CF6"
+                          : "1px solid #e0e0e0",
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": { transform: "scale(1.03)" },
+                      boxShadow:
+                        index === selectedIndex
+                          ? "0 0 8px rgba(122,44,246,0.3)"
+                          : "none",
+                    }}
+                    onClick={() => setSelectedIndex(index)}
+                  >
+                    <img
+                      src={src}
+                      alt={`miniatura ${index + 1}`}
+                      style={styles.boxMiniImg}
+                    />
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            {/* 🔹 Descrição */}
+            <Typography sx={styles.tituloDesc}>Descrição:</Typography>
+            <Typography sx={styles.descricao}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
+              vitae mollis velit. Phasellus imperdiet ex sed quam vestibulum, sed
+              dignissim magna ornare. Curabitur maximus consequat aliquet. In mollis
+              tellus sapien, ac ultricies neque euismod at.
+            </Typography>
           </Grid>
 
-          {/* 🔹 Descrição */}
-          <Typography sx={styles.tituloDesc}>Descrição:</Typography>
-          <Typography sx={styles.descricao}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-            vitae mollis velit. Phasellus imperdiet ex sed quam vestibulum, sed
-            dignissim magna ornare. Curabitur maximus consequat aliquet. In mollis
-            tellus sapien, ac ultricies neque euismod at.
-          </Typography>
+          {/* 🔹 Coluna Direita - Perfil do Autor */}
+          <Grid item xs={12} md={4}>
+            <Card sx={styles.cardPerfil}>
+              <Avatar sx={styles.avatar} />
+              <CardContent>
+                <Typography variant="h6" sx={styles.nome}>
+                  Carlos
+                </Typography>
+                <Button variant="contained" sx={styles.button}>
+                  Visualizar perfil
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
+      </Container>
+    </>
 
-        {/* 🔹 Coluna Direita - Perfil do Autor */}
-        <Grid item xs={12} md={4}>
-          <Card sx={styles.cardPerfil}>
-            <Avatar sx={styles.avatar} />
-            <CardContent>
-              <Typography variant="h6" sx={styles.nome}>
-                Carlos
-              </Typography>
-              <Button variant="contained" sx={styles.button}>
-                Visualizar perfil
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Container>
   );
 }
 

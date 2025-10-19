@@ -7,12 +7,17 @@ import {
   Alert,
 } from "@mui/material";
 import Button from "@mui/material/Button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../axios/axios";
+import BottonUpgrade from "../Components/BottonUpgrade";
 
 function CriarProjeto() {
   const styles = Styles();
   const ID_user = localStorage.getItem("id_usuario");
+  const [userPlan, setUserPlan] = useState({
+      plan: null,
+      authenticated: null,
+    });
 
   const [form, setForm] = useState({
     titulo: "",
@@ -58,84 +63,110 @@ function CriarProjeto() {
     }
   };
 
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+  useEffect(() => {
+    getUserById();
+  }, []);
+
   return (
-    <Container maxWidth="sx">
-      <form style={styles.box_principal} onSubmit={handleSubmit}>
-        <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
+    <>
+      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null }
+      <Container maxWidth="sx">
+        <form style={styles.box_principal} onSubmit={handleSubmit}>
+          <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
 
-        <Typography style={styles.label}>Adicionar imagens:</Typography>
+          <Typography style={styles.label}>Adicionar imagens:</Typography>
 
-        <Box>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileChange}
+          <Box>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </Box>
+
+          {/* lista de nomes das imagens */}
+          <Box mt={2}>
+            {imagens.length > 0 && (
+              <Box>
+                {imagens.map((img, index) => (
+                  <Typography key={index} variant="body2">
+                    {index + 1}. {img.name}
+                  </Typography>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Título"
+            name="titulo"
+            id="titulo"
+            variant="outlined"
+            onChange={handleChange}
+            style={styles.textfield}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
+            }}
           />
-        </Box>
 
-        {/* lista de nomes das imagens */}
-        <Box mt={2}>
-          {imagens.length > 0 && (
-            <Box>
-              {imagens.map((img, index) => (
-                <Typography key={index} variant="body2">
-                  {index + 1}. {img.name}
-                </Typography>
-              ))}
-            </Box>
-          )}
-        </Box>
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Descrição"
+            name="descricao"
+            id="descricao"
+            variant="outlined"
+            onChange={handleChange}
+            style={styles.textfield}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
+            }}
+          />
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Título"
-          name="titulo"
-          id="titulo"
-          variant="outlined"
-          onChange={handleChange}
-          style={styles.textfield}
-          sx={{
-            "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-          }}
-        />
-
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Descrição"
-          name="descricao"
-          id="descricao"
-          variant="outlined"
-          onChange={handleChange}
-          style={styles.textfield}
-          sx={{
-            "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-          }}
-        />
-
-        <Button type="submit" style={styles.button}>
-          Criar
-        </Button>
-      </form>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
+          <Button type="submit" style={styles.button}>
+            Criar
+          </Button>
+        </form>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
           onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </>
+
   );
 }
 

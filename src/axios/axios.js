@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-  baseURL: "http://10.89.240.71:5000/api/v1",
+  baseURL: "http://localhost:5000/api/v1",
   headers: {
     accept: "application/json",
   },
@@ -51,7 +51,8 @@ const sheets = {
   postLogin: (user) => api.post("/login", user),
   deleteUser: (id_user) => api.delete(`/user/${id_user}`),
   getByUsername: (username) => api.get(`/user/${username}`),
-
+  paymentUserPix: (id_user, email) => api.post(`/pagamento-pix/${id_user}`, { email }),
+  getPaymentPixStatus: (id_user, paymentId) => api.get(`/pagamento/pix/status/${id_user}/${paymentId}`),
   updateUser: (id_user, user) => {
     const isForm = typeof FormData !== "undefined" && user instanceof FormData;
     const config = {
@@ -125,8 +126,29 @@ const sheets = {
     });
   },
 
-  // Get project details including imagens array
   getProjectDetails: (id) => api.get(`/projectdetail/${id}`),
+
+  getProjectsByUserName: (username) => api.get(`/projects/${username}`),
+
+  getAllProjects: () => api.get("/projects"),
+
+  getAllProjectsOrderByLikes: () => api.get("/projects?order=likes"),
+  
+  likeProject: (projectId, userId) => {
+    if (!projectId || !userId) {
+      return Promise.reject(new Error("Project ID ou User ID ausente"));
+    }
+
+    return api.post("/like_dislike_projects", {
+      ID_projeto: Number(projectId),
+      ID_user: Number(userId),
+    });
+  },
+
+  getProjectsLikedUser: (userId) => {
+    if (!userId) return Promise.reject(new Error("User ID ausente"));
+    return api.get(`/projectsliked/${userId}`);
+  },
 };
 
 export default sheets;

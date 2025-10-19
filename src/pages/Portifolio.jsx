@@ -8,6 +8,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import { useParams } from "react-router-dom";
 import api from "../axios/axios";
+import BottonUpgrade from "../Components/BottonUpgrade";
 
 function Portfolio() {
   const Params = useParams();
@@ -17,11 +18,38 @@ function Portfolio() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [userPlan, setUserPlan] = useState({
+    plan: null,
+    authenticated: null,
+  });
+
   const projects = [
     { id: 1, title: "design sapato" },
     { id: 2, title: "design sapato" },
     { id: 3, title: "design sapato" },
   ];
+
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+  useEffect(() => {
+    getUserById();
+  }, []);
 
   useEffect(() => {
     async function getByUsername() {
@@ -95,53 +123,60 @@ function Portfolio() {
 
   if (!user) return null;
 
+  
+
   return (
-    <Box style={styles.container}>
-      <Box style={styles.box_user}>
-        {user.imagem ? (
-          <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
-        ) : (
-          <AccountCircleIcon sx={styles.accountIcon} />
-        )}
+    <>
+      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
-        <Typography style={styles.userName}>{user.name}</Typography>
+      <Box style={styles.container}>
+        <Box style={styles.box_user}>
+          {user.imagem ? (
+            <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
+          ) : (
+            <AccountCircleIcon sx={styles.accountIcon} />
+          )}
 
-        <Typography style={styles.bio}>{user.biografia}</Typography>
+          <Typography style={styles.userName}>{user.name}</Typography>
 
-        <Box style={styles.box_contatos}>
-          <Box style={styles.contato}>
-            <InstagramIcon />
-            <Typography>teste</Typography>
-          </Box>
-          <Box style={styles.contato}>
-            <EmailIcon />
-            <Typography>{user.email}</Typography>
-          </Box>
-        </Box>
-      </Box>
+          <Typography style={styles.bio}>{user.biografia}</Typography>
 
-      <Box style={styles.divider} />
-
-      <Box style={styles.box_projeto}>
-        <Box style={styles.grid}>
-          {projects.map((p) => (
-            <Box key={p.id} style={styles.card}>
-              <Box
-                style={{
-                  ...styles.preview,
-                  backgroundImage: `url(${background2})`,
-                }}
-              >
-                <Box style={styles.likeBtn}>
-                  <FavoriteBorderIcon fontSize="small" />
-                </Box>
-              </Box>
-              <Typography style={styles.caption}>{p.title}</Typography>
+          <Box style={styles.box_contatos}>
+            <Box style={styles.contato}>
+              <InstagramIcon />
+              <Typography>teste</Typography>
             </Box>
-          ))}
+            <Box style={styles.contato}>
+              <EmailIcon />
+              <Typography>{user.email}</Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box style={styles.divider} />
+
+        <Box style={styles.box_projeto}>
+          <Box style={styles.grid}>
+            {projects.map((p) => (
+              <Box key={p.id} style={styles.card}>
+                <Box
+                  style={{
+                    ...styles.preview,
+                    backgroundImage: `url(${background2})`,
+                  }}
+                >
+                  <Box style={styles.likeBtn}>
+                    <FavoriteBorderIcon fontSize="small" />
+                  </Box>
+                </Box>
+                <Typography style={styles.caption}>{p.title}</Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Box>
-    </Box>
+    </>
+
   );
 }
 

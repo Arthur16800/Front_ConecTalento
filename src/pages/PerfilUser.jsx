@@ -15,6 +15,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import api from "../axios/axios";
 import ModalBase from "../Components/ModalBase";
+import BottonUpgrade from "../Components/BottonUpgrade";
 
 function PerfilUser() {
   const styles = Styles();
@@ -38,6 +39,11 @@ function PerfilUser() {
     open: false,
     severity: "",
     message: "",
+  });
+
+  const [userPlan, setUserPlan] = useState({
+    plan: null,
+    authenticated: null,
   });
 
   // Carrega dados do usuário
@@ -166,7 +172,7 @@ function PerfilUser() {
       console.error("Erro no updateUser:", error);
       showAlert(
         "error",
-        error.response?.data?.error || "Erro inesperado ao atualizar perfil."
+        error.response?.data?.error
       );
     } finally {
       setLoading(false);
@@ -187,227 +193,255 @@ function PerfilUser() {
     setFormData((prev) => ({ ...prev, imagem: file }));
   };
 
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+  useEffect(() => {
+    getUserById();
+  }, []);
+
   return (
-    <Box style={styles.container}>
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={3000}
-        onClose={handleCloseAlert}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
+    <>
+      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
+      
+      <Box style={styles.container}>
+        <Snackbar
+          open={alert.open}
+          autoHideDuration={3000}
           onClose={handleCloseAlert}
-          severity={alert.severity}
-          sx={{ width: "100%" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          {alert.message}
-        </Alert>
-      </Snackbar>
-
-      {/* Card lateral */}
-      <Box style={styles.leftCard}>
-        <Box style={styles.box_IMG} />
-
-        <Box style={styles.user_perfil}>
-          <Box
-            sx={{
-              position: "relative",
-              width: 100,
-              height: 100,
-              borderRadius: "50%",
-              overflow: "hidden",
-              border: "3px solid #ddd",
-              cursor: editing ? "pointer" : "default",
-            }}
-            onClick={handleAvatarClick}
-            onMouseEnter={() => editing && setHover(true)}
-            onMouseLeave={() => editing && setHover(false)}
+          <Alert
+            onClose={handleCloseAlert}
+            severity={alert.severity}
+            sx={{ width: "100%" }}
           >
-            <Avatar
-              src={avatarPreview}
-              alt="Foto do perfil"
-              sx={{ width: "100%", height: "100%" }}
-            />
+            {alert.message}
+          </Alert>
+        </Snackbar>
+
+        {/* Card lateral */}
+        <Box style={styles.leftCard}>
+          <Box style={styles.box_IMG} />
+
+          <Box style={styles.user_perfil}>
             <Box
               sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0,0,0,0.5)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                color: "white",
-                opacity: hover ? 1 : 0,
-                transition: "opacity 0.3s",
-                pointerEvents: "none",
+                position: "relative",
+                width: 100,
+                height: 100,
+                borderRadius: "50%",
+                overflow: "hidden",
+                border: "3px solid #ddd",
+                cursor: editing ? "pointer" : "default",
               }}
+              onClick={handleAvatarClick}
+              onMouseEnter={() => editing && setHover(true)}
+              onMouseLeave={() => editing && setHover(false)}
             >
-              <CameraAltIcon />
+              <Avatar
+                src={avatarPreview}
+                alt="Foto do perfil"
+                sx={{ width: "100%", height: "100%" }}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  color: "white",
+                  opacity: hover ? 1 : 0,
+                  transition: "opacity 0.3s",
+                  pointerEvents: "none",
+                }}
+              >
+                <CameraAltIcon />
+              </Box>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleImageChange}
+                disabled={!editing}
+              />
             </Box>
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleImageChange}
-              disabled={!editing}
-            />
+
+            <Box style={styles.name_user}>
+              <span style={styles.user_name}>{formData.name}</span>
+              <DeleteIcon style={styles.removeIcon} onClick={handleOpenModal} />
+            </Box>
           </Box>
 
-          <Box style={styles.name_user}>
-            <span style={styles.user_name}>{formData.name}</span>
-            <DeleteIcon style={styles.removeIcon} onClick={handleOpenModal} />
-          </Box>
+          {!editing && (
+            <Button style={styles.editBtn} onClick={handleEditClick}>
+              Editar Perfil
+            </Button>
+          )}
         </Box>
 
-        {!editing && (
-          <Button style={styles.editBtn} onClick={handleEditClick}>
-            Editar Perfil
-          </Button>
-        )}
-      </Box>
+        {/* Painel de formulário */}
+        <Box style={styles.formPanel}>
+          <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
-      {/* Painel de formulário */}
-      <Box style={styles.formPanel}>
-        <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Nome"
+            variant="outlined"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            disabled={!editing}
+            style={styles.camposForm}
+          />
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Nome"
-          variant="outlined"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="Username"
+            variant="outlined"
+            name="username"
+            value={formData.username}
+            onChange={handleInputChange}
+            disabled={!editing}
+            style={styles.camposForm}
+          />
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="Username"
-          variant="outlined"
-          name="username"
-          value={formData.username}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
+          <TextField
+            required
+            fullWidth
+            margin="normal"
+            label="E-mail"
+            type="email"
+            variant="outlined"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            disabled={!editing}
+            style={styles.camposForm}
+          />
 
-        <TextField
-          required
-          fullWidth
-          margin="normal"
-          label="E-mail"
-          type="email"
-          variant="outlined"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Biografia"
+            multiline
+            rows={3}
+            variant="outlined"
+            name="biografia"
+            value={formData.biografia}
+            onChange={handleInputChange}
+            disabled={!editing}
+            style={styles.camposForm}
+          />
 
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Biografia"
-          multiline
-          rows={3}
-          variant="outlined"
-          name="biografia"
-          value={formData.biografia}
-          onChange={handleInputChange}
-          disabled={!editing}
-          style={styles.camposForm}
-        />
-
-        {editing && (
-          <Button
-            style={styles.saveBtn}
-            onClick={handleSaveClick}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              "Salvar"
-            )}
-          </Button>
-        )}
-      </Box>
-
-      <ModalBase open={openModal} onClose={handleCloseModal}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "80%",
-            padding: 3,
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, color: "#222", mb: 1 }}
-          >
-            Tem certeza que deseja deletar sua conta?
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#555" }}>
-            Essa ação é irreversível e todos os seus dados serão perdidos.
-          </Typography>
-
-          <Box sx={{ display: "flex", gap: 2, width: "100%", mt: 2 }}>
+          {editing && (
             <Button
-              variant="outlined"
-              sx={{
-                flex: 1,
-                borderRadius: 5,
-                borderColor: "#ccc",
-                color: "#555",
-                "&:hover": {
-                  backgroundColor: "#f5f5f5",
-                  borderColor: "#bbb",
-                },
-              }}
-              onClick={handleCloseModal}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              variant="contained"
-              sx={{
-                flex: 1,
-                borderRadius: 5,
-                background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
-                color: "#fff",
-                "&:hover": {
-                  background:
-                    "linear-gradient(90deg, #D12F2F 0%, #B82828 100%)",
-                },
-              }}
-              onClick={handleDeleteUser}
+              style={styles.saveBtn}
+              onClick={handleSaveClick}
               disabled={loading}
             >
               {loading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                "Deletar"
+                "Salvar"
               )}
             </Button>
-          </Box>
+          )}
         </Box>
-      </ModalBase>
-    </Box>
+
+        <ModalBase open={openModal} onClose={handleCloseModal}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "80%",
+              padding: 3,
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 600, color: "#222", mb: 1 }}
+            >
+              Tem certeza que deseja deletar sua conta?
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#555" }}>
+              Essa ação é irreversível e todos os seus dados serão perdidos.
+            </Typography>
+
+            <Box sx={{ display: "flex", gap: 2, width: "100%", mt: 2 }}>
+              <Button
+                variant="outlined"
+                sx={{
+                  flex: 1,
+                  borderRadius: 5,
+                  borderColor: "#ccc",
+                  color: "#555",
+                  "&:hover": {
+                    backgroundColor: "#f5f5f5",
+                    borderColor: "#bbb",
+                  },
+                }}
+                onClick={handleCloseModal}
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                variant="contained"
+                sx={{
+                  flex: 1,
+                  borderRadius: 5,
+                  background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
+                  color: "#fff",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(90deg, #D12F2F 0%, #B82828 100%)",
+                  },
+                }}
+                onClick={handleDeleteUser}
+                disabled={loading}
+              >
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Deletar"
+                )}
+              </Button>
+            </Box>
+          </Box>
+        </ModalBase>
+      </Box>
+
+    </>
+
   );
 }
 

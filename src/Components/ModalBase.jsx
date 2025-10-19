@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, Box } from "@mui/material";
 import logo from "../assets/logo_ct.png";
+import { b } from "framer-motion/client";
 
 function Styles() {
   return {
@@ -18,11 +19,11 @@ function Styles() {
       overflow: "hidden",
     },
     logo: {
-      position: "absolute",
-      top: 8,
-      left: 8,
       width: 45,
     },
+    boxIMG: {
+      width: "100%",
+    }
   };
 }
 
@@ -31,7 +32,9 @@ const ModalBase = ({ open, onClose, children }) => {
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={styles.modalStyle}>
-        <img src={logo} alt="Logo" style={styles.logo} />
+        <Box sx={styles.boxIMG}>
+          <img src={logo} alt="Logo" style={styles.logo} />
+        </Box>
         {children}
       </Box>
     </Modal>

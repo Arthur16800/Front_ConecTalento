@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, Typography, Box, Grid } from "@mui/material";
 import LikeButton from "../Components/likeButton";
 import LoginPromptModal from "../Components/LoginPromptModal";
-import sheets from "../axios/axios";
+import api from "../axios/axios";
+import BottonUpgrade from "../Components/BottonUpgrade";
 
 const shuffleArray = (array) => {
   const arr = [...array];
@@ -16,11 +17,15 @@ const shuffleArray = (array) => {
 function Home() {
   const [projects, setProjects] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [userPlan, setUserPlan] = useState({
+    plan: null,
+    authenticated: null,
+  });
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await sheets.getAllProjects();
+        const response = await api.getAllProjects();
         let rawProjects = response?.data?.profile_projeto ?? [];
 
         const formattedProjects = rawProjects.map((p) => ({
@@ -44,8 +49,33 @@ function Home() {
     if (!token) setOpenModal(true);
   };
 
+  async function getUserById () {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) { 
+      setUserPlan(prev => ({...prev, authenticated: false}));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({...prev, plan, authenticated: true}));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+   useEffect(() => {
+    getUserById();
+  }, []);
+
   return (
     <>
+    
+      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null }
+      
       <Grid container spacing={2} sx={{ mb: 5 }}>
         {projects.map((project) => (
           <Grid key={project.ID_projeto} item xs={12} sm={6} md={4}>

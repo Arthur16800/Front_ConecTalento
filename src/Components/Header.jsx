@@ -47,8 +47,7 @@ const Header = ({ children, onSearch }) => {
   }, [lastScrollY]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
+    localStorage.clear();  
     setIsLogged(false);
     setUsername("");
     navigate("/login");
