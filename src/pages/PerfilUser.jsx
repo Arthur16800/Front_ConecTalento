@@ -10,9 +10,9 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import background2 from "../assets/background2.png";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import background2 from "../assets/background2.png";
 import api from "../axios/axios";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
@@ -21,10 +21,16 @@ function PerfilUser() {
   const styles = Styles();
   const id_user = localStorage.getItem("id_usuario");
   const fileInputRef = useRef(null);
+
   const [openModal, setOpenModal] = useState(false);
+  const [openModalSenha, setOpenModalSenha] = useState(false);
+  const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [hover, setHover] = useState(false); // estado de hover no avatar
+  const [hover, setHover] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingSenha, setLoadingSenha] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -33,20 +39,28 @@ function PerfilUser() {
     imagem: null,
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({
-    open: false,
-    severity: "",
-    message: "",
+  const [senhaData, setSenhaData] = useState({
+    senha_atual: "",
+    nova_senha: "",
+    confirmar_senha: "",
   });
+
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [alert, setAlert] = useState({ open: false, severity: "", message: "" });
+
+  // Estados para "esqueci minha senha"
+  const [emailRecuperacao, setEmailRecuperacao] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [codigoValidado, setCodigoValidado] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmSenha, setConfirmSenha] = useState("");
 
   const [userPlan, setUserPlan] = useState({
     plan: null,
     authenticated: null,
   });
 
-  // Carrega dados do usuário
   useEffect(() => {
     async function getUserById() {
       try {
@@ -60,59 +74,39 @@ function PerfilUser() {
             : `data:image/jpeg;base64,${data.imagem}`
           : null;
 
-        setFormData((prev) => ({
-          ...prev,
+        setFormData({
           name: data.name,
           username: data.username,
           email: data.email,
           biografia: data.biografia,
           imagem: base64Src,
-        }));
-
+        });
         setAvatarPreview(base64Src);
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
         showAlert(
           "error",
-          error.response?.data?.error
+          error.response?.data?.error || "Erro ao buscar usuário."
         );
       }
     }
     getUserById();
   }, [id_user]);
 
-  // Função de delete do usuário
-  async function deleteUser() {
-    setLoading(true);
-    try {
-      const response = await api.deleteUser(id_user);
-      showAlert(
-        "success",
-        response.data.message || "Usuário deletado com sucesso!"
-      );
-      localStorage.clear();
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Erro ao deletar usuário:", error);
-      showAlert(
-        "error",
-        error.response?.data?.error || "Erro ao deletar usuário."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+
+  const handleInputChange = (e) =>
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSenhaChange = (e) =>
+    setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
+  const handleOpenModalSenha = () => setOpenModalSenha(true);
+  const handleCloseModalSenha = () => setOpenModalSenha(false);
+
   const handleDeleteUser = () => {
     deleteUser();
     handleCloseModal();
@@ -134,7 +128,6 @@ function PerfilUser() {
     return new File([u8arr], filename, { type: mime });
   }
 
-  // Atualiza perfil do usuário
   async function updateUser() {
     setLoading(true);
     try {
@@ -148,15 +141,12 @@ function PerfilUser() {
       if (imageToSend && typeof imageToSend === "string") {
         imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
       }
-
-      if (imageToSend) {
-        data.append("imagens", imageToSend);
-      }
+      if (imageToSend) data.append("imagens", imageToSend);
 
       const response = await api.updateUser(id_user, data);
 
-      if (response.data?.profile?.imagem) {
-        const img = response.data.profile.imagem;
+      const img = response.data?.profile?.imagem;
+      if (img) {
         const isBase64 = img.startsWith("data:image");
         const base64Src = isBase64 ? img : `data:image/jpeg;base64,${img}`;
         setAvatarPreview(base64Src);
@@ -172,25 +162,145 @@ function PerfilUser() {
       console.error("Erro no updateUser:", error);
       showAlert(
         "error",
-        error.response?.data?.error
+        error.response?.data?.error || "Erro ao atualizar perfil."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  // Avatar click (só permite enviar imagem se estiver editando)
-  const handleAvatarClick = () => {
-    if (!editing) return;
-    fileInputRef.current.click();
-  };
+  async function deleteUser() {
+    setLoading(true);
+    try {
+      const response = await api.deleteUser(id_user);
+      showAlert(
+        "success",
+        response.data.message || "Usuário deletado com sucesso!"
+      );
+      localStorage.clear();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      showAlert(
+        "error",
+        error.response?.data?.error || "Erro ao deletar usuário."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  async function handleUpdatePassword() {
+    if (!senhaData.senha_atual || !senhaData.nova_senha || !senhaData.confirmar_senha) {
+      showAlert("error", "Preencha todos os campos.");
+      return;
+    }
+    if (senhaData.nova_senha !== senhaData.confirmar_senha) {
+      showAlert("error", "As novas senhas não coincidem.");
+      return;
+    }
+
+    setLoadingSenha(true);
+    try {
+      const response = await api.updatePassword(id_user, {
+        senha_atual: senhaData.senha_atual,
+        nova_senha: senhaData.nova_senha,
+      });
+      showAlert(
+        "success",
+        response.data.message || "Senha atualizada com sucesso!"
+      );
+      setSenhaData({ senha_atual: "", nova_senha: "", confirmar_senha: "" });
+      handleCloseModalSenha();
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      showAlert(
+        "error",
+        error.response?.data?.error || "Erro ao atualizar senha."
+      );
+    } finally {
+      setLoadingSenha(false);
+    }
+  }
+
+  const handleAvatarClick = () => editing && fileInputRef.current.click();
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     setAvatarPreview(URL.createObjectURL(file));
     setFormData((prev) => ({ ...prev, imagem: file }));
+  };
+
+  // ============ ESQUECI MINHA SENHA ============
+  const handleOpenModalEsqueciSenha = () => setOpenModalEsqueci(true);
+  const handleCloseModalEsqueciSenha = () => {
+    setOpenModalEsqueci(false);
+    setCodigoEnviado(false);
+    setCodigoValidado(false);
+    setEmailRecuperacao("");
+    setCodigo("");
+    setNovaSenha("");
+    setConfirmSenha("");
+  };
+
+  const forgotPasswordSendCode = async () => {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({ email: emailRecuperacao });
+      showAlert("success", res.data.message);
+      setCodigoEnviado(true);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Erro ao enviar código");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validarCodigo = async () => {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        atualizar: false,
+      });
+      showAlert("success", res.data.message);
+      setCodigoValidado(true);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Código inválido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const atualizarSenhaEsquecida = async () => {
+    if (novaSenha !== confirmSenha) {
+      showAlert("error", "As senhas não coincidem.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        password: novaSenha,
+        confirmPassword: confirmSenha,
+        atualizar: true,
+      });
+      showAlert("success", res.data.message);
+      handleCloseModalEsqueciSenha();
+    } catch (err) {
+      console.error(err);
+      showAlert(
+        "error",
+        err.response?.data?.error || "Erro ao atualizar senha"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   async function getUserById() {
@@ -215,10 +325,11 @@ function PerfilUser() {
     getUserById();
   }, []);
 
+
   return (
     <>
       {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
-      
+
       <Box style={styles.container}>
         <Snackbar
           open={alert.open}
@@ -226,11 +337,7 @@ function PerfilUser() {
           onClose={handleCloseAlert}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert
-            onClose={handleCloseAlert}
-            severity={alert.severity}
-            sx={{ width: "100%" }}
-          >
+          <Alert severity={alert.severity} onClose={handleCloseAlert}>
             {alert.message}
           </Alert>
         </Snackbar>
@@ -238,7 +345,6 @@ function PerfilUser() {
         {/* Card lateral */}
         <Box style={styles.leftCard}>
           <Box style={styles.box_IMG} />
-
           <Box style={styles.user_perfil}>
             <Box
               sx={{
@@ -262,10 +368,7 @@ function PerfilUser() {
               <Box
                 sx={{
                   position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
+                  inset: 0,
                   backgroundColor: "rgba(0,0,0,0.5)",
                   display: "flex",
                   justifyContent: "center",
@@ -273,7 +376,6 @@ function PerfilUser() {
                   color: "white",
                   opacity: hover ? 1 : 0,
                   transition: "opacity 0.3s",
-                  pointerEvents: "none",
                 }}
               >
                 <CameraAltIcon />
@@ -287,7 +389,6 @@ function PerfilUser() {
                 disabled={!editing}
               />
             </Box>
-
             <Box style={styles.name_user}>
               <span style={styles.user_name}>{formData.name}</span>
               <DeleteIcon style={styles.removeIcon} onClick={handleOpenModal} />
@@ -295,63 +396,64 @@ function PerfilUser() {
           </Box>
 
           {!editing && (
-            <Button style={styles.editBtn} onClick={handleEditClick}>
-              Editar Perfil
-            </Button>
+            <>
+              <Button style={styles.editBtn} onClick={handleEditClick}>
+                Editar Perfil
+              </Button>
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 2,
+                  textDecoration: "underline",
+                  color: "#6D2AF0",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+                onClick={handleOpenModalEsqueciSenha}
+              >
+                Esqueci Minha Senha
+              </Typography>
+            </>
           )}
         </Box>
 
-        {/* Painel de formulário */}
+        {/* Painel principal */}
         <Box style={styles.formPanel}>
           <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
           <TextField
-            required
             fullWidth
-            margin="normal"
             label="Nome"
-            variant="outlined"
             name="name"
             value={formData.name}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
           />
-
           <TextField
-            required
             fullWidth
-            margin="normal"
             label="Username"
-            variant="outlined"
             name="username"
             value={formData.username}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
           />
-
           <TextField
-            required
             fullWidth
-            margin="normal"
             label="E-mail"
-            type="email"
-            variant="outlined"
             name="email"
+            type="email"
             value={formData.email}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
           />
-
           <TextField
             fullWidth
-            margin="normal"
             label="Biografia"
             multiline
             rows={3}
-            variant="outlined"
             name="biografia"
             value={formData.biografia}
             onChange={handleInputChange}
@@ -360,91 +462,168 @@ function PerfilUser() {
           />
 
           {editing && (
-            <Button
-              style={styles.saveBtn}
-              onClick={handleSaveClick}
-              disabled={loading}
-            >
-              {loading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                "Salvar"
-              )}
-            </Button>
+            <>
+              <Button
+                variant="outlined"
+                onClick={handleOpenModalSenha}
+                style={styles.saveBtn}
+              >
+                Alterar Senha
+              </Button>
+              <Button
+                style={styles.saveBtn}
+                onClick={handleSaveClick}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : "Salvar"}
+              </Button>
+            </>
           )}
         </Box>
 
+        {/* Modais */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "80%",
-              padding: 3,
-              textAlign: "center",
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, color: "#222", mb: 1 }}
-            >
+          <Box textAlign="center" p={3}>
+            <Typography variant="h6" fontWeight={600}>
               Tem certeza que deseja deletar sua conta?
             </Typography>
             <Typography variant="body2" sx={{ color: "#555" }}>
               Essa ação é irreversível e todos os seus dados serão perdidos.
             </Typography>
-
-            <Box sx={{ display: "flex", gap: 2, width: "100%", mt: 2 }}>
-              <Button
-                variant="outlined"
-                sx={{
-                  flex: 1,
-                  borderRadius: 5,
-                  borderColor: "#ccc",
-                  color: "#555",
-                  "&:hover": {
-                    backgroundColor: "#f5f5f5",
-                    borderColor: "#bbb",
-                  },
-                }}
-                onClick={handleCloseModal}
-              >
+            <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+              <Button variant="outlined" onClick={handleCloseModal} sx={{ flex: 1 }}>
                 Cancelar
               </Button>
-
               <Button
                 variant="contained"
-                sx={{
-                  flex: 1,
-                  borderRadius: 5,
-                  background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
-                  color: "#fff",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(90deg, #D12F2F 0%, #B82828 100%)",
-                  },
-                }}
+                sx={{ flex: 1, background: "linear-gradient(90deg,#F23A3A,#D12F2F)" }}
                 onClick={handleDeleteUser}
                 disabled={loading}
               >
-                {loading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  "Deletar"
-                )}
+                {loading ? <CircularProgress size={20} color="inherit" /> : "Deletar"}
               </Button>
             </Box>
           </Box>
         </ModalBase>
-      </Box>
 
+        <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
+          <Box textAlign="center" p={2}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Alterar Senha
+            </Typography>
+            <TextField
+              fullWidth
+              label="Senha Atual"
+              type="password"
+              name="senha_atual"
+              value={senhaData.senha_atual}
+              onChange={handleSenhaChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Nova Senha"
+              type="password"
+              name="nova_senha"
+              value={senhaData.nova_senha}
+              onChange={handleSenhaChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Confirmar Nova Senha"
+              type="password"
+              name="confirmar_senha"
+              value={senhaData.confirmar_senha}
+              onChange={handleSenhaChange}
+              sx={{ mb: 3 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{ borderRadius: 5, background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)" }}
+              onClick={handleUpdatePassword}
+              disabled={loadingSenha}
+            >
+              {loadingSenha ? <CircularProgress size={20} color="inherit" /> : "Salvar Nova Senha"}
+            </Button>
+          </Box>
+        </ModalBase>
+
+        <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
+          <Box textAlign="center" p={3}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Esqueci Minha Senha
+            </Typography>
+            {!codigoValidado ? (
+              <>
+                <TextField
+                  fullWidth
+                  label="E-mail"
+                  value={emailRecuperacao}
+                  onChange={(e) => setEmailRecuperacao(e.target.value)}
+                  disabled={codigoEnviado}
+                  sx={{ mb: 2 }}
+                />
+                {codigoEnviado && (
+                  <TextField
+                    fullWidth
+                    label="Código"
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value)}
+                    sx={{ mb: 2 }}
+                  />
+                )}
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={codigoEnviado ? validarCodigo : forgotPasswordSendCode}
+                  disabled={loading}
+                >
+                  {loading
+                    ? <CircularProgress size={20} color="inherit" />
+                    : codigoEnviado
+                      ? "Validar Código"
+                      : "Enviar Código"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <TextField
+                  fullWidth
+                  label="Nova Senha"
+                  type="password"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Confirmar Senha"
+                  type="password"
+                  value={confirmSenha}
+                  onChange={(e) => setConfirmSenha(e.target.value)}
+                  sx={{ mb: 3 }}
+                />
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={atualizarSenhaEsquecida}
+                  disabled={loading}
+                >
+                  {loading ? <CircularProgress size={20} color="inherit" /> : "Atualizar Senha"}
+                </Button>
+              </>
+            )}
+          </Box>
+        </ModalBase>
+      </Box>
     </>
 
   );
 }
 
+// Estilos
 function Styles() {
   return {
     container: {
@@ -460,7 +639,6 @@ function Styles() {
       minWidth: 250,
       flex: 2,
       width: "100%",
-      height: "10%",
       backgroundColor: "#fff",
       border: "1px solid #E5E5E5",
       borderRadius: 16,
@@ -492,10 +670,7 @@ function Styles() {
       gap: 8,
       flexDirection: "row",
     },
-    removeIcon: {
-      color: "#7e7e7ea9",
-      cursor: "pointer",
-    },
+    removeIcon: { color: "#7e7e7ea9", cursor: "pointer" },
     editBtn: {
       marginTop: 12,
       marginBottom: 12,
@@ -527,33 +702,17 @@ function Styles() {
       textAlign: "center",
       color: "#222",
     },
-    camposForm: {
-      width: "100%",
-      maxWidth: 560,
-    },
+    camposForm: { width: "100%", marginBottom: 16 },
     saveBtn: {
-      width: "20%",
-      marginTop: 16,
+      marginTop: 12,
       borderRadius: 5,
       textTransform: "none",
       fontWeight: 700,
-      padding: "12px 0",
+      padding: "10px 0",
       background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
       color: "#fff",
       border: "none",
-    },
-    content: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 16,
-      padding: 16,
-      alignItems: "center",
-    },
-    button: {
-      background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
-      color: "#fff",
-      borderRadius: 5,
-      width: "100%",
+      width: "60%",
     },
   };
 }

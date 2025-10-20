@@ -14,6 +14,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
 import { Snackbar, Alert, CircularProgress } from "@mui/material"; // Import do Snackbar e CircularProgress
+import ModalBase from "../Components/ModalBase"; // <-- (adição) Modal idêntico ao PerfilUser
 
 function Login() {
   const styles = Styles();
@@ -31,6 +32,16 @@ function Login() {
     severity: "",
     message: "",
   }); // Para o Snackbar
+
+  // ===== (adição) Estados idênticos ao PerfilUser para "Esqueci Minha Senha" =====
+  const id_user = localStorage.getItem("id_usuario");
+  const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
+  const [emailRecuperacao, setEmailRecuperacao] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [codigoValidado, setCodigoValidado] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmSenha, setConfirmSenha] = useState("");
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -63,10 +74,74 @@ function Login() {
         navigate("/");
       },
       (error) => {
-        showAlert("error", error.response.data.error);
+        showAlert("error", error.response?.data?.error || "Erro ao logar");
         setLoading(false);
       }
     );
+  }
+
+  // ===== (adição) Funções idênticas ao PerfilUser para "Esqueci Minha Senha" =====
+  const handleOpenModalEsqueci = () => setOpenModalEsqueci(true);
+  const handleCloseModalEsqueciSenha = () => {
+    setOpenModalEsqueci(false);
+    setCodigoEnviado(false);
+    setCodigoValidado(false);
+    setEmailRecuperacao("");
+    setCodigo("");
+    setNovaSenha("");
+    setConfirmSenha("");
+  };
+
+  async function forgotPasswordSendCode() {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({ email: emailRecuperacao });
+      showAlert("success", res.data.message);
+      setCodigoEnviado(true);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error);
+      setLoading(false);
+    }
+  }
+
+  async function validarCodigo() {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        atualizar: false,
+      });
+      showAlert("success", res.data.message);
+      setCodigoValidado(true);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Código inválido");
+      setLoading(false);
+    }
+  }
+
+  async function atualizarSenhaEsquecida() {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        password: novaSenha,
+        confirmPassword: confirmSenha,
+        atualizar: true,
+      });
+      showAlert("success", res.data.message);
+      handleCloseModalEsqueciSenha();
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error);
+      setLoading(false);
+    }
   }
 
   return (
@@ -160,7 +235,11 @@ function Login() {
             />
 
             <Button type="submit" style={styles.button} disabled={loading}>
-              {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Login"
+              )}
             </Button>
 
             <Box style={styles.textoCadastro}>
@@ -169,9 +248,125 @@ function Login() {
                 Cadastre-se
               </Typography>
             </Box>
+
+            {/* (adição) Link "Esqueci Minha Senha" idêntico ao PerfilUser */}
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 2,
+                textDecoration: "underline",
+                color: "#6D2AF0",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              onClick={handleOpenModalEsqueci}
+            >
+              Esqueci Minha Senha
+            </Typography>
           </Box>
         </Box>
       </Container>
+
+      {/* (adição) Modal "Esqueci Minha Senha" idêntico ao PerfilUser */}
+      <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 3.5,
+            textAlign: "center",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, color: "#222", mb: 2 }}
+          >
+            Esqueci Minha Senha
+          </Typography>
+
+          {!codigoValidado ? (
+            <>
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="E-mail"
+                type="email"
+                variant="outlined"
+                value={emailRecuperacao}
+                onChange={(e) => setEmailRecuperacao(e.target.value)}
+                style={styles.camposForm}
+                disabled={codigoEnviado}
+              />
+
+              {codigoEnviado && (
+                <TextField
+                  required
+                  fullWidth
+                  margin="normal"
+                  label="Código"
+                  variant="outlined"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  style={styles.camposForm}
+                />
+              )}
+
+              <Button
+                style={styles.saveBtn}
+                onClick={codigoEnviado ? validarCodigo : forgotPasswordSendCode}
+                disabled={loading}
+              >
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : codigoEnviado ? (
+                  "Validar Código"
+                ) : (
+                  "Enviar Código"
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="Nova Senha"
+                type="password"
+                variant="outlined"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                style={styles.camposForm}
+              />
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="Confirmar Senha"
+                type="password"
+                variant="outlined"
+                value={confirmSenha}
+                onChange={(e) => setConfirmSenha(e.target.value)}
+                style={styles.camposForm}
+              />
+              <Button
+                style={styles.saveBtn}
+                onClick={atualizarSenhaEsquecida}
+                disabled={loading}
+              >
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Atualizar Senha"
+                )}
+              </Button>
+            </>
+          )}
+        </Box>
+      </ModalBase>
     </Box>
   );
 }
@@ -236,6 +431,19 @@ function Styles() {
       textTransform: "none",
       margin: "15px",
       cursor: "pointer",
+    },
+    // ===== (adição) estilos usados apenas no Modal "Esqueci Minha Senha" =====
+    camposForm: { width: "100%", marginBottom: 16 },
+    saveBtn: {
+      marginTop: 12,
+      borderRadius: 5,
+      textTransform: "none",
+      fontWeight: 700,
+      padding: "10px 0",
+      background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+      color: "#fff",
+      border: "none",
+      width: "60%",
     },
   };
 }

@@ -45,14 +45,16 @@ api.interceptors.response.use(
 );
 
 const sheets = {
+  // 🧍 Usuário
   postCadastro: (user) => api.post("/user", user),
-  postValidateCode: (user) => api.post("user/validatecode", user),
+  postValidateCode: (user) => api.post("/user/validatecode", user),
   getUserById: (id_user) => api.get(`/userId/${id_user}`),
   postLogin: (user) => api.post("/login", user),
   deleteUser: (id_user) => api.delete(`/user/${id_user}`),
   getByUsername: (username) => api.get(`/user/${username}`),
   paymentUserPix: (id_user, email) => api.post(`/pagamento-pix/${id_user}`, { email }),
   getPaymentPixStatus: (id_user, paymentId) => api.get(`/pagamento/pix/status/${id_user}/${paymentId}`),
+
   updateUser: (id_user, user) => {
     const isForm = typeof FormData !== "undefined" && user instanceof FormData;
     const config = {
@@ -84,9 +86,11 @@ const sheets = {
     });
   },
 
+  updatePassword: (id_user, senhas) =>
+    api.put(`/user/newpassword/${id_user}`, senhas),
+
   createProjeto: (ID_user, form, imagens) => {
     const data = new FormData();
-
     for (let key in form) {
       data.append(key, form[key]);
     }
@@ -105,20 +109,8 @@ const sheets = {
     });
   },
 
-  updateProjeto: (ID_projeto, { titulo, descricao, ID_user }, imagens) => {
-    const data = new FormData();
-
-    data.append("titulo", titulo);
-    data.append("descricao", descricao);
-    data.append("ID_user", ID_user);
-
-    if (imagens) {
-      for (let i = 0; i < imagens.length; i++) {
-        data.append("imagens", imagens[i]);
-      }
-    }
-
-    return api.put(`/project/${ID_projeto}`, data, {
+  updateProjeto: (ID_projeto, formData) => {
+    return api.put(`/project/${ID_projeto}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Accept: "application/json",
@@ -127,18 +119,15 @@ const sheets = {
   },
 
   getProjectDetails: (id) => api.get(`/projectdetail/${id}`),
-
   getProjectsByUserName: (username) => api.get(`/projects/${username}`),
-
   getAllProjects: () => api.get("/projects"),
-
   getAllProjectsOrderByLikes: () => api.get("/projects?order=likes"),
-  
+  updateExtrainfo: (ID_user, redes) => api.put(`/extrainfo/${ID_user}`, redes),
+
   likeProject: (projectId, userId) => {
     if (!projectId || !userId) {
       return Promise.reject(new Error("Project ID ou User ID ausente"));
     }
-
     return api.post("/like_dislike_projects", {
       ID_projeto: Number(projectId),
       ID_user: Number(userId),
@@ -149,6 +138,11 @@ const sheets = {
     if (!userId) return Promise.reject(new Error("User ID ausente"));
     return api.get(`/projectsliked/${userId}`);
   },
+
+  forgotPassword: (data) => api.put('/user/forgotpassword', data),
+
+  deleteProject: (ID_projeto, ID_user) => api.delete(`/project/${ID_projeto}`, {data: { ID_user },}),
+  
 };
 
 export default sheets;

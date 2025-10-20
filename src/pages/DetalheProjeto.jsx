@@ -10,19 +10,25 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
+import LikeButton from "../Components/likeButton";
+import LoginPromptModal from "../Components/LoginPromptModal";
 import BottonUpgrade from "../Components/BottonUpgrade";
 
 function DetalhesProjeto({ imagesCount = 4 }) {
   const styles = Styles();
   const { id, id_projeto, projectId } = useParams();
-
+  const navigate = useNavigate();
   const projetoId = Number(id || id_projeto || projectId || 1);
+
   const [imagens, setImagens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [projeto, setProjeto] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+
   const [userPlan, setUserPlan] = useState({
     plan: null,
     authenticated: null,
@@ -38,6 +44,8 @@ function DetalhesProjeto({ imagesCount = 4 }) {
       try {
         const res = await api.getProjectDetails(projetoId);
         if (!ativo) return;
+        const dadosProjeto = res.data?.projeto;
+        setProjeto(dadosProjeto);
         const imgs = res.data?.projeto?.imagens || [];
         setImagens(imgs);
       } catch (err) {
@@ -53,6 +61,29 @@ function DetalhesProjeto({ imagesCount = 4 }) {
       ativo = false;
     };
   }, [projetoId]);
+
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      alert("error");
+    }
+  }
+
+  useEffect(() => {
+    getUserById();
+  }, []);
+
 
   // 🔹 Converter formatos de imagem
   const origin = "http://localhost:5000";
@@ -81,37 +112,17 @@ function DetalhesProjeto({ imagesCount = 4 }) {
     if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
   }, [imageUrls]);
 
-  async function getUserById() {
-    const authenticated = localStorage.getItem("authenticated");
-    if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
-      return null;
-    }
-    const id_user = localStorage.getItem("id_usuario");
-    try {
-      const response = await api.getUserById(id_user);
-      const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
-      return plan;
-    } catch (error) {
-      console.error("Erro ao buscar usuário:", error);
-      alert("error");
-    }
-  }
-
-  useEffect(() => {
-    getUserById();
-  }, []);
-
   return (
     <>
       {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
       <Container sx={styles.container}>
         <Grid container spacing={4}>
-          {/* 🔹 Coluna Esquerda - Projeto */}
           <Grid item xs={12} md={8}>
-            <Typography sx={styles.titulo}>Título do Portfólio</Typography>
+            <Typography sx={styles.titulo}>
+              {projeto?.titulo || "Título do Portfólio"}
+            </Typography>
+
 
             <Card sx={styles.cardPrincipal}>
               {loading ? (
@@ -121,12 +132,31 @@ function DetalhesProjeto({ imagesCount = 4 }) {
               ) : erro ? (
                 <Box sx={styles.imagemPrincipal}>Erro ao carregar imagens</Box>
               ) : imageUrls.length > 0 ? (
-                <Box sx={styles.imagemContainer}>
+                <Box sx={{ ...styles.imagemContainer, position: "relative" }}>
                   <img
                     src={imageUrls[selectedIndex]}
                     alt={`Imagem ${selectedIndex + 1}`}
                     style={styles.imagemPrincipalImg}
                   />
+
+                  {/* 🔹 LikeButton posicionado no canto superior direito */}
+                  {projeto && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 60,
+                        right: 60,
+                        zIndex: 10,
+                      }}
+                    >
+                      <LikeButton
+                        projectId={projeto.ID_projeto}
+                        initialLikes={projeto.total_curtidas ?? 0}
+                        userId={localStorage.getItem("id_usuario")}
+                        onRequireLogin={() => setOpenModal(true)}
+                      />
+                    </Box>
+                  )}
                 </Box>
               ) : (
                 <Box sx={styles.imagemPrincipal}>Nenhuma imagem disponível</Box>
@@ -167,28 +197,44 @@ function DetalhesProjeto({ imagesCount = 4 }) {
             {/* 🔹 Descrição */}
             <Typography sx={styles.tituloDesc}>Descrição:</Typography>
             <Typography sx={styles.descricao}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-              vitae mollis velit. Phasellus imperdiet ex sed quam vestibulum, sed
-              dignissim magna ornare. Curabitur maximus consequat aliquet. In mollis
-              tellus sapien, ac ultricies neque euismod at.
+              {projeto?.descricao || "Sem descrição disponível."}
             </Typography>
           </Grid>
 
           {/* 🔹 Coluna Direita - Perfil do Autor */}
           <Grid item xs={12} md={4}>
             <Card sx={styles.cardPerfil}>
-              <Avatar sx={styles.avatar} />
+              <Avatar
+                sx={styles.avatar}
+                src={
+                  projeto?.autor?.imagem
+                    ? `data:${projeto.autor.tipo_imagem};base64,${projeto.autor.imagem}`
+                    : undefined
+                }
+              />
+
               <CardContent>
                 <Typography variant="h6" sx={styles.nome}>
-                  Carlos
+                  {projeto?.autor?.nome || "Sem Autor disponível."}
                 </Typography>
-                <Button variant="contained" sx={styles.button}>
+                <Button
+                  variant="contained"
+                  sx={styles.button}
+                  onClick={() => {
+                    if (projeto?.autor?.username) {
+                      navigate(`/${projeto.autor.username}`);
+                    }
+                  }}
+                >
                   Visualizar perfil
                 </Button>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
+
+        {/* 🔹 Modal de login para curtidas */}
+        <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
       </Container>
     </>
 
@@ -205,7 +251,6 @@ function Styles() {
     titulo: {
       fontSize: 28,
       fontWeight: 700,
-      mb: 2,
       color: "#222",
     },
     cardPrincipal: {
@@ -235,7 +280,7 @@ function Styles() {
       width: "100%",
       height: "auto",
       display: "block",
-      objectFit: "contain", // 👈 sem corte nem zoom
+      objectFit: "contain",
       maxHeight: 500,
       margin: "0 auto",
     },

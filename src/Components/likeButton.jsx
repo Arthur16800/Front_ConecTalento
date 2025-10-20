@@ -50,7 +50,10 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
   };
 
   // 🔄 Curtir / Descurtir
-  const toggleLike = async () => {
+  const toggleLike = async (e) => {
+
+    e.stopPropagation();
+    
     if (!isLoggedIn) {
       setOpenModal(true);
       return;

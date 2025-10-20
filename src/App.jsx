@@ -11,12 +11,12 @@ import DefaultLayout from "./Components/DefaultLayout";
 import UpdateProjeto from "./pages/updateProjeto";
 import Pagamento from "./pages/Pagameto";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./Components/ProtectedRoutes";
 
 function App() {
   return (
     <Router>
       <Routes>
-
         <Route
           path="/"
           element={
@@ -25,56 +25,75 @@ function App() {
             </DefaultLayout>
           }
         />
-        <Route
-          path="/criarProjeto"
-          element={
-            <DefaultLayout>
-              <CriarProjeto />
-            </DefaultLayout>
-          }
-        />
-        <Route
-          path="/perfiluser"
-          element={
-            <DefaultLayout>
-              <PerfilUser />
-            </DefaultLayout>
-          }
-        />
-        <Route
-          path="/updateprojeto/:ID_projeto"
-          element={
-            <DefaultLayout>
-              <UpdateProjeto />
-            </DefaultLayout>
-          }
-        />
-        <Route
-          path="/portifoliouser/:username"
-          element={
-            <DefaultLayout>
-              <Portfolio />
-            </DefaultLayout>
-          }
-        />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
         <Route
+          path="/criarProjeto"
+          element={
+            <ProtectedRoute>
+              <DefaultLayout>
+                <CriarProjeto />
+              </DefaultLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/perfiluser"
+          element={
+            <ProtectedRoute>
+              <DefaultLayout>
+                <PerfilUser />
+              </DefaultLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/updateprojeto/:ID_projeto"
+          element={
+            <ProtectedRoute>
+              <DefaultLayout>
+                <UpdateProjeto />
+              </DefaultLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/:username"
+          element={
+            <ProtectedRoute>
+              <DefaultLayout>
+                <Portfolio />
+              </DefaultLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/detalhesprojeto/:id"
           element={
-            <DefaultLayout>
-              <DetalhesProjeto />
-            </DefaultLayout>
-          } />
+            <ProtectedRoute>
+              <DefaultLayout>
+                <DetalhesProjeto />
+              </DefaultLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/pagamento/:id"
           element={
-            <DefaultLayout>
-              <Pagamento />
-            </DefaultLayout>
+            <ProtectedRoute>
+              <DefaultLayout>
+                <Pagamento />
+              </DefaultLayout>
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="*"
           element={

@@ -1,33 +1,127 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Avatar } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Avatar,
+  IconButton,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import InstagramIcon from "@mui/icons-material/Instagram";
 import EmailIcon from "@mui/icons-material/Email";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import { useParams } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
+import LikeButton from "../Components/likeButton";
+import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
 
 function Portfolio() {
-  const Params = useParams();
+  const { username } = useParams();
+  const navigate = useNavigate();
   const styles = Styles();
 
   const [user, setUser] = useState(null);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const usernameLocal = localStorage.getItem("username");
+  const isOwner = usernameLocal === username;
+
+  // Modal
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
 
   const [userPlan, setUserPlan] = useState({
     plan: null,
     authenticated: null,
   });
 
-  const projects = [
-    { id: 1, title: "design sapato" },
-    { id: 2, title: "design sapato" },
-    { id: 3, title: "design sapato" },
-  ];
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleDeleteProject = async () => {
+    if (!selectedProject) return;
+
+    try {
+      const ID_user = localStorage.getItem("id_usuario");
+      await api.deleteProject(selectedProject, ID_user);
+
+      setProjects((prev) => prev.filter((p) => p.id !== selectedProject));
+      setOpenModal(false);
+      setSelectedProject(null);
+      setSnackbar({ open: true, message: "Projeto deletado com sucesso!", severity: "success" });
+    } catch (error) {
+      console.error("Erro ao deletar projeto:", error);
+      setSnackbar({ open: true, message: "Erro ao deletar o projeto.", severity: "error" });
+      setOpenModal(false);
+      setSelectedProject(null);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchUserAndProjects() {
+      if (!username) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const responseUser = await api.getByUsername(username);
+        const dataUser = responseUser.data.profile;
+
+        if (!dataUser) {
+          setError("Página Não Encontrada");
+          setLoading(false);
+          return;
+        }
+
+        const isBase64 = dataUser.imagem?.startsWith("data:image");
+        const base64Src = dataUser.imagem
+          ? isBase64
+            ? dataUser.imagem
+            : `data:image/jpeg;base64,${dataUser.imagem}`
+          : null;
+
+        setUser({
+          name: dataUser.name,
+          email: dataUser.email,
+          biografia: dataUser.biografia || "Nenhuma biografia cadastrada.",
+          imagem: base64Src,
+        });
+
+        const responseProjects = await api.getProjectsByUserName(username);
+        const dataProjects = responseProjects.data.profile_projeto || [];
+
+        setProjects(
+          dataProjects.map((p) => ({
+            id: p.ID_projeto,
+            title: p.titulo,
+            total_curtidas: p.total_curtidas,
+            imagem: p.imagem
+              ? `data:${p.tipo_imagem};base64,${p.imagem}`
+              : null,
+          }))
+        );
+      } catch (error) {
+        console.log("error:", error?.response?.data?.error);
+        setError("Página Não Encontrada");
+      }
+
+      setLoading(false);
+    }
+
+    fetchUserAndProjects();
+  }, [username]);
 
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
@@ -51,40 +145,6 @@ function Portfolio() {
     getUserById();
   }, []);
 
-  useEffect(() => {
-    async function getByUsername() {
-      if (!Params.username) return;
-
-      setLoading(true);
-      setError(null);
-      setUser(null);
-
-      try {
-        const response = await api.getByUsername(Params.username);
-        const data = response.data.profile;
-
-        const isBase64 = data.imagem?.startsWith("data:image");
-        const base64Src = data.imagem
-          ? isBase64
-            ? data.imagem
-            : `data:image/jpeg;base64,${data.imagem}`
-          : null;
-
-        setUser({
-          name: data.name,
-          email: data.email,
-          biografia: data.biografia || "Nenhuma biografia cadastrada.",
-          imagem: base64Src,
-        });
-      } catch (error) {
-        console.log("error:", error?.response?.data?.error);
-        setError("Página Não Encontrada");
-      }
-      setLoading(false);
-    }
-
-    getByUsername();
-  }, [Params.username]);
 
   if (loading) {
     return (
@@ -123,13 +183,12 @@ function Portfolio() {
 
   if (!user) return null;
 
-  
-
   return (
     <>
       {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
       <Box style={styles.container}>
+        {/* Perfil do usuário */}
         <Box style={styles.box_user}>
           {user.imagem ? (
             <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
@@ -137,15 +196,24 @@ function Portfolio() {
             <AccountCircleIcon sx={styles.accountIcon} />
           )}
 
-          <Typography style={styles.userName}>{user.name}</Typography>
+          <Box style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Typography style={styles.userName}>{user.name}</Typography>
+            {isOwner && (
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={() => navigate("/perfiluser")}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
 
           <Typography style={styles.bio}>{user.biografia}</Typography>
 
+          {/* Contatos */}
           <Box style={styles.box_contatos}>
-            <Box style={styles.contato}>
-              <InstagramIcon />
-              <Typography>teste</Typography>
-            </Box>
+            <Box style={styles.contato}></Box>
             <Box style={styles.contato}>
               <EmailIcon />
               <Typography>{user.email}</Typography>
@@ -155,25 +223,160 @@ function Portfolio() {
 
         <Box style={styles.divider} />
 
+        {/* Projetos */}
         <Box style={styles.box_projeto}>
           <Box style={styles.grid}>
             {projects.map((p) => (
-              <Box key={p.id} style={styles.card}>
+              <Box
+                key={p.id}
+                style={styles.card}
+                onClick={() => navigate(`/detalhesprojeto/${p.id}`)}
+              >
                 <Box
                   style={{
                     ...styles.preview,
-                    backgroundImage: `url(${background2})`,
+                    backgroundImage: `url(${p.imagem || background2})`,
                   }}
                 >
                   <Box style={styles.likeBtn}>
-                    <FavoriteBorderIcon fontSize="small" />
+                    <LikeButton
+                      projectId={p.id}
+                      userId={localStorage.getItem("id_usuario")}
+                      initialLikes={p.total_curtidas}
+                    />
                   </Box>
                 </Box>
-                <Typography style={styles.caption}>{p.title}</Typography>
+
+                <Box
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "8px 12px",
+                  }}
+                >
+                  <Typography style={styles.caption}>{p.title}</Typography>
+
+                  {isOwner && (
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/updateprojeto/${p.id}`);
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProject(p.id);
+                          setOpenModal(true);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
               </Box>
             ))}
+
+            {/* Card de criar projeto */}
+            {isOwner && (
+              <Box
+                onClick={() => navigate("/criarProjeto")}
+                sx={{
+                  width: "330px",
+                  height: "250px",
+                  background: "#F0F0F0",
+                  borderRadius: 5,
+                  padding: 0,
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "#E0E0E0",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: "40%",
+                    height: "55%",
+                    borderRadius: "100%",
+                    backgroundColor: "#BDBDBD",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    transition: "0.2s",
+                    "&:hover": {
+                      backgroundColor: "#A0A0A0",
+                    },
+                  }}
+                >
+                  <AddIcon sx={{ fontSize: 70, color: "#fff" }} />
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
+
+        {/* Modal de confirmação */}
+        <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <Typography variant="h6" sx={{ mt: 9, mb: 2 }}>
+              Deseja realmente excluir este projeto?
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+              <button
+                onClick={() => setOpenModal(false)}
+                style={{
+                  padding: "8px 16px",
+                  background: "#ccc",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                style={{
+                  padding: "8px 16px",
+                  background: "#e53935",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Excluir
+              </button>
+            </Box>
+          </Box>
+        </ModalBase>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </>
 
@@ -202,10 +405,7 @@ function Styles() {
       alignItems: "center",
       gap: 10,
     },
-    accountIcon: {
-      color: "#E5E5E5",
-      fontSize: 250,
-    },
+    accountIcon: { color: "#E5E5E5", fontSize: 250 },
     avatar: {
       width: 200,
       height: 200,
@@ -213,11 +413,7 @@ function Styles() {
       border: "4px solid #E5E5E5",
       objectFit: "cover",
     },
-    userName: {
-      fontWeight: 600,
-      fontSize: 18,
-      marginTop: 8,
-    },
+    userName: { fontWeight: 600, fontSize: 18, marginTop: 8 },
     bio: {
       maxWidth: 560,
       lineHeight: 1.6,
@@ -232,11 +428,7 @@ function Styles() {
       gap: 6,
       marginTop: 8,
     },
-    contato: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    },
+    contato: { display: "flex", alignItems: "center", gap: 8 },
     divider: {
       width: 1,
       background: "#D9D9D9",
@@ -248,6 +440,7 @@ function Styles() {
       width: "100%",
       padding: "0 0 24px 0",
       display: "flex",
+      flexDirection: "column",
     },
     grid: {
       display: "grid",
@@ -260,14 +453,15 @@ function Styles() {
       width: "100%",
       maxWidth: 360,
       background: "#F0F0F0",
-      borderRadius: 8,
+      borderRadius: 5,
       padding: 0,
       overflow: "hidden",
+      cursor: "pointer",
     },
     preview: {
       position: "relative",
       width: "100%",
-      paddingTop: "56.25%", // 16:9
+      paddingTop: "56.25%",
       backgroundSize: "cover",
       backgroundPosition: "center",
     },
@@ -278,17 +472,11 @@ function Styles() {
       width: 36,
       height: 36,
       borderRadius: "50%",
-      background: "#FFF",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "0 1px 6px rgba(0,0,0,0.15)",
     },
-    caption: {
-      textAlign: "center",
-      padding: "10px 12px 14px",
-      fontSize: 14,
-    },
+    caption: { textAlign: "center", fontSize: 14 },
   };
 }
 
