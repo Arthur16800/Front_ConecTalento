@@ -6,7 +6,7 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import LogoBranca from "../assets/logo_branca.png";
 
 const Membros = [
-  { name: "Arthur", url: "https://instagram.com/arthurcaramori_" },
+  { name: "Arthur", url: "https://instagram.com/arthur.caramori" },
   { name: "Negrijo", url: "https://instagram.com/negrij0" },
   { name: "Bonini", url: "https://instagram.com/boninipedro_" },
   { name: "Rhuan", url: "https://instagram.com/rhuan" },
@@ -24,19 +24,27 @@ const Footer = () => {
         overflow: "hidden",
         background:
           "linear-gradient(180deg, #6A00B6 0%, #56039A 55%, #35045F 100%)",
+        mt: "auto",
+        pt: 5,
+        pb: 10, // Espaço extra para a logo não sobrepor o texto
       }}
     >
+      {/* Radial Background Effect */}
       <Box
         sx={{
           position: "absolute",
           inset: "-20%",
           background:
             "radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 65%)",
+          zIndex: 0,
         }}
       />
 
+      {/* Conteúdo do Footer */}
       <Box
         sx={{
+          position: "relative",
+          zIndex: 1,
           maxWidth: 1200,
           mx: "auto",
           py: { xs: 5, md: 7 },
@@ -65,7 +73,7 @@ const Footer = () => {
               <Link
                 key={m.name}
                 href={m.url}
-                target="blank"
+                target="_blank"
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -91,6 +99,7 @@ const Footer = () => {
           </Box>
         </Box>
 
+        {/* Quem somos */}
         <Box sx={{ textAlign: "justify" }}>
           <Typography sx={{ fontWeight: 800, mb: 1 }}>Quem somos?</Typography>
           <Typography
@@ -108,12 +117,13 @@ const Footer = () => {
         </Box>
       </Box>
 
+      {/* Logo no canto inferior direito */}
       <Box
         sx={{
           position: "absolute",
-          bottom: { md: 24 },
-          right: { md: 28 },
-          pointerEvents: "none",
+          bottom: 24,
+          right: 28,
+          zIndex: 2,
         }}
       >
         <Box
@@ -127,12 +137,14 @@ const Footer = () => {
         />
       </Box>
 
-      <Box />
+      {/* Copyright */}
       <Typography
         sx={{
           textAlign: "center",
-          marginBottom: 5,
+          mt: 4,
           fontSize: 14,
+          zIndex: 1,
+          position: "relative",
         }}
       >
         © 2025 ConecTalento — Todos os direitos reservados.

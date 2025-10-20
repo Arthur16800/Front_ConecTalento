@@ -1,6 +1,12 @@
-import { Box, Container, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Container,
+  TextField,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import Button from "@mui/material/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import background2 from "../assets/background2.png";
 import logo from "../assets/logo_ct.png";
 import { Link, useNavigate } from "react-router-dom";
@@ -10,19 +16,58 @@ import IconButton from "@mui/material/IconButton";
 import api from "../axios/axios";
 import InputAdornment from "@mui/material/InputAdornment";
 import ModalBase from "../Components/ModalBase";
+import { Alert, Snackbar } from "@mui/material";
 
 function Cadastro() {
   const [user, setUser] = useState({
     username: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    code:"",
+    code: "",
     showPassword: false,
     showConfirmPassword: false,
   });
 
+  const [openModal, setOpenModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutos em segundos
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
+  const [alert, setAlert] = useState({
+    open: false,
+    severity: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false); // Novo estado para ícone de carregamento
+
+  useEffect(() => {
+    let timer;
+
+    if (openModal && isTimerActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+
+    if (timeLeft === 0) {
+      clearInterval(timer);
+      setIsTimerActive(false);
+    }
+
+    return () => clearInterval(timer);
+  }, [openModal, isTimerActive, timeLeft]);
+
   const navigate = useNavigate();
+
+  const showAlert = (severity, message) => {
+    setAlert({ open: true, severity, message });
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, open: false });
+  };
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -36,51 +81,77 @@ function Cadastro() {
 
   const handleSubmitCode = (event) => {
     event.preventDefault();
-    cadastroCode();
+    validateCode();
   };
-
-
-  const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = () => {
     setOpenModal(true);
+    setTimeLeft(15 * 60);
+    setIsTimerActive(true);
   };
 
   const handleCloseModal = () => {
     setOpenModal(false);
+    setIsTimerActive(false);
   };
 
   async function cadastro() {
+    setLoading(true); // Ativa o ícone de carregamento
     await api.postCadastro(user).then(
       (response) => {
-        alert(response.data.message);
-        
+        showAlert("success", response.data.message);
+        handleOpenModal();
+        setLoading(false); // Desativa o ícone após resposta
       },
       (error) => {
-        alert(error.response.data.error);
+        showAlert("error", error.response.data.error);
+        setLoading(false); // Desativa o ícone após erro
       }
     );
   }
 
-  async function cadastroCode() {
+  async function validateCode() {
     await api.postCadastro(user).then(
       (response) => {
-        alert(response.data.message);
+        showAlert("success", response.data.message);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("id_usuario", user.email);
+        localStorage.setItem("id_usuario", response.data.user.ID_user);
+        localStorage.setItem("username", response.data.user.username);
+        
+        handleCloseModal();
         navigate("/");
       },
       (error) => {
-        alert(error.response.data.error);
+        showAlert("error", error.response.data.error);
       }
     );
   }
+
+  const formatTime = (totalSeconds) => {
+    const mins = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+    const secs = String(totalSeconds % 60).padStart(2, "0");
+    return `${mins}:${secs}`;
+  };
 
   const styles = Styles();
 
   return (
     <Box style={styles.principal}>
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={3000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
       <Container style={styles.container}>
         <Box style={styles.box_Cadastro}>
           <Box style={styles.box_logo_img}>
@@ -99,6 +170,19 @@ function Cadastro() {
               fullWidth
               margin="normal"
               label="Nome"
+              name="name"
+              id="name"
+              value={user.name}
+              onChange={onChange}
+              variant="outlined"
+              style={styles.camposForm}
+            />
+
+            <TextField
+              required
+              fullWidth
+              margin="normal"
+              label="Username"
               name="username"
               id="username"
               value={user.username}
@@ -204,17 +288,19 @@ function Cadastro() {
               }}
             />
 
-            <Button
-              type="submit"
-              style={styles.button}
-              onClick={() => handleOpenModal()}
-            >
-              Cadastrar
+            <Button type="submit" style={styles.button} disabled={loading}>
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Cadastrar"
+              )}
             </Button>
 
             <Box style={styles.textoLogin}>
               <Typography>Já possui uma conta?</Typography>
-              <Typography component={Link} to="/login">Faça login</Typography>
+              <Typography component={Link} to="/login">
+                Faça login
+              </Typography>
             </Box>
           </Box>
         </Box>
@@ -228,8 +314,23 @@ function Cadastro() {
 
       <ModalBase open={openModal} onClose={handleCloseModal}>
         <Box component="form" onSubmit={handleSubmitCode} sx={styles.content}>
-          <Typography variant="h5" fontWeight="bold">Quase lá</Typography>
+          <Typography variant="h5" fontWeight="bold">
+            Quase lá
+          </Typography>
           <Typography>Digite o código que enviamos no seu email</Typography>
+
+          <Box style={styles.timer}>
+            <Typography
+              variant="body1"
+              color="black"
+              sx={{ mt: 1, mb: 1, marginRight: "2px" }}
+            >
+              Código expira em:
+            </Typography>
+            <Typography variant="body1" color="error" sx={{ mt: 1, mb: 1 }}>
+              {formatTime(timeLeft)}
+            </Typography>
+          </Box>
 
           <TextField
             variant="outlined"
@@ -238,10 +339,14 @@ function Cadastro() {
             id="code"
             value={user.code}
             onChange={onChange}
-            inputProps={{ maxLength: 10 }}
           />
 
-          <Button variant="contained" sx={styles.button} type="submit">
+          <Button
+            variant="contained"
+            sx={styles.button}
+            type="submit"
+            disabled={timeLeft === 0}
+          >
             Continuar
           </Button>
         </Box>
@@ -265,6 +370,9 @@ function Styles() {
       left: "50%",
       transform: "translate(-50%, -50%)",
       padding: 0,
+    },
+    timer: {
+      display: "flex",
     },
     box_IMG_02: {
       backgroundImage: `url(${background2})`,
@@ -307,6 +415,7 @@ function Styles() {
       fontSize: "35px",
     },
     box_Formulario: {
+      margin:"-25px",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -318,9 +427,9 @@ function Styles() {
       gap: "5px",
     },
     camposForm: {
-      width: "80%",
-      margin: "7px",
-    },
+      width: "75%",   // diminui a largura para caber melhor
+      margin: "3.5px 0",
+    },    
     button: {
       backgroundColor: "#8500C2",
       color: "#fff",
