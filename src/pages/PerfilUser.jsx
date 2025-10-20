@@ -10,9 +10,9 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import background2 from "../assets/background2.png";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import background2 from "../assets/background2.png";
 import api from "../axios/axios";
 import ModalBase from "../Components/ModalBase";
 
@@ -20,12 +20,15 @@ function PerfilUser() {
   const styles = Styles();
   const id_user = localStorage.getItem("id_usuario");
   const fileInputRef = useRef(null);
+
   const [openModal, setOpenModal] = useState(false);
   const [openModalSenha, setOpenModalSenha] = useState(false);
   const [openModalRedes, setOpenModalRedes] = useState(false);
+  const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [hover, setHover] = useState(false); // estado de hover no avatar
+  const [hover, setHover] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -50,19 +53,21 @@ function PerfilUser() {
 
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({
-    open: false,
-    severity: "",
-    message: "",
-  });
+  const [alert, setAlert] = useState({ open: false, severity: "", message: "" });
 
-  // Carrega dados do usuário
+  // Estados para esqueci minha senha
+  const [emailRecuperacao, setEmailRecuperacao] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [codigoValidado, setCodigoValidado] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmSenha, setConfirmSenha] = useState("");
+
   useEffect(() => {
     async function getUserById() {
       try {
         const response = await api.getUserById(id_user);
         const data = response.data.profile;
-
         const isBase64 = data.imagem?.startsWith("data:image");
         const base64Src = data.imagem
           ? isBase64
@@ -70,64 +75,26 @@ function PerfilUser() {
             : `data:image/jpeg;base64,${data.imagem}`
           : null;
 
-        setFormData((prev) => ({
-          ...prev,
+        setFormData({
           name: data.name,
           username: data.username,
           email: data.email,
           biografia: data.biografia,
           imagem: base64Src,
-        }));
-
+        });
         setAvatarPreview(base64Src);
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
-        showAlert(
-          "error",
-          error.response?.data?.error
-        );
+        showAlert("error", error.response?.data?.error || "Erro ao buscar usuário");
       }
     }
     getUserById();
   }, [id_user]);
 
-  async function updatePassword() {
-    setLoading(true);
-    try {
-      const response = await api.updatePassword(id_user, senhas);
-      showAlert("success", response.data.message);
-      setLoading(false);
-    } catch (error) {
-      console.error("Erro ao atualizar senha:", error);
-      showAlert("error", error.response?.data?.error);
-      setLoading(false);
-    }
-  }
-
-  // Função de delete do usuário
-  async function deleteUser() {
-    setLoading(true);
-    try {
-      const response = await api.deleteUser(id_user);
-      showAlert(
-        "success",
-        response.data.message
-      );
-      localStorage.clear();
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Erro ao deletar usuário:", error);
-      showAlert(
-        "error",
-        error.response?.data?.error
-      );
-      setLoading(false);
-    }
-  }
-
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
   const handleCloseAlert = () => setAlert({ ...alert, open: false });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -145,6 +112,17 @@ function PerfilUser() {
   const handleOpenModalRedesSociais = () => setOpenModalRedes(true);
   const handleCloseModalRedesSociais = () => setOpenModalRedes(false);
 
+  const handleOpenModalEsqueci = () => setOpenModalEsqueci(true);
+  const handleCloseModalEsqueciSenha = () => {
+    setOpenModalEsqueci(false);
+    setCodigoEnviado(false);
+    setCodigoValidado(false);
+    setEmailRecuperacao("");
+    setCodigo("");
+    setNovaSenha("");
+    setConfirmSenha("");
+  };
+
   const handleEditClick = () => setEditing(true);
   const handleSaveClick = () => updateUser();
 
@@ -161,7 +139,6 @@ function PerfilUser() {
     return new File([u8arr], filename, { type: mime });
   }
 
-  // Atualiza perfil do usuário
   async function updateUser() {
     setLoading(true);
     try {
@@ -175,10 +152,7 @@ function PerfilUser() {
       if (imageToSend && typeof imageToSend === "string") {
         imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
       }
-
-      if (imageToSend) {
-        data.append("imagens", imageToSend);
-      }
+      if (imageToSend) data.append("imagens", imageToSend);
 
       const response = await api.updateUser(id_user, data);
 
@@ -206,7 +180,6 @@ function PerfilUser() {
     }
   }
 
-  // Avatar click (só permite enviar imagem se estiver editando)
   const handleAvatarClick = () => {
     if (!editing) return;
     fileInputRef.current.click();
@@ -215,9 +188,93 @@ function PerfilUser() {
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     setAvatarPreview(URL.createObjectURL(file));
     setFormData((prev) => ({ ...prev, imagem: file }));
+  };
+
+  async function updatePassword() {
+    setLoading(true);
+    try {
+      const response = await api.updatePassword(id_user, senhas);
+      showAlert("success", response.data.message);
+      setLoading(false);
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      showAlert("error", error.response?.data?.error);
+      setLoading(false);
+    }
+  }
+
+  async function deleteUser() {
+    setLoading(true);
+    try {
+      const response = await api.deleteUser(id_user);
+      showAlert("success", response.data.message);
+      localStorage.clear();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      showAlert("error", error.response?.data?.error);
+      setLoading(false);
+    }
+  }
+
+  // ================= ESQUECI MINHA SENHA =================
+  const forgotPasswordSendCode = async () => {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({ email: emailRecuperacao });
+      showAlert("success", res.data.message);
+      setCodigoEnviado(true);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Erro ao enviar código");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validarCodigo = async () => {
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        atualizar: false,
+      });
+      showAlert("success", res.data.message);
+      setCodigoValidado(true);
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Código inválido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const atualizarSenhaEsquecida = async () => {
+    if (novaSenha !== confirmSenha) {
+      showAlert("error", "As senhas não coincidem.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.forgotPassword({
+        email: emailRecuperacao,
+        code: codigo,
+        password: novaSenha,
+        confirmPassword: confirmSenha,
+        atualizar: true,
+      });
+      showAlert("success", res.data.message);
+      handleCloseModalEsqueciSenha();
+    } catch (err) {
+      console.error(err);
+      showAlert("error", err.response?.data?.error || "Erro ao atualizar senha");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -297,17 +354,31 @@ function PerfilUser() {
         </Box>
 
         {!editing && (
-          <Button style={styles.editBtn} onClick={handleEditClick}>
-            Editar Perfil
-          </Button>
-        )}
-        {!editing && (
-          <Button style={styles.editBtn} onClick={handleOpenModalRedesSociais}>
-            Informações de Contato
-          </Button>
+          <>
+            <Button style={styles.editBtn} onClick={handleEditClick}>
+              Editar Perfil
+            </Button>
+            <Button style={styles.editBtn} onClick={handleOpenModalRedesSociais}>
+              Informações de Contato
+            </Button>
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 2,
+                textDecoration: "underline",
+                color: "#6D2AF0",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              onClick={handleOpenModalEsqueci}
+            >
+              Esqueci Minha Senha
+            </Typography>
+          </>
         )}
       </Box>
 
+      {/* Form principal */}
       <Box style={styles.formPanel}>
         <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
@@ -366,370 +437,137 @@ function PerfilUser() {
         />
 
         {editing && (
-          <Button
-            style={styles.saveBtn}
-            onClick={handleOpenModalSenha}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              "Alterar Senha"
-            )}
-          </Button>
-        )}
-
-        {editing && (
-          <Button
-            style={styles.saveBtn}
-            onClick={handleSaveClick}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              "Salvar"
-            )}
-          </Button>
+          <>
+            <Button
+              style={styles.saveBtn}
+              onClick={handleOpenModalSenha}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={20} color="inherit" /> : "Alterar Senha"}
+            </Button>
+            <Button
+              style={styles.saveBtn}
+              onClick={handleSaveClick}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={20} color="inherit" /> : "Salvar"}
+            </Button>
+          </>
         )}
       </Box>
 
+      {/* MODAIS */}
+      {/* Delete */}
       <ModalBase open={openModal} onClose={handleCloseModal}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "80%",
-            padding: 3,
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, color: "#222", mb: 1 }}
-          >
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "80%", padding: 3, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "#222", mb: 1 }}>
             Tem certeza que deseja deletar sua conta?
           </Typography>
           <Typography variant="body2" sx={{ color: "#555" }}>
             Essa ação é irreversível e todos os seus dados serão perdidos.
           </Typography>
-
           <Box sx={{ display: "flex", gap: 2, width: "100%", mt: 2 }}>
-            <Button
-              variant="outlined"
-              sx={{
-                flex: 1,
-                borderRadius: 5,
-                borderColor: "#ccc",
-                color: "#555",
-                "&:hover": {
-                  backgroundColor: "#f5f5f5",
-                  borderColor: "#bbb",
-                },
-              }}
-              onClick={handleCloseModal}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              variant="contained"
-              sx={{
-                flex: 1,
-                borderRadius: 5,
-                background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
-                color: "#fff",
-                "&:hover": {
-                  background:
-                    "linear-gradient(90deg, #D12F2F 0%, #B82828 100%)",
-                },
-              }}
-              onClick={handleDeleteUser}
-              disabled={loading}
-            >
-              {loading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                "Deletar"
-              )}
-            </Button>
+            <Button variant="outlined" sx={{ flex: 1 }} onClick={handleCloseModal}>Cancelar</Button>
+            <Button variant="contained" sx={{ flex: 1 }} onClick={handleDeleteUser} disabled={loading}>Deletar</Button>
           </Box>
         </Box>
       </ModalBase>
-      <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "80%",
-            padding: 3.5,
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, color: "#222", mb: 1 }}
-          >
-            Alterar Senha
-          </Typography>
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Senha Atual"
-            type="password"
-            variant="outlined"
-            name="senha_atual"
-            value={senhas.senha_atual}
-            onChange={(e) =>
-              setSenhas({ ...senhas, senha_atual: e.target.value })
-            }
-            style={styles.camposForm}
-          />
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Nova Senha"
-            type="password"
-            variant="outlined"
-            name="nova_senha"
-            value={senhas.nova_senha}
-            onChange={(e) =>
-              setSenhas({ ...senhas, nova_senha: e.target.value })
-            }
-            style={styles.camposForm}
-          />
-          <TextField
-            required
-            fullWidth
-            margin="normal"
-            label="Confirmar Nova Senha"
-            type="password"
-            variant="outlined"
-            name="confirmar_senha"
-            value={senhas.confirmar_senha}
-            onChange={(e) =>
-              setSenhas({ ...senhas, confirmar_senha: e.target.value })
-            }
-            style={styles.camposForm}
-          />
-          <Button
-            style={styles.saveBtn}
-            onClick={() => {
-              handleCloseModalSenha();
-              updatePassword();
-            }}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              "Salvar Senha"
-            )}
-          </Button>
-        </Box>
-      </ModalBase>
-      <ModalBase open={openModalRedes} onClose={handleCloseModalRedesSociais}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            marginTop: -2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, color: "#222", mb: 2 }}
-          >
-            Editar Redes Sociais
+
+      {/* Modal Esqueci Minha Senha */}
+      <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 3.5, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: "#222", mb: 2 }}>
+            Esqueci Minha Senha
           </Typography>
 
-          <TextField
-            required
-            label="Link do Facebook"
-            variant="outlined"
-            size="small"
-            name="facebook"
-            value={redes.facebook}
-            onChange={(e) => setRedes({ ...redes, facebook: e.target.value })}
-            sx={{ width: "90%", mb: 1 }}
-          />
-          <TextField
-            required
-            label="Link do GitHub"
-            variant="outlined"
-            size="small"
-            name="github"
-            value={redes.github}
-            onChange={(e) => setRedes({ ...redes, github: e.target.value })}
-            sx={{ width: "90%", mb: 1 }}
-          />
-          <TextField
-            required
-            label="Link do Instagram"
-            variant="outlined"
-            size="small"
-            name="insta"
-            value={redes.insta}
-            onChange={(e) => setRedes({ ...redes, insta: e.target.value })}
-            sx={{ width: "90%", mb: 1 }}
-          />
-          <TextField
-            required
-            label="Link do Pinterest"
-            variant="outlined"
-            size="small"
-            name="pinterest"
-            value={redes.pinterest}
-            onChange={(e) => setRedes({ ...redes, pinterest: e.target.value })}
-            sx={{ width: "90%", mb: 1 }}
-          />
-          <TextField
-            required
-            label="Número de Telefone"
-            variant="outlined"
-            size="small"
-            name="numero_telefone"
-            value={redes.numero_telefone}
-            onChange={(e) => setRedes({ ...redes, numero_telefone: e.target.value })}
-            sx={{ width: "90%", mb: 1 }}
-          />
-
-          <Button
-            variant="contained"
-            sx={{ width: "40%", borderRadius: 2 }}
-            onClick={handleCloseModalRedesSociais}
-          >
-            Salvar
-          </Button>
+          {!codigoValidado ? (
+            <>
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="E-mail"
+                type="email"
+                variant="outlined"
+                value={emailRecuperacao}
+                onChange={(e) => setEmailRecuperacao(e.target.value)}
+                style={styles.camposForm}
+                disabled={codigoEnviado}
+              />
+              {codigoEnviado && (
+                <TextField
+                  required
+                  fullWidth
+                  margin="normal"
+                  label="Código"
+                  variant="outlined"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  style={styles.camposForm}
+                />
+              )}
+              <Button
+                style={styles.saveBtn}
+                onClick={codigoEnviado ? validarCodigo : forgotPasswordSendCode}
+                disabled={loading}
+              >
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : codigoEnviado ? "Validar Código" : "Enviar Código"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="Nova Senha"
+                type="password"
+                variant="outlined"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                style={styles.camposForm}
+              />
+              <TextField
+                required
+                fullWidth
+                margin="normal"
+                label="Confirmar Senha"
+                type="password"
+                variant="outlined"
+                value={confirmSenha}
+                onChange={(e) => setConfirmSenha(e.target.value)}
+                style={styles.camposForm}
+              />
+              <Button
+                style={styles.saveBtn}
+                onClick={atualizarSenhaEsquecida}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : "Atualizar Senha"}
+              </Button>
+            </>
+          )}
         </Box>
       </ModalBase>
-
     </Box>
   );
 }
 
 function Styles() {
   return {
-    container: {
-      display: "flex",
-      justifyContent: "space-between",
-      gap: 30,
-      padding: "24px 16px",
-      maxWidth: "70%",
-      margin: "0 auto",
-    },
-    camposStyle: {
-      width: "90%",
-      mb: 0.5
-    },
-    leftCard: {
-      maxWidth: 280,
-      minWidth: 250,
-      flex: 2,
-      width: "100%",
-      height: "10%",
-      backgroundColor: "#fff",
-      border: "1px solid #E5E5E5",
-      borderRadius: 16,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    },
-    box_IMG: {
-      height: 50,
-      borderRadius: "16px 16px 0 0",
-      backgroundImage: `url(${background2})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      marginBottom: 16,
-      width: "100%",
-    },
-    user_perfil: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      marginBottom: 12,
-    },
-    name_user: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      flexDirection: "row",
-    },
-    removeIcon: {
-      color: "#7e7e7ea9",
-      cursor: "pointer",
-    },
-    editBtn: {
-      marginTop: 12,
-      marginBottom: 12,
-      borderRadius: 5,
-      textTransform: "none",
-      fontWeight: 700,
-      padding: "10px 0",
-      background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
-      color: "#fff",
-      border: "none",
-      width: "90%",
-    },
-    formPanel: {
-      flex: 1,
-      backgroundColor: "#fff",
-      border: "1px solid #E5E5E5",
-      borderRadius: 16,
-      padding: 24,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      minWidth: 400,
-      maxWidth: 800,
-    },
-    formTitle: {
-      fontSize: 20,
-      fontWeight: 600,
-      marginBottom: 8,
-      textAlign: "center",
-      color: "#222",
-    },
-    camposForm: {
-      width: "100%",
-      maxWidth: 560,
-    },
-    saveBtn: {
-      width: "40%",
-      marginTop: 16,
-      borderRadius: 5,
-      textTransform: "none",
-      fontWeight: 700,
-      padding: "12px 0",
-      background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
-      color: "#fff",
-      border: "none",
-    },
-    content: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 16,
-      padding: 16,
-      alignItems: "center",
-    },
-    button: {
-      background: "linear-gradient(90deg, #F23A3A 0%, #D12F2F 100%)",
-      color: "#fff",
-      borderRadius: 5,
-      width: "100%",
-    },
+    container: { display: "flex", justifyContent: "space-between", gap: 30, padding: "24px 16px", maxWidth: "70%", margin: "0 auto" },
+    leftCard: { maxWidth: 280, minWidth: 250, flex: 2, width: "100%", backgroundColor: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, display: "flex", flexDirection: "column", alignItems: "center" },
+    box_IMG: { height: 50, borderRadius: "16px 16px 0 0", backgroundImage: `url(${background2})`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 16, width: "100%" },
+    user_perfil: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 },
+    name_user: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexDirection: "row" },
+    removeIcon: { color: "#7e7e7ea9", cursor: "pointer" },
+    editBtn: { marginTop: 12, marginBottom: 12, borderRadius: 5, textTransform: "none", fontWeight: 700, padding: "10px 0", background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)", color: "#fff", border: "none", width: "90%" },
+    formPanel: { flex: 1, backgroundColor: "#fff", border: "1px solid #E5E5E5", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", alignItems: "center", minWidth: 400, maxWidth: 800 },
+    formTitle: { fontSize: 20, fontWeight: 600, marginBottom: 8, textAlign: "center", color: "#222" },
+    camposForm: { width: "100%", marginBottom: 16 },
+    saveBtn: { marginTop: 12, borderRadius: 5, textTransform: "none", fontWeight: 700, padding: "10px 0", background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)", color: "#fff", border: "none", width: "60%" },
   };
 }
 

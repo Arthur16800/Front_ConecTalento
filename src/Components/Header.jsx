@@ -171,7 +171,7 @@ const Header = ({ children, onSearch }) => {
 
               <span style={{ cursor: "pointer", marginLeft: "8px" }}>
                 {isLogged
-                  ? userData?.username || userData?.name || "Usuário"
+                  ? userData?.username || userData?.name || "Login"
                   : "Login"}
               </span>
 

@@ -108,8 +108,6 @@ const sheets = {
     });
   },
 
-  // 🔧 Mantido para casar com: router.put("/project/:id", verifyJWT, upload.array("imagens"), ...)
-  // O back exige multipart/form-data com a chave "imagens" SEMPRE presente.
   updateProjeto: (ID_projeto, formData) => {
     return api.put(`/project/${ID_projeto}`, formData, {
       headers: {
@@ -120,6 +118,7 @@ const sheets = {
   },
 
   getProjectDetails: (id) => api.get(`/projectdetail/${id}`),
+  getProjectsByUserName: (username) => api.get(`/projects/${username}`),
   getAllProjects: () => api.get("/projects"),
   getAllProjectsOrderByLikes: () => api.get("/projects?order=likes"),
   updateExtrainfo: (ID_user, redes) => api.put(`/extrainfo/${ID_user}`, redes),
@@ -139,7 +138,7 @@ const sheets = {
     return api.get(`/projectsliked/${userId}`);
   },
 
-  getProjectsByUserName: (username) => api.get(`/projects/${username}`),
+  forgotPassword: (data) => api.put('/user/forgotpassword', data),
 };
 
 export default sheets;
