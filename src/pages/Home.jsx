@@ -275,9 +275,6 @@ function Home() {
                   <Typography variant="h6" color="#000" sx={{ mb: 1 }}>
                     {project.titulo}
                   </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {/* {project.user.name}  */}
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>

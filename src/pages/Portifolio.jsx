@@ -7,6 +7,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Pagination,
 } from "@mui/material";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
@@ -33,6 +34,11 @@ function Portfolio() {
   const usernameLocal = localStorage.getItem("username");
   const isOwner = usernameLocal === username;
 
+  // paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const itemsPerPage = 4;
+
   // Modal
   const [openModal, setOpenModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -43,7 +49,11 @@ function Portfolio() {
   });
 
   // Snackbar
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -59,10 +69,18 @@ function Portfolio() {
       setProjects((prev) => prev.filter((p) => p.id !== selectedProject));
       setOpenModal(false);
       setSelectedProject(null);
-      setSnackbar({ open: true, message: "Projeto deletado com sucesso!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Projeto deletado com sucesso!",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Erro ao deletar projeto:", error);
-      setSnackbar({ open: true, message: "Erro ao deletar o projeto.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Erro ao deletar o projeto.",
+        severity: "error",
+      });
       setOpenModal(false);
       setSelectedProject(null);
     }
@@ -112,6 +130,8 @@ function Portfolio() {
               : null,
           }))
         );
+
+        setTotalPaginas(Math.ceil(dataProjects.length / itemsPerPage));
       } catch (error) {
         console.log("error:", error?.response?.data?.error);
         setError("Página Não Encontrada");
@@ -126,14 +146,14 @@ function Portfolio() {
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
     if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
       return null;
     }
     const id_user = localStorage.getItem("id_usuario");
     try {
       const response = await api.getUserById(id_user);
       const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
@@ -144,7 +164,6 @@ function Portfolio() {
   useEffect(() => {
     getUserById();
   }, []);
-
 
   if (loading) {
     return (
@@ -183,9 +202,18 @@ function Portfolio() {
 
   if (!user) return null;
 
+  // lógica de paginação
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const displayedProjects = projects.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
+      {userPlan.plan === false && userPlan.authenticated === true ? (
+        <BottonUpgrade />
+      ) : null}
 
       <Box style={styles.container}>
         {/* Perfil do usuário */}
@@ -226,7 +254,7 @@ function Portfolio() {
         {/* Projetos */}
         <Box style={styles.box_projeto}>
           <Box style={styles.grid}>
-            {projects.map((p) => (
+            {displayedProjects.map((p) => (
               <Box
                 key={p.id}
                 style={styles.card}
@@ -324,6 +352,19 @@ function Portfolio() {
               </Box>
             )}
           </Box>
+
+          {/* PAGINAÇÃO */}
+          {totalPaginas > 1 && (
+            <Box display="flex" justifyContent="center" mt={2} mb={4}>
+              <Pagination
+                count={totalPaginas}
+                page={currentPage}
+                onChange={(e, page) => setCurrentPage(page)}
+                color="primary"
+                shape="rounded"
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Modal de confirmação */}
@@ -379,7 +420,6 @@ function Portfolio() {
         </Snackbar>
       </Box>
     </>
-
   );
 }
 
