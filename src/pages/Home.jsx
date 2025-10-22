@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, Box, Grid } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Grid,
+  Chip,
+  Stack,
+  Snackbar,
+  Alert,
+  Pagination,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import LikeButton from "../Components/likeButton";
 import LoginPromptModal from "../Components/LoginPromptModal";
@@ -7,19 +18,15 @@ import api from "../axios/axios";
 import Header from "../Components/Header";
 import BottonUpgrade from "../Components/BottonUpgrade";
 
-const shuffleArray = (array) => {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-};
-
 function Home() {
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [ordenacao, setOrdenacao] = useState("maisRecentes");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const projetosPorPagina = 6;
   const navigate = useNavigate();
 
   const [userPlan, setUserPlan] = useState({
@@ -27,13 +34,12 @@ function Home() {
     authenticated: null,
   });
 
-  
-
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const response = await api.getAllProjects();
         let rawProjects = response?.data?.profile_projeto ?? [];
+        console.log(response.data)
 
         const formattedProjects = rawProjects.map((p) => ({
           ID_projeto: p.ID_projeto,
@@ -42,9 +48,12 @@ function Home() {
           imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
         }));
 
-        const shuffled = shuffleArray(formattedProjects);
-        setProjects(shuffled);
-        setFilteredProjects(shuffled);
+        const sorted = formattedProjects.sort(
+          (a, b) => b.ID_projeto - a.ID_projeto
+        );
+
+        setProjects(sorted);
+        setFilteredProjects(sorted);
       } catch (err) {
         console.error("Erro ao buscar projetos:", err);
       }
@@ -53,23 +62,48 @@ function Home() {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    const ordenados = [...projects];
+
+    switch (ordenacao) {
+      case "maisCurtidos":
+        ordenados.sort((a, b) => b.total_curtidas - a.total_curtidas);
+        break;
+      case "menosCurtidos":
+        ordenados.sort((a, b) => a.total_curtidas - b.total_curtidas);
+        break;
+      case "tituloAZ":
+        ordenados.sort((a, b) => a.titulo.localeCompare(b.titulo));
+        break;
+      case "tituloZA":
+        ordenados.sort((a, b) => b.titulo.localeCompare(a.titulo));
+        break;
+      case "maisRecentes":
+      default:
+        ordenados.sort((a, b) => b.ID_projeto - a.ID_projeto);
+        break;
+    }
+
+    setFilteredProjects(ordenados);
+    setCurrentPage(1);
+  }, [ordenacao, projects]);
+
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
-    console.log("Authenticated:", authenticated);
     if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
       return null;
     }
     const id_user = localStorage.getItem("id_usuario");
-    console.log("ID do usuário:", id_user);
     try {
       const response = await api.getUserById(id_user);
       const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
-      alert("error");
+      setSnackbarMessage("Erro ao buscar usuário");
+      setSnackbarOpen(true);
     }
   }
 
@@ -87,6 +121,7 @@ function Home() {
   };
 
   const handleSearch = (query) => {
+    setCurrentPage(1);
     if (!query) {
       setFilteredProjects(projects);
     } else {
@@ -97,18 +132,65 @@ function Home() {
     }
   };
 
-  
-
+  // Paginação
+  const indexUltimoProjeto = currentPage * projetosPorPagina;
+  const indexPrimeiroProjeto = indexUltimoProjeto - projetosPorPagina;
+  const projetosVisiveis = filteredProjects.slice(
+    indexPrimeiroProjeto,
+    indexUltimoProjeto
+  );
+  const totalPaginas = Math.ceil(filteredProjects.length / projetosPorPagina);
 
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
+      {userPlan.plan === false && userPlan.authenticated === true ? (
+        <BottonUpgrade />
+      ) : null}
 
       <Header onSearch={handleSearch} />
 
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          flexWrap: "wrap",
+          justifyContent: "center",
+          mt: -10,
+          mb: 3,
+          gap: 1.5,
+        }}
+      >
+        {[
+          { label: "Mais recentes", value: "maisRecentes" },
+          { label: "Mais curtidos", value: "maisCurtidos" },
+          { label: "Menos curtidos", value: "menosCurtidos" },
+          { label: "Título A-Z", value: "tituloAZ" },
+          { label: "Título Z-A", value: "tituloZA" },
+        ].map((filtro) => (
+          <Chip
+            key={filtro.value}
+            label={filtro.label}
+            clickable
+            variant={ordenacao === filtro.value ? "filled" : "outlined"}
+            color={ordenacao === filtro.value ? "primary" : "default"}
+            onClick={() => setOrdenacao(filtro.value)}
+            sx={{
+              fontWeight: ordenacao === filtro.value ? 600 : 400,
+              boxShadow:
+                ordenacao === filtro.value
+                  ? "0px 3px 6px rgba(0, 0, 0, 0.15)"
+                  : "none",
+              borderWidth: ordenacao === filtro.value ? 2 : 1,
+              borderColor: ordenacao === filtro.value ? "#1976d2" : "#ccc",
+              transition: "all 0.2s ease-in-out",
+            }}
+          />
+        ))}
+      </Stack>
+
       <Grid container spacing={2} sx={{ mb: 5 }}>
-        {filteredProjects.length > 0 ? (
-          filteredProjects.map((project) => (
+        {projetosVisiveis.length > 0 ? (
+          projetosVisiveis.map((project) => (
             <Grid key={project.ID_projeto} item xs={12} sm={6} md={4}>
               <Card
                 sx={{
@@ -127,7 +209,7 @@ function Home() {
                   maxWidth: 400,
                   "&:hover": { transform: "scale(1.03)" },
                 }}
-                onClick={() => handleCardClick(project.ID_projeto)} // <-- passa o ID (string/number)
+                onClick={() => handleCardClick(project.ID_projeto)}
               >
                 <Box
                   sx={{
@@ -156,7 +238,7 @@ function Home() {
                       padding: 0.5,
                       boxShadow: 1,
                     }}
-                    onClick={(e) => e.stopPropagation()} // <-- evita abrir detalhes ao clicar no like
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <LikeButton
                       projectId={project.ID_projeto}
@@ -194,7 +276,7 @@ function Home() {
                     {project.titulo}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    {project.total_curtidas} Curtidas
+                    {/* {project.user.name}  */}
                   </Typography>
                 </CardContent>
               </Card>
@@ -214,7 +296,35 @@ function Home() {
         )}
       </Grid>
 
+      {/* Paginação */}
+      {totalPaginas > 1 && (
+        <Box display="flex" justifyContent="center" mt={2} mb={4}>
+          <Pagination
+            count={totalPaginas}
+            page={currentPage}
+            onChange={(e, page) => setCurrentPage(page)}
+            color="primary"
+            shape="rounded"
+          />
+        </Box>
+      )}
+
       <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="error"
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

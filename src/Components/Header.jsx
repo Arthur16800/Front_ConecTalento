@@ -3,13 +3,7 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import conecTalento from "../assets/ConecTalento.png";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  InputBase,
-  Menu,
-  MenuItem,
-  IconButton,
-  Avatar,
-} from "@mui/material";
+import { InputBase, Menu, MenuItem, IconButton, Avatar, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import api from "../axios/axios";
@@ -26,9 +20,30 @@ const Header = ({ children, onSearch }) => {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  const [userPlan, setUserPlan] = useState({
+    plan: null,
+    authenticated: null,
+  });
+
+  async function getUserById() {
+    const authenticated = localStorage.getItem("authenticated");
+    if (!authenticated) {
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
+      return null;
+    }
+    const id_user = localStorage.getItem("id_usuario");
+    try {
+      const response = await api.getUserById(id_user);
+      const plan = Boolean(response.data.profile.plano);
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
+      return plan;
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+    }
+  }
+
   const open = Boolean(anchorEl);
 
-  // 🔹 Busca os dados do usuário
   useEffect(() => {
     const token = localStorage.getItem("token");
     const id_usuario = localStorage.getItem("id_usuario");
@@ -50,12 +65,12 @@ const Header = ({ children, onSearch }) => {
             ...data,
             imagem: base64Src,
           });
+          getUserById();
         })
         .catch((err) => console.error("Erro ao buscar dados do usuário:", err));
     }
   }, []);
 
-  // 🔹 Oculta o header ao rolar
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -70,14 +85,12 @@ const Header = ({ children, onSearch }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // 🔹 Sincroniza searchQuery com o state da rota
   useEffect(() => {
     if (location.state?.search) {
       setSearchQuery(location.state.search);
     }
   }, [location.state]);
 
-  // 🔹 Logout
   const handleLogout = () => {
     localStorage.clear();
     setIsLogged(false);
@@ -95,7 +108,6 @@ const Header = ({ children, onSearch }) => {
 
   const handleMenuClose = () => setAnchorEl(null);
 
-  // 🔹 Lógica de pesquisa
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
@@ -103,12 +115,10 @@ const Header = ({ children, onSearch }) => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     const trimmedQuery = searchQuery.trim();
-    
+
     if (location.pathname === "/") {
-      // Se já está na Home, executa a pesquisa diretamente
       if (onSearch) onSearch(trimmedQuery);
     } else {
-      // Se está em outra página, navega para Home com o termo de pesquisa
       navigate("/", { state: { search: trimmedQuery } });
     }
   };
@@ -136,7 +146,7 @@ const Header = ({ children, onSearch }) => {
               onClick={() => navigate("/")}
             />
 
-            {/* CAMPO DE PESQUISA */}
+            {/* PESQUISA */}
             <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
               <InputBase
                 placeholder="Pesquisar projetos..."
@@ -157,23 +167,30 @@ const Header = ({ children, onSearch }) => {
                 if (!isLogged) navigate("/login");
               }}
             >
-              {isLogged && userData?.imagem ? (
-                <Avatar
-                  src={userData.imagem}
-                  alt={userData.username}
-                  sx={{ width: 32, height: 32 }}
-                />
-              ) : (
-                <Avatar sx={{ bgcolor: "#888", width: 32, height: 32 }}>
-                  {!isLogged ? "?" : userData?.username?.[0]?.toUpperCase() || "U"}
-                </Avatar>
-              )}
+              <Avatar
+                src={isLogged && userData?.imagem ? userData.imagem : ""}
+                alt={userData?.username}
+                sx={{ width: 32, height: 32, bgcolor: "#888" }}
+              >
+                {!isLogged
+                  ? "?"
+                  : userData?.username?.[0]?.toUpperCase() || "U"}
+              </Avatar>
 
-              <span style={{ cursor: "pointer", marginLeft: "8px" }}>
-                {isLogged
-                  ? userData?.username || userData?.name || "Login"
-                  : "Login"}
-              </span>
+              {/* Nome e Plano */}
+              <Box sx={{ display: "flex", flexDirection: "column", ml: 1 }}>
+                <Typography sx={{ fontSize: 14, lineHeight: 1 }}>
+                  {isLogged
+                    ? userData?.username || userData?.name || "Usuário"
+                    : "Login"}
+                </Typography>
+
+                {isLogged && userPlan.authenticated && (
+                  <Typography sx={{ fontSize: 11, opacity: 0.8, mt: 0.3 }}>
+                    {userPlan.plan === false ? "Free" : "Premium"}
+                  </Typography>
+                )}
+              </Box>
 
               {isLogged && (
                 <IconButton
@@ -194,12 +211,8 @@ const Header = ({ children, onSearch }) => {
                 <MenuItem onClick={() => navigate("/perfiluser")}>
                   Área do Usuário
                 </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    navigate("/" + userData?.username)
-                  }
-                >
-                  Meu Portifólio
+                <MenuItem onClick={() => navigate("/" + userData?.username)}>
+                  Meu Portfólio
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Sair</MenuItem>
               </Menu>
