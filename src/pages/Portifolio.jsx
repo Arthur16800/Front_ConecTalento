@@ -7,6 +7,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Pagination,
 } from "@mui/material";
 import background2 from "../assets/background2.png";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
@@ -19,6 +20,7 @@ import api from "../axios/axios";
 import LikeButton from "../Components/likeButton";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import NotFound from "./NotFound"; // para exibir a página 404
 
 function Portfolio() {
   const { username } = useParams();
@@ -27,11 +29,16 @@ function Portfolio() {
 
   const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
-  const [error, setError] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [usernameLocal, setusernameLocal] = useState(null);
 
-  const usernameLocal = localStorage.getItem("username");
   const isOwner = usernameLocal === username;
+
+  // paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const itemsPerPage = 4;
 
   // Modal
   const [openModal, setOpenModal] = useState(false);
@@ -43,7 +50,11 @@ function Portfolio() {
   });
 
   // Snackbar
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -59,10 +70,18 @@ function Portfolio() {
       setProjects((prev) => prev.filter((p) => p.id !== selectedProject));
       setOpenModal(false);
       setSelectedProject(null);
-      setSnackbar({ open: true, message: "Projeto deletado com sucesso!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Projeto deletado com sucesso!",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Erro ao deletar projeto:", error);
-      setSnackbar({ open: true, message: "Erro ao deletar o projeto.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Erro ao deletar o projeto.",
+        severity: "error",
+      });
       setOpenModal(false);
       setSelectedProject(null);
     }
@@ -73,14 +92,14 @@ function Portfolio() {
       if (!username) return;
 
       setLoading(true);
-      setError(null);
+      setNotFound(false);
 
       try {
         const responseUser = await api.getByUsername(username);
         const dataUser = responseUser.data.profile;
 
         if (!dataUser) {
-          setError("Página Não Encontrada");
+          setNotFound(true);
           setLoading(false);
           return;
         }
@@ -107,14 +126,14 @@ function Portfolio() {
             id: p.ID_projeto,
             title: p.titulo,
             total_curtidas: p.total_curtidas,
-            imagem: p.imagem
-              ? `data:${p.tipo_imagem};base64,${p.imagem}`
-              : null,
+            imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
           }))
         );
+
+        setTotalPaginas(Math.ceil(dataProjects.length / itemsPerPage));
       } catch (error) {
         console.log("error:", error?.response?.data?.error);
-        setError("Página Não Encontrada");
+        setNotFound(true);
       }
 
       setLoading(false);
@@ -126,14 +145,15 @@ function Portfolio() {
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
     if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
       return null;
     }
     const id_user = localStorage.getItem("id_usuario");
     try {
       const response = await api.getUserById(id_user);
       const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      setusernameLocal(response.data.profile.username);
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
@@ -144,7 +164,6 @@ function Portfolio() {
   useEffect(() => {
     getUserById();
   }, []);
-
 
   if (loading) {
     return (
@@ -161,31 +180,25 @@ function Portfolio() {
     );
   }
 
-  if (error) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "80vh",
-          textAlign: "center",
-        }}
-      >
-        <AccountCircleIcon sx={{ fontSize: 120, color: "#ccc" }} />
-        <Typography variant="h5" sx={{ mt: 2 }}>
-          {error}
-        </Typography>
-      </Box>
-    );
+  // Quando usuário não existe ou houve erro na busca
+  if (notFound) {
+    return <NotFound />;
   }
 
   if (!user) return null;
 
+  // lógica de paginação
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const displayedProjects = projects.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
+      {userPlan.plan === false && userPlan.authenticated === true ? (
+        <BottonUpgrade />
+      ) : null}
 
       <Box style={styles.container}>
         {/* Perfil do usuário */}
@@ -225,8 +238,27 @@ function Portfolio() {
 
         {/* Projetos */}
         <Box style={styles.box_projeto}>
+          {isOwner && (
+            <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+              <IconButton
+                onClick={() => navigate("/criarProjeto")}
+                sx={{
+                  backgroundColor: "#1976d2",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#1565c0" },
+                  borderRadius: "50%",
+                  width: 56,
+                  height: 56,
+                  boxShadow: "0px 3px 6px rgba(0,0,0,0.2)",
+                }}
+              >
+                <AddIcon sx={{ fontSize: 32 }} />
+              </IconButton>
+            </Box>
+          )}
+
           <Box style={styles.grid}>
-            {projects.map((p) => (
+            {displayedProjects.map((p) => (
               <Box
                 key={p.id}
                 style={styles.card}
@@ -285,45 +317,20 @@ function Portfolio() {
                 </Box>
               </Box>
             ))}
-
-            {/* Card de criar projeto */}
-            {isOwner && (
-              <Box
-                onClick={() => navigate("/criarProjeto")}
-                sx={{
-                  width: "330px",
-                  height: "250px",
-                  background: "#F0F0F0",
-                  borderRadius: 5,
-                  padding: 0,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  backgroundColor: "#E0E0E0",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: "40%",
-                    height: "55%",
-                    borderRadius: "100%",
-                    backgroundColor: "#BDBDBD",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    transition: "0.2s",
-                    "&:hover": {
-                      backgroundColor: "#A0A0A0",
-                    },
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 70, color: "#fff" }} />
-                </Box>
-              </Box>
-            )}
           </Box>
+
+          {/* PAGINAÇÃO */}
+          {totalPaginas > 1 && (
+            <Box display="flex" justifyContent="center" mt={2} mb={4}>
+              <Pagination
+                count={totalPaginas}
+                page={currentPage}
+                onChange={(e, page) => setCurrentPage(page)}
+                color="primary"
+                shape="rounded"
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Modal de confirmação */}
@@ -379,7 +386,6 @@ function Portfolio() {
         </Snackbar>
       </Box>
     </>
-
   );
 }
 

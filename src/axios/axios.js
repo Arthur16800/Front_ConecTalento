@@ -142,6 +142,9 @@ const sheets = {
   forgotPassword: (data) => api.put('/user/forgotpassword', data),
 
   deleteProject: (ID_projeto, ID_user) => api.delete(`/project/${ID_projeto}`, {data: { ID_user },}),
+
+  updateExtraInfo: (data) => api.put("/extrainfo", data),
+  getExtraInfo: (id_user) => api.get(`/extrainfo/${id_user}`),
   
 };
 
