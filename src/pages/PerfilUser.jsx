@@ -107,11 +107,11 @@ function PerfilUser() {
         const response = await api.getExtraInfo(id_user);
         const data = response.data
         setFormContatoData({
-          telefone: data.numero_telefone || "",
-          instagram: data.link_insta || "",
-          linkedin: data.link_facebook || "",
-          github: data.link_github || "",
-          pinterest: data.link_pinterest || "",
+          telefone: data.numero_telefone ,
+          instagram: data.link_insta,
+          linkedin: data.link_facebook,
+          github: data.link_github,
+          pinterest: data.link_pinterest,
         });
       } catch (error) {
         console.error("Erro ao buscar informações de contato:", error);
@@ -130,8 +130,11 @@ function PerfilUser() {
   const handleSenhaChange = (e) =>
     setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleContatoChange = (e) =>
-    setFormContatoData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleContatoChange = (e) => {
+    const { name, value } = e.target;
+    const sanitized = name === "telefone" ? value.replace(/\s+/g, "") : value;
+    setFormContatoData((prev) => ({ ...prev, [name]: sanitized }));
+  };
 
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
@@ -594,7 +597,7 @@ function PerfilUser() {
                 size="small"
                 label="Telefone"
                 name="telefone"
-                value={formContatoData.telefone || ""}
+                value={formContatoData.telefone}
                 onChange={handleContatoChange}
               />
               <TextField

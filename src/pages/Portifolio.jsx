@@ -21,6 +21,11 @@ import LikeButton from "../Components/likeButton";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
 import NotFound from "./NotFound"; // para exibir a página 404
+import InstagramIcon from "@mui/icons-material/Instagram";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import PinterestIcon from "@mui/icons-material/Pinterest";
+import PhoneIcon from "@mui/icons-material/Phone";
 
 function Portfolio() {
   const { username } = useParams();
@@ -116,6 +121,7 @@ function Portfolio() {
           email: dataUser.email,
           biografia: dataUser.biografia || "Nenhuma biografia cadastrada.",
           imagem: base64Src,
+          extrainfo: dataUser.extrainfo || {},
         });
 
         const responseProjects = await api.getProjectsByUserName(username);
@@ -126,7 +132,9 @@ function Portfolio() {
             id: p.ID_projeto,
             title: p.titulo,
             total_curtidas: p.total_curtidas,
-            imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
+            imagem: p.imagem
+              ? `data:${p.tipo_imagem};base64,${p.imagem}`
+              : null,
           }))
         );
 
@@ -226,11 +234,78 @@ function Portfolio() {
 
           {/* Contatos */}
           <Box style={styles.box_contatos}>
-            <Box style={styles.contato}></Box>
             <Box style={styles.contato}>
               <EmailIcon />
               <Typography>{user.email}</Typography>
             </Box>
+
+            {/* 🔹 Extra Info (só exibe o que existir) */}
+            {user.extrainfo?.numero_telefone && (
+              <Box style={styles.contato}>
+                <PhoneIcon />
+                <Typography>{user.extrainfo.numero_telefone}</Typography>
+              </Box>
+            )}
+
+            {user.extrainfo?.link_insta && (
+              <Box style={styles.contato}>
+                <InstagramIcon color="secondary" />
+                <Typography
+                  component="a"
+                  href={user.extrainfo.link_insta}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textDecoration: "none", color: "inherit" }}
+                >
+                  Instagram
+                </Typography>
+              </Box>
+            )}
+
+            {user.extrainfo?.link_facebook && (
+              <Box style={styles.contato}>
+                <FacebookIcon color="primary" />
+                <Typography
+                  component="a"
+                  href={user.extrainfo.link_facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textDecoration: "none", color: "inherit" }}
+                >
+                  Facebook
+                </Typography>
+              </Box>
+            )}
+
+            {user.extrainfo?.link_github && (
+              <Box style={styles.contato}>
+                <GitHubIcon />
+                <Typography
+                  component="a"
+                  href={user.extrainfo.link_github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textDecoration: "none", color: "inherit" }}
+                >
+                  GitHub
+                </Typography>
+              </Box>
+            )}
+
+            {user.extrainfo?.link_pinterest && (
+              <Box style={styles.contato}>
+                <PinterestIcon sx={{ color: "#E60023" }} />
+                <Typography
+                  component="a"
+                  href={user.extrainfo.link_pinterest}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textDecoration: "none", color: "inherit" }}
+                >
+                  Pinterest
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
 
