@@ -112,7 +112,7 @@ function Pagamento() {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(formData.qr_code || "");
+      await navigator.clipboard.writeText(formData.qr_code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {}

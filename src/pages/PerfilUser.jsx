@@ -25,6 +25,7 @@ function PerfilUser() {
   const [openModal, setOpenModal] = useState(false);
   const [openModalSenha, setOpenModalSenha] = useState(false);
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
+  const [openModalContato, setOpenModalContato] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false);
@@ -45,10 +46,21 @@ function PerfilUser() {
     confirmar_senha: "",
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [alert, setAlert] = useState({ open: false, severity: "", message: "" });
+  const [formContatoData, setFormContatoData] = useState({
+    telefone: "",
+    instagram: "",
+    linkedin: "",
+    github: "",
+    pinterest: "",
+  });
 
-  // Estados para "esqueci minha senha"
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [alert, setAlert] = useState({
+    open: false,
+    severity: "",
+    message: "",
+  });
+
   const [emailRecuperacao, setEmailRecuperacao] = useState("");
   const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
@@ -90,7 +102,23 @@ function PerfilUser() {
         );
       }
     }
+    async function getContactInfo() {
+      try {
+        const response = await api.getExtraInfo(id_user);
+        const data = response.data
+        setFormContatoData({
+          telefone: data.numero_telefone ,
+          instagram: data.link_insta,
+          linkedin: data.link_facebook,
+          github: data.link_github,
+          pinterest: data.link_pinterest,
+        });
+      } catch (error) {
+        console.error("Erro ao buscar informações de contato:", error);
+      }
+    }
     getUserById();
+    getContactInfo();
   }, [id_user]);
 
   const showAlert = (severity, message) =>
@@ -102,10 +130,18 @@ function PerfilUser() {
   const handleSenhaChange = (e) =>
     setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const handleContatoChange = (e) => {
+    const { name, value } = e.target;
+    const sanitized = name === "telefone" ? value.replace(/\s+/g, "") : value;
+    setFormContatoData((prev) => ({ ...prev, [name]: sanitized }));
+  };
+
   const handleOpenModal = () => setOpenModal(true);
   const handleCloseModal = () => setOpenModal(false);
   const handleOpenModalSenha = () => setOpenModalSenha(true);
   const handleCloseModalSenha = () => setOpenModalSenha(false);
+  const handleOpenModalContato = () => setOpenModalContato(true);
+  const handleCloseModalContato = () => setOpenModalContato(false);
 
   const handleDeleteUser = () => {
     deleteUser();
@@ -190,8 +226,36 @@ function PerfilUser() {
     }
   }
 
+  async function handleUpdateContactInfo() {
+    try {
+      const response = await api.updateExtraInfo({
+        link_insta: formContatoData.instagram,
+        link_facebook: formContatoData.linkedin,
+        link_github: formContatoData.github,
+        link_pinterest: formContatoData.pinterest,
+        numero_telefone: formContatoData.telefone,
+        ID_user: id_user,
+      });
+      showAlert(
+        "success",
+        response.data.message || "Informações de contato atualizadas!"
+      );
+      handleCloseModalContato();
+    } catch (error) {
+      console.error("Erro ao atualizar informações de contato:", error);
+      showAlert(
+        "error",
+        error.response?.data?.error || "Erro ao atualizar informações de contato."
+      );
+    }
+  }
+
   async function handleUpdatePassword() {
-    if (!senhaData.senha_atual || !senhaData.nova_senha || !senhaData.confirmar_senha) {
+    if (
+      !senhaData.senha_atual ||
+      !senhaData.nova_senha ||
+      !senhaData.confirmar_senha
+    ) {
       showAlert("error", "Preencha todos os campos.");
       return;
     }
@@ -231,7 +295,6 @@ function PerfilUser() {
     setFormData((prev) => ({ ...prev, imagem: file }));
   };
 
-  // ============ ESQUECI MINHA SENHA ============
   const handleOpenModalEsqueciSenha = () => setOpenModalEsqueci(true);
   const handleCloseModalEsqueciSenha = () => {
     setOpenModalEsqueci(false);
@@ -306,14 +369,14 @@ function PerfilUser() {
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
     if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
       return null;
     }
     const id_user = localStorage.getItem("id_usuario");
     try {
       const response = await api.getUserById(id_user);
       const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
@@ -325,10 +388,11 @@ function PerfilUser() {
     getUserById();
   }, []);
 
-
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
+      {userPlan.plan === false && userPlan.authenticated === true ? (
+        <BottonUpgrade />
+      ) : null}
 
       <Box style={styles.container}>
         <Snackbar
@@ -342,7 +406,6 @@ function PerfilUser() {
           </Alert>
         </Snackbar>
 
-        {/* Card lateral */}
         <Box style={styles.leftCard}>
           <Box style={styles.box_IMG} />
           <Box style={styles.user_perfil}>
@@ -400,6 +463,9 @@ function PerfilUser() {
               <Button style={styles.editBtn} onClick={handleEditClick}>
                 Editar Perfil
               </Button>
+              <Button style={styles.editBtn} onClick={handleOpenModalContato}>
+                Informações de Contato
+              </Button>
               <Typography
                 variant="body2"
                 sx={{
@@ -417,7 +483,6 @@ function PerfilUser() {
           )}
         </Box>
 
-        {/* Painel principal */}
         <Box style={styles.formPanel}>
           <Typography style={styles.formTitle}>Perfil do Usuário</Typography>
 
@@ -475,13 +540,16 @@ function PerfilUser() {
                 onClick={handleSaveClick}
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={20} color="inherit" /> : "Salvar"}
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Salvar"
+                )}
               </Button>
             </>
           )}
         </Box>
 
-        {/* Modais */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600}>
@@ -491,16 +559,90 @@ function PerfilUser() {
               Essa ação é irreversível e todos os seus dados serão perdidos.
             </Typography>
             <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-              <Button variant="outlined" onClick={handleCloseModal} sx={{ flex: 1 }}>
+              <Button
+                variant="outlined"
+                onClick={handleCloseModal}
+                sx={{ flex: 1 }}
+              >
                 Cancelar
               </Button>
               <Button
                 variant="contained"
-                sx={{ flex: 1, background: "linear-gradient(90deg,#F23A3A,#D12F2F)" }}
+                sx={{
+                  flex: 1,
+                  background: "linear-gradient(90deg,#F23A3A,#D12F2F)",
+                }}
                 onClick={handleDeleteUser}
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={20} color="inherit" /> : "Deletar"}
+                {loading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Deletar"
+                )}
+              </Button>
+            </Box>
+          </Box>
+        </ModalBase>
+
+        <ModalBase open={openModalContato} onClose={handleCloseModalContato}>
+          <Box textAlign="center" p={3} mt={-6}>
+            <Typography variant="h6" fontWeight={600} mb={1}>
+              Informações de Contato
+            </Typography>
+
+            <Box display="flex" flexDirection="column" gap={1.5}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Telefone"
+                name="telefone"
+                value={formContatoData.telefone}
+                onChange={handleContatoChange}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Instagram"
+                name="instagram"
+                value={formContatoData.instagram || ""}
+                onChange={handleContatoChange}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="LinkedIn"
+                name="linkedin"
+                value={formContatoData.linkedin || ""}
+                onChange={handleContatoChange}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="GitHub"
+                name="github"
+                value={formContatoData.github || ""}
+                onChange={handleContatoChange}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Pinterest"
+                name="pinterest"
+                value={formContatoData.pinterest || ""}
+                onChange={handleContatoChange}
+              />
+
+              <Button
+                variant="contained"
+                sx={{
+                  mt: 2,
+                  borderRadius: 5,
+                  background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+                }}
+                onClick={handleUpdateContactInfo}
+              >
+                Salvar Informações
               </Button>
             </Box>
           </Box>
@@ -541,16 +683,26 @@ function PerfilUser() {
             <Button
               fullWidth
               variant="contained"
-              sx={{ borderRadius: 5, background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)" }}
+              sx={{
+                borderRadius: 5,
+                background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+              }}
               onClick={handleUpdatePassword}
               disabled={loadingSenha}
             >
-              {loadingSenha ? <CircularProgress size={20} color="inherit" /> : "Salvar Nova Senha"}
+              {loadingSenha ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                "Salvar Nova Senha"
+              )}
             </Button>
           </Box>
         </ModalBase>
 
-        <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
+        <ModalBase
+          open={openModalEsqueci}
+          onClose={handleCloseModalEsqueciSenha}
+        >
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Esqueci Minha Senha
@@ -577,14 +729,18 @@ function PerfilUser() {
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={codigoEnviado ? validarCodigo : forgotPasswordSendCode}
+                  onClick={
+                    codigoEnviado ? validarCodigo : forgotPasswordSendCode
+                  }
                   disabled={loading}
                 >
-                  {loading
-                    ? <CircularProgress size={20} color="inherit" />
-                    : codigoEnviado
-                      ? "Validar Código"
-                      : "Enviar Código"}
+                  {loading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : codigoEnviado ? (
+                    "Validar Código"
+                  ) : (
+                    "Enviar Código"
+                  )}
                 </Button>
               </>
             ) : (
@@ -611,7 +767,11 @@ function PerfilUser() {
                   onClick={atualizarSenhaEsquecida}
                   disabled={loading}
                 >
-                  {loading ? <CircularProgress size={20} color="inherit" /> : "Atualizar Senha"}
+                  {loading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    "Atualizar Senha"
+                  )}
                 </Button>
               </>
             )}
@@ -619,11 +779,9 @@ function PerfilUser() {
         </ModalBase>
       </Box>
     </>
-
   );
 }
 
-// Estilos
 function Styles() {
   return {
     container: {
