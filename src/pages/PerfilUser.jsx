@@ -74,7 +74,7 @@ function PerfilUser() {
   });
 
   useEffect(() => {
-    async function getUserById() {
+    async function fetchUser() {
       try {
         const response = await api.getUserById(id_user);
         const data = response.data.profile;
@@ -102,12 +102,13 @@ function PerfilUser() {
         );
       }
     }
-    async function getContactInfo() {
+
+    async function fetchContactInfo() {
       try {
         const response = await api.getExtraInfo(id_user);
-        const data = response.data
+        const data = response.data;
         setFormContatoData({
-          telefone: data.numero_telefone ,
+          telefone: data.numero_telefone,
           instagram: data.link_insta,
           linkedin: data.link_facebook,
           github: data.link_github,
@@ -117,13 +118,14 @@ function PerfilUser() {
         console.error("Erro ao buscar informações de contato:", error);
       }
     }
-    getUserById();
-    getContactInfo();
+
+    fetchUser();
+    fetchContactInfo();
   }, [id_user]);
 
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
-  const handleCloseAlert = () => setAlert({ ...alert, open: false });
+  const handleCloseAlert = () => setAlert((prev) => ({ ...prev, open: false }));
 
   const handleInputChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -168,8 +170,14 @@ function PerfilUser() {
     setLoading(true);
     try {
       const data = new FormData();
+
+      const biografiaToSend =
+        !formData.biografia || formData.biografia.trim() === ""
+          ? "Nenhuma biografia cadastrada."
+          : formData.biografia;
+
       data.append("email", formData.email);
-      data.append("biografia", formData.biografia);
+      data.append("biografia", biografiaToSend);
       data.append("username", formData.username);
       data.append("name", formData.name);
 
@@ -182,17 +190,31 @@ function PerfilUser() {
       const response = await api.updateUser(id_user, data);
 
       const img = response.data?.profile?.imagem;
+      let updatedAvatar = avatarPreview;
+
       if (img) {
         const isBase64 = img.startsWith("data:image");
         const base64Src = isBase64 ? img : `data:image/jpeg;base64,${img}`;
-        setAvatarPreview(base64Src);
-        setFormData((prev) => ({ ...prev, imagem: base64Src }));
+        updatedAvatar = base64Src;
       }
 
+      setFormData((prev) => ({
+        ...prev,
+        name: formData.name,
+        username: formData.username,
+        email: formData.email,
+        biografia: biografiaToSend,
+        imagem: updatedAvatar,
+      }));
+      setAvatarPreview(updatedAvatar);
+
+      // Mostra alerta de sucesso
       showAlert(
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
       );
+
+      // Sai do modo edição
       setEditing(false);
     } catch (error) {
       console.error("Erro no updateUser:", error);
@@ -245,7 +267,8 @@ function PerfilUser() {
       console.error("Erro ao atualizar informações de contato:", error);
       showAlert(
         "error",
-        error.response?.data?.error || "Erro ao atualizar informações de contato."
+        error.response?.data?.error ||
+          "Erro ao atualizar informações de contato."
       );
     }
   }
@@ -366,33 +389,29 @@ function PerfilUser() {
     }
   };
 
-  async function getUserById() {
-    const authenticated = localStorage.getItem("authenticated");
-    if (!authenticated) {
-      setUserPlan((prev) => ({ ...prev, authenticated: false }));
-      return null;
-    }
-    const id_user = localStorage.getItem("id_usuario");
-    try {
-      const response = await api.getUserById(id_user);
-      const plan = Boolean(response.data.profile.plano);
-      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
-      return plan;
-    } catch (error) {
-      console.error("Erro ao buscar usuário:", error);
-      alert("error");
-    }
-  }
-
   useEffect(() => {
-    getUserById();
-  }, []);
+    async function getUserPlanStatus() {
+      const authenticated = localStorage.getItem("authenticated");
+      if (!authenticated) {
+        setUserPlan((prev) => ({ ...prev, authenticated: false }));
+        return;
+      }
+      try {
+        const response = await api.getUserById(id_user);
+        const plan = Boolean(response.data.profile.plano);
+        setUserPlan({ plan, authenticated: true });
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      }
+    }
+    getUserPlanStatus();
+  }, [id_user]);
 
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? (
+      {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
-      ) : null}
+      )}
 
       <Box style={styles.container}>
         <Snackbar
@@ -406,7 +425,13 @@ function PerfilUser() {
           </Alert>
         </Snackbar>
 
-        <Box style={styles.leftCard}>
+        {/* Aqui: altura ajustada conforme editing */}
+        <Box
+          style={{
+            ...styles.leftCard,
+            height: editing ? 250 : 380,
+          }}
+        >
           <Box style={styles.box_IMG} />
           <Box style={styles.user_perfil}>
             <Box
@@ -466,19 +491,6 @@ function PerfilUser() {
               <Button style={styles.editBtn} onClick={handleOpenModalContato}>
                 Informações de Contato
               </Button>
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 2,
-                  textDecoration: "underline",
-                  color: "#6D2AF0",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-                onClick={handleOpenModalEsqueciSenha}
-              >
-                Esqueci Minha Senha
-              </Typography>
             </>
           )}
         </Box>
@@ -550,6 +562,7 @@ function PerfilUser() {
           )}
         </Box>
 
+        {/* Modal de apagar usuário */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600}>
@@ -585,6 +598,7 @@ function PerfilUser() {
           </Box>
         </ModalBase>
 
+        {/* Modal de contato */}
         <ModalBase open={openModalContato} onClose={handleCloseModalContato}>
           <Box textAlign="center" p={3} mt={-6}>
             <Typography variant="h6" fontWeight={600} mb={1}>
@@ -603,7 +617,7 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="Instagram"
+                label="Link do Instagram"
                 name="instagram"
                 value={formContatoData.instagram || ""}
                 onChange={handleContatoChange}
@@ -611,7 +625,7 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="LinkedIn"
+                label="Link do LinkedIn"
                 name="linkedin"
                 value={formContatoData.linkedin || ""}
                 onChange={handleContatoChange}
@@ -619,7 +633,7 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="GitHub"
+                label="Link do GitHub"
                 name="github"
                 value={formContatoData.github || ""}
                 onChange={handleContatoChange}
@@ -627,30 +641,38 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="Pinterest"
+                label="Link do Pinterest"
                 name="pinterest"
                 value={formContatoData.pinterest || ""}
                 onChange={handleContatoChange}
               />
-
-              <Button
-                variant="contained"
+              <Box
                 sx={{
-                  mt: 2,
-                  borderRadius: 5,
-                  background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-                onClick={handleUpdateContactInfo}
               >
-                Salvar Informações
-              </Button>
+                <Button
+                  variant="contained"
+                  sx={{
+                    borderRadius: 1,
+                    width: "65%",
+                    background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+                  }}
+                  onClick={handleUpdateContactInfo}
+                >
+                  Salvar Informações
+                </Button>
+              </Box>
             </Box>
           </Box>
         </ModalBase>
 
+        {/* Modal de alterar senha */}
         <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
-          <Box textAlign="center" p={2}>
-            <Typography variant="h6" fontWeight={600} mb={2}>
+          <Box textAlign="center" p={2} mt={-4}>
+            <Typography variant="h6" fontWeight={600} mb={1}>
               Alterar Senha
             </Typography>
             <TextField
@@ -684,7 +706,8 @@ function PerfilUser() {
               fullWidth
               variant="contained"
               sx={{
-                borderRadius: 5,
+                borderRadius: 1,
+                width: "65%",
                 background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
               }}
               onClick={handleUpdatePassword}
@@ -696,9 +719,23 @@ function PerfilUser() {
                 "Salvar Nova Senha"
               )}
             </Button>
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 2,
+                textDecoration: "underline",
+                color: "#6D2AF0",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              onClick={handleOpenModalEsqueciSenha}
+            >
+              Esqueci Minha Senha
+            </Typography>
           </Box>
         </ModalBase>
 
+        {/* Modal de esqueci minha senha */}
         <ModalBase
           open={openModalEsqueci}
           onClose={handleCloseModalEsqueciSenha}
@@ -803,6 +840,7 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      transition: "height 0.3s ease", // animação suave da altura
     },
     box_IMG: {
       height: 50,
