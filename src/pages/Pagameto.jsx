@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, GlobalStyles } from "@mui/material";
+import { Box, Typography, Button } from "@mui/material";
 import { useLocation, useParams } from "react-router-dom";
 import NotFound from "./NotFound";
 import ModalBase from "../Components/ModalBase";
@@ -24,7 +24,6 @@ function Pagamento() {
     }
   });
 
-  // Remove TODAS as chaves pix do localStorage
   const removeAllPixCache = () => {
     const keysToDelete = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -36,7 +35,6 @@ function Pagamento() {
     keysToDelete.forEach((k) => localStorage.removeItem(k));
   };
 
-  // Se a rota mudar e não vier state, recarrega do localStorage do novo id
   useEffect(() => {
     if (state) return;
     try {
@@ -57,23 +55,18 @@ function Pagamento() {
     }
   }, [formData]);
 
-  // Polling do status do pagamento
   useEffect(() => {
-    // Só inicia se houver formData válido e o payment_id corresponder à rota
     if (!formData || String(formData.payment_id) !== String(id)) return;
-    // Se já está aprovado, não precisa pollar
     if (formData.status === "approved") return;
 
     let isPollingCancelled = false;
 
     async function fetchPaymentStatus() {
-      // Guarda adicional, evita chamadas desnecessárias
       if (!formData?.payment_id) return;
       try {
         const response = await api.getPaymentPixStatus(id_user, formData.payment_id);
         const status = response?.data?.status;
         if (!isPollingCancelled && status && status !== formData.status) {
-          // Evita espalhar null
           setFormData((prev) => (prev ? { ...prev, status } : prev));
         }
       } catch (error) {
@@ -82,23 +75,18 @@ function Pagamento() {
       }
     }
 
-    // Dispara imediatamente uma vez
     fetchPaymentStatus();
-
-    // E mantém o polling a cada 3s
     const pollingTimerId = setInterval(() => {
       setTick((t) => t + 1);
       fetchPaymentStatus();
     }, 3000);
 
-    // Cleanup
     return () => {
       isPollingCancelled = true;
       clearInterval(pollingTimerId);
     };
   }, [id, formData?.payment_id, formData?.status, id_user]);
 
-  // Quando aprovar, remove TODAS as chaves pix:* do localStorage
   useEffect(() => {
     if (formData?.status !== "approved") return;
     removeAllPixCache();
@@ -141,10 +129,26 @@ function Pagamento() {
       </ModalBase>
 
       {formData.status === "approved" ? (
-        <Box>
-          <Typography style={styles.title}>
-            Pagamento aprovado! Obrigado por apoiar o Conectalento.
-          </Typography>
+        <Box sx={styles.successWrapper}>
+          <Box sx={styles.successCard}>
+            <Box sx={styles.checkCircle}>
+              <Typography sx={styles.checkIcon}>✓</Typography>
+            </Box>
+            <Typography sx={styles.successTitle}>
+              Pagamento aprovado
+            </Typography>
+            <Typography sx={styles.successSubtitle}>
+              Seu plano <strong>Premium</strong> está ativo. <br />
+              Obrigado por apoiar o <strong>Conectalento</strong>!
+            </Typography>
+            <Button
+              variant="contained"
+              sx={styles.successBtn}
+              onClick={() => (window.location.href = "/")}
+            >
+              Ir para o início
+            </Button>
+          </Box>
         </Box>
       ) : (
         <Box style={styles.container}>
@@ -160,13 +164,20 @@ function Pagamento() {
             />
           )}
 
-          {formData.amount && <Typography style={styles.code}>Valor: {formData.amount}</Typography>}
+          {formData.amount && (
+            <Typography style={styles.code}>Valor: {formData.amount}</Typography>
+          )}
 
+          {formData.qr_code && (
+            <Typography style={styles.code}>{formData.qr_code}</Typography>
+          )}
 
-
-          {formData.qr_code && <Typography style={styles.code}>{formData.qr_code}</Typography>}
-
-          <Button variant="contained" onClick={handleCopy} style={styles.copyBtn} disableElevation>
+          <Button
+            variant="contained"
+            onClick={handleCopy}
+            style={styles.copyBtn}
+            disableElevation
+          >
             {copied ? "Copiado" : "Copiar"}
           </Button>
         </Box>
@@ -243,6 +254,67 @@ function Styles() {
       fontWeight: 700,
       borderRadius: 9999,
       padding: "10px 18px",
+    },
+    successWrapper: {
+      width: "100%",
+      minHeight: "60vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom:"40px",
+      marginTop:"20px"
+    },
+    successCard: {
+      background: "#fff",
+      borderRadius: 20,
+      padding: "48px 32px",
+      maxWidth: 480,
+      width: "30%",
+      textAlign: "center",
+      boxShadow: "0 12px 32px rgba(122, 44, 246, 0.2)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 7,
+    },
+        checkCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: "50%",
+      background: "linear-gradient(to right, #7A2CF6, #9D4EDD)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      animation: "scaleUp 0.6s ease",
+    },
+    checkIcon: {
+      fontSize: 40,
+      color: "#fff",
+      fontWeight: 700,
+    },
+    successTitle: {
+      fontSize: 26,
+      fontWeight: 700,
+      fontFamily: "Montserrat, sans-serif",
+      color: "#1a1a1a",
+    },
+    successSubtitle: {
+      fontSize: 16,
+      lineHeight: 1.6,
+      color: "#555",
+      fontFamily: "Montserrat, sans-serif",
+    },
+    successBtn: {
+      background: "#7A2CF6",
+      color: "#fff",
+      fontWeight: 600,
+      textTransform: "none",
+      borderRadius: 8,
+      padding: "10px 24px",
+      boxShadow: "0 4px 12px rgba(122, 44, 246, 0.3)",
+      "&:hover": {
+        background: "#6920e6",
+      },
     },
   };
 }

@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
-import conecTalento from "../assets/ConecTalento.png";
 import { useNavigate, useLocation } from "react-router-dom";
-import { InputBase, Menu, MenuItem, IconButton, Avatar, Typography } from "@mui/material";
+import {
+  InputBase,
+  Menu,
+  MenuItem,
+  IconButton,
+  Avatar,
+  Typography,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import api from "../axios/axios";
@@ -60,7 +66,6 @@ const Header = ({ onSearch }) => {
         })
         .catch((err) => console.error("Erro ao buscar dados do usuário:", err));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -77,7 +82,6 @@ const Header = ({ onSearch }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // Sync input with URL query param (so when user navigates to /?search=... the input shows value)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get("search") || "";
@@ -91,16 +95,6 @@ const Header = ({ onSearch }) => {
     navigate("/login");
   };
 
-  const handleMenuOpen = (event) => {
-    if (!isLogged) {
-      navigate("/login");
-      return;
-    }
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => setAnchorEl(null);
-
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
@@ -108,15 +102,9 @@ const Header = ({ onSearch }) => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     const trimmedQuery = searchQuery.trim();
-
-    // Always update the URL to include the search param.
-    // navigate to "/" with query so Home can read it and apply filter immediately.
     const encoded = encodeURIComponent(trimmedQuery);
-    // If already on "/", still update the URL so Home's effect can react (and keep history tidy)
     navigate(`/?search=${encoded}`, { replace: false });
 
-    // If parent passed onSearch and we're on home, call it immediately to avoid waiting for nav re-render.
-    // But do not rely only on this — Home will also react to location.search.
     if (location.pathname === "/" && typeof onSearch === "function") {
       onSearch(trimmedQuery);
     }
@@ -139,13 +127,10 @@ const Header = ({ onSearch }) => {
       >
         <Container maxWidth={false} disableGutters sx={{ height: "100%" }}>
           <Box sx={{ ...styles.container, height: "100%" }}>
-            {/* LOGO */}
-            <img
-              style={styles.logo}
-              src={conecTalento}
-              alt="Logo"
-              onClick={() => navigate("/")}
-            />
+            {/* LOGO TEXTO */}
+            <Typography onClick={() => navigate("/")} sx={styles.logoText}>
+              ConecTalento
+            </Typography>
 
             {/* PESQUISA */}
             <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
@@ -154,7 +139,6 @@ const Header = ({ onSearch }) => {
                 sx={styles.inputBase}
                 value={searchQuery}
                 onChange={handleSearchChange}
-                // onKeyDown not necessary because form handles Enter
               />
               <IconButton type="submit" sx={styles.searchIcon}>
                 <SearchIcon />
@@ -164,8 +148,12 @@ const Header = ({ onSearch }) => {
             {/* PERFIL / LOGIN */}
             <Box
               sx={styles.userBox}
-              onClick={() => {
-                if (!isLogged) navigate("/login");
+              onClick={(event) => {
+                if (!isLogged) {
+                  navigate("/login");
+                } else {
+                  setAnchorEl(event.currentTarget); // abre o menu
+                }
               }}
             >
               <Avatar
@@ -173,13 +161,16 @@ const Header = ({ onSearch }) => {
                 alt={userData?.username}
                 sx={{ width: 32, height: 32, bgcolor: "#888" }}
               >
-                {!isLogged ? "?" : userData?.username?.[0]?.toUpperCase() || "U"}
+                {!isLogged
+                  ? "?"
+                  : userData?.username?.[0]?.toUpperCase() || "U"}
               </Avatar>
 
-              {/* Nome e Plano */}
               <Box sx={{ display: "flex", flexDirection: "column", ml: 1 }}>
                 <Typography sx={{ fontSize: 14, lineHeight: 1 }}>
-                  {isLogged ? userData?.username || userData?.name || "Usuário" : "Login"}
+                  {isLogged
+                    ? userData?.username || userData?.name || "Usuário"
+                    : "Login"}
                 </Typography>
 
                 {isLogged && userPlan.authenticated && (
@@ -190,23 +181,32 @@ const Header = ({ onSearch }) => {
               </Box>
 
               {isLogged && (
-                <IconButton onClick={handleMenuOpen} sx={{ color: "#ffffff", padding: 0 }}>
-                  <KeyboardArrowDownIcon sx={styles.arrowIcon} />
-                </IconButton>
+                <KeyboardArrowDownIcon
+                  sx={{
+                    ...styles.arrowIcon,
+                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.3s ease",
+                  }}
+                />
               )}
-
-              <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleMenuClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                transformOrigin={{ vertical: "top", horizontal: "right" }}
-              >
-                <MenuItem onClick={() => navigate("/perfiluser")}>Área do Usuário</MenuItem>
-                <MenuItem onClick={() => navigate("/" + userData?.username)}>Meu Portfólio</MenuItem>
-                <MenuItem onClick={handleLogout}>Sair</MenuItem>
-              </Menu>
             </Box>
+
+            {/* MENU */}
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={() => setAnchorEl(null)}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem onClick={() => navigate("/perfiluser")}>
+                Área do Usuário
+              </MenuItem>
+              <MenuItem onClick={() => navigate("/" + userData?.username)}>
+                Meu Portfólio
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>Sair</MenuItem>
+            </Menu>
           </Box>
         </Container>
       </Box>
@@ -227,10 +227,13 @@ function Styles() {
       backgroundColor: "#64058fff",
       px: 2,
     },
-    logo: {
-      height: "40%",
-      width: "20%",
+    logoText: {
+      fontFamily: "Montserrat, sans-serif",
+      fontWeight: 800,
+      fontSize: "40px",
+      color: "white",
       cursor: "pointer",
+      userSelect: "none",
     },
     searchBox: {
       display: "flex",
