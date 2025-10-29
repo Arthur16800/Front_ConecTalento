@@ -75,6 +75,11 @@ function PerfilUser() {
 
   useEffect(() => {
     async function fetchUser() {
+      const authenticated = localStorage.getItem("authenticated");
+      if (!authenticated) {
+        setUserPlan((prev) => ({ ...prev, authenticated: false }));
+        return;
+      }
       try {
         const response = await api.getUserById(id_user);
         const data = response.data.profile;
@@ -94,6 +99,8 @@ function PerfilUser() {
           imagem: base64Src,
         });
         setAvatarPreview(base64Src);
+        const plan = Boolean(response.data.profile.plano);
+        setUserPlan({ plan, authenticated: true });
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
         showAlert(
@@ -389,23 +396,7 @@ function PerfilUser() {
     }
   };
 
-  useEffect(() => {
-    async function getUserPlanStatus() {
-      const authenticated = localStorage.getItem("authenticated");
-      if (!authenticated) {
-        setUserPlan((prev) => ({ ...prev, authenticated: false }));
-        return;
-      }
-      try {
-        const response = await api.getUserById(id_user);
-        const plan = Boolean(response.data.profile.plano);
-        setUserPlan({ plan, authenticated: true });
-      } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-      }
-    }
-    getUserPlanStatus();
-  }, [id_user]);
+  
 
   return (
     <>
@@ -866,7 +857,7 @@ function Styles() {
       gap: 8,
       flexDirection: "row",
     },
-    removeIcon: { color: "#7e7e7ea9", cursor: "pointer" },
+    removeIcon: { color: "#ff0000a9", cursor: "pointer" },
     editBtn: {
       marginTop: 12,
       marginBottom: 12,
