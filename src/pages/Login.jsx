@@ -13,8 +13,8 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
-import { Snackbar, Alert, CircularProgress } from "@mui/material"; // Import do Snackbar e CircularProgress
-import ModalBase from "../Components/ModalBase"; // <-- (adição) Modal idêntico ao PerfilUser
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import ModalBase from "../Components/ModalBase"; 
 
 function Login() {
   const styles = Styles();
@@ -26,14 +26,13 @@ function Login() {
     showPassword: false,
   });
 
-  const [loading, setLoading] = useState(false); // Para o ícone de carregamento
+  const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
     open: false,
     severity: "",
     message: "",
-  }); // Para o Snackbar
+  });
 
-  // ===== (adição) Estados idênticos ao PerfilUser para "Esqueci Minha Senha" =====
   const id_user = localStorage.getItem("id_usuario");
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [emailRecuperacao, setEmailRecuperacao] = useState("");
@@ -79,7 +78,6 @@ function Login() {
     );
   }
 
-  // ===== (adição) Funções idênticas ao PerfilUser para "Esqueci Minha Senha" =====
   const handleOpenModalEsqueci = () => setOpenModalEsqueci(true);
   const handleCloseModalEsqueciSenha = () => {
     setOpenModalEsqueci(false);
@@ -145,6 +143,28 @@ function Login() {
 
   return (
     <Box style={styles.main}>
+      {/* CSS com @media screen para responsividade mobile */}
+      <style>{`
+        @media screen and (max-width: 844px) {
+          .ct-container {
+            width: 92% !important;
+            height: auto !important;
+            min-height: 480px;
+          }
+          .ct-box-img {
+            display: none !important;
+          }
+          .ct-box-login {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 5px !important;
+          }
+          .ct-box-form {
+            padding: 16px 0 !important;
+          }
+        }
+      `}</style>
+
       <Snackbar
         open={alert.open}
         autoHideDuration={3000}
@@ -160,14 +180,18 @@ function Login() {
         </Alert>
       </Snackbar>
 
-      <Container style={styles.container} disableGutters>
-        <Box style={styles.box_IMG_02}>
+      <Container
+        style={styles.container}
+        disableGutters
+        className="ct-container"
+      >
+        <Box style={styles.box_IMG_02} className="ct-box-img">
           <Typography style={styles.style_Font}>
             Seja bem-vindo de volta!
           </Typography>
         </Box>
 
-        <Box style={styles.box_Login}>
+        <Box style={styles.box_Login} className="ct-box-login">
           <Box style={styles.box_logo_img}>
             <img style={styles.logo} src={logo} alt="logo site" />
           </Box>
@@ -175,10 +199,11 @@ function Login() {
             component="form"
             onSubmit={handleSubmit}
             style={styles.box_Formulario}
+            className="ct-box-form"
           >
             <Typography style={styles.font_Titulo}>Login</Typography>
             <Typography>Seja bem-vindo(a)!</Typography>
-            <Typography>faça seu login na ConecTalento</Typography>
+            <Typography>faça seu login no ConecTalento</Typography>
 
             <TextField
               required
@@ -248,7 +273,6 @@ function Login() {
               </Typography>
             </Box>
 
-            {/* (adição) Link "Esqueci Minha Senha" idêntico ao PerfilUser */}
             <Typography
               variant="body2"
               sx={{
@@ -266,7 +290,6 @@ function Login() {
         </Box>
       </Container>
 
-      {/* (adição) Modal "Esqueci Minha Senha" idêntico ao PerfilUser */}
       <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
         <Box
           sx={{
@@ -431,7 +454,6 @@ function Styles() {
       margin: "15px",
       cursor: "pointer",
     },
-    // ===== (adição) estilos usados apenas no Modal "Esqueci Minha Senha" =====
     camposForm: { width: "100%", marginBottom: 16 },
     saveBtn: {
       marginTop: 12,

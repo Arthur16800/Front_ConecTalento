@@ -127,15 +127,13 @@ function Home() {
 
   // When location.search changes (ex: /?search=...), apply the search
   useEffect(() => {
-    // wait until projects are loaded
     if (!projects || projects.length === 0) {
       return;
     }
     const params = new URLSearchParams(location.search);
     const q = params.get("search") || "";
     handleSearch(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search, projects]);
+  }, [location.search, projects, handleSearch]);
 
   const handleCardClick = (projectId) => {
     const token = localStorage.getItem("token");
@@ -154,11 +152,78 @@ function Home() {
 
   return (
     <>
+      {/* CSS responsivo para melhorar a visualização dos cards, filtros e paginação */}
+      <style>{`
+        /* Base: pequenos ajustes transversais */
+        .ct-grid { padding: 0 8px; }
+
+        /* Barra de filtros rolável no mobile */
+        @media screen and (max-width: 680px) {
+          .ct-filters{
+            margin-top: 8px !important;
+            margin-bottom: 12px !important;
+            gap: 8px !important;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 0 12px;
+            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;     /* Firefox */
+          }
+          .ct-filters::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+          /* Cards mais largos e sem "zoom" no hover (melhor para toque) */
+          .ct-card{ 
+            max-width: 100% !important; 
+            box-shadow: 0 4px 14px rgba(0,0,0,.08) !important; 
+          }
+          .ct-card:hover{ transform: none !important; }
+
+          /* Imagem mais alta para destacar o projeto no mobile */
+          .ct-card-media{ height: 180px !important; }
+
+          /* Título mais legível e centralizado */
+          .ct-card-title{ 
+            font-size: 1rem !important; 
+            text-align: center !important; 
+            line-height: 1.25 !important;
+          }
+
+          /* Paginação compacta */
+          .ct-pagination .MuiPagination-ul li button{
+            min-width: 28px !important;
+            height: 28px !important;
+            font-size: 0.8rem !important;
+          }
+        }
+
+        /* Tablets e telas médias */
+        @media screen and (min-width: 681px) and (max-width: 1024px) {
+          .ct-card-media{ height: 190px !important; }
+          .ct-card-title{ font-size: 1.05rem !important; }
+        }
+
+        /* Notebooks comuns */
+        @media screen and (min-width: 1025px) and (max-width: 1400px) {
+          .ct-card-media{ height: 200px !important; }
+        }
+
+        /* Telas grandes */
+        @media screen and (min-width: 1401px) {
+          .ct-card-media{ height: 220px !important; }
+          .ct-card-title{ font-size: 1.15rem !important; }
+        }
+      `}</style>
+
       {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
       <Header onSearch={handleSearch} />
 
-      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", justifyContent: "center", mt: -10, mb: 3, gap: 1.5 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        className="ct-filters"
+        sx={{ flexWrap: "wrap", justifyContent: "center", mt: -10, mb: 3, gap: 1.5}}
+      >
         {[
           { label: "Mais recentes", value: "maisRecentes" },
           { label: "Mais curtidos", value: "maisCurtidos" },
@@ -184,11 +249,12 @@ function Home() {
         ))}
       </Stack>
 
-      <Grid container spacing={2} sx={{ mb: 5 }}>
+      <Grid container spacing={2} sx={{ mb: 5 }} className="ct-grid">
         {projetosVisiveis.length > 0 ? (
           projetosVisiveis.map((project) => (
             <Grid key={project.ID_projeto} item xs={12} sm={6} md={4}>
               <Card
+                className="ct-card"
                 sx={{
                   mx: "auto",
                   mt: 2,
@@ -208,6 +274,7 @@ function Home() {
                 onClick={() => handleCardClick(project.ID_projeto)}
               >
                 <Box
+                  className="ct-card-media"
                   sx={{
                     width: "100%",
                     height: 160,
@@ -254,11 +321,8 @@ function Home() {
                 </Box>
 
                 <CardContent sx={{ padding: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <Typography variant="h6" color="#000" sx={{ mb: 1 }}>
+                  <Typography variant="h6" color="#000" sx={{ mb: 1 }} className="ct-card-title">
                     {project.titulo}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-                    {project.total_curtidas} curtidas
                   </Typography>
                 </CardContent>
               </Card>
@@ -272,7 +336,7 @@ function Home() {
       </Grid>
 
       {totalPaginas > 1 && (
-        <Stack alignItems="center" mt={4} mb={6}>
+        <Stack alignItems="center" mt={4} mb={6} className="ct-pagination">
           <Pagination count={totalPaginas} page={currentPage} onChange={(e, value) => setCurrentPage(value)} color="primary" />
         </Stack>
       )}
