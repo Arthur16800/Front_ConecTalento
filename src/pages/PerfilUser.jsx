@@ -1,4 +1,4 @@
-import * as React from "react"; 
+import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import {
   TextField,
@@ -629,9 +629,10 @@ function PerfilUser() {
                 sx={{
                   position: "relative",
                   width: "100%",
-                  height: 220,
+                  height: 200,
                   borderRadius: 2,
                   overflow: "hidden",
+                  mt: 2,
                   mb: 2,
                 }}
               >
@@ -653,7 +654,6 @@ function PerfilUser() {
                   display: "flex",
                   justifyContent: "space-between",
                   width: "100%",
-                  px: 1,
                   mt: "auto",
                 }}
               >
@@ -1041,4 +1041,4 @@ function Styles() {
   };
 }
 
-export default PerfilUser; 
+export default PerfilUser;
