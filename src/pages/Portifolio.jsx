@@ -217,15 +217,14 @@ function Portfolio() {
             <AccountCircleIcon sx={styles.accountIcon} />
           )}
 
-          <Box style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Box style={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Typography style={styles.userName}>{user.name}</Typography>
             {isOwner && (
               <IconButton
-                color="primary"
                 size="small"
                 onClick={() => navigate("/perfiluser")}
               >
-                <EditIcon fontSize="small" />
+                <EditIcon fontSize="small" sx={{color: "#6A22F0"}}/>
               </IconButton>
             )}
           </Box>
@@ -318,16 +317,16 @@ function Portfolio() {
               <IconButton
                 onClick={() => navigate("/criarProjeto")}
                 sx={{
-                  backgroundColor: "#1976d2",
+                  backgroundColor: "#6A22F0",
                   color: "#fff",
-                  "&:hover": { backgroundColor: "#1565c0" },
+                  "&:hover": { backgroundColor: "#5617cbff" },
                   borderRadius: "50%",
                   width: 56,
                   height: 56,
                   boxShadow: "0px 3px 6px rgba(0,0,0,0.2)",
                 }}
               >
-                <AddIcon sx={{ fontSize: 32 }} />
+                <AddIcon sx={{ fontSize: 32  }} />
               </IconButton>
             </Box>
           )}
@@ -365,7 +364,7 @@ function Portfolio() {
                   <Typography style={styles.caption}>{p.title}</Typography>
 
                   {isOwner && (
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box sx={{ display: "flex" }}>
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -410,33 +409,65 @@ function Portfolio() {
 
         {/* Modal de confirmação */}
         <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <Typography variant="h6" sx={{ mt: 9, mb: 2 }}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 3,
+                fontWeight: 600,
+                color: "text.primary",
+              }}
+            >
               Deseja realmente excluir este projeto?
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 2,
+              }}
+            >
               <button
                 onClick={() => setOpenModal(false)}
                 style={{
-                  padding: "8px 16px",
-                  background: "#ccc",
+                  padding: "10px 22px",
+                  background: "#64058fff",
+                  color: "#ffffffff",
                   border: "none",
-                  borderRadius: "4px",
+                  borderRadius: "6px",
+                  fontWeight: "500",
                   cursor: "pointer",
+                  transition: "background 0.2s ease",
                 }}
+                onMouseEnter={(e) => (e.target.style.background = "#5a0283ff")}
+                onMouseLeave={(e) => (e.target.style.background = "#64058fff")}
               >
                 Cancelar
               </button>
+
               <button
                 onClick={handleDeleteProject}
                 style={{
-                  padding: "8px 16px",
-                  background: "#e53935",
+                  padding: "10px 22px",
+                  background: "#d32f2f",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "4px",
+                  borderRadius: "6px",
+                  fontWeight: "500",
                   cursor: "pointer",
+                  transition: "background 0.2s ease",
                 }}
+                onMouseEnter={(e) => (e.target.style.background = "#b71c1c")}
+                onMouseLeave={(e) => (e.target.style.background = "#d32f2f")}
               >
                 Excluir
               </button>
