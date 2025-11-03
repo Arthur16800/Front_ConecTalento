@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   InputBase,
@@ -12,6 +11,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import MenuIcon from "@mui/icons-material/Menu";
 import api from "../axios/axios";
 
 const Header = ({ onSearch }) => {
@@ -113,106 +113,144 @@ const Header = ({ onSearch }) => {
   const open = Boolean(anchorEl);
 
   return (
-    <>
-      <Box
-        sx={{
-          position: "fixed",
-          top: showHeader ? 0 : -70,
-          left: 0,
-          width: "100%",
-          height: "70px",
-          transition: "top 0.3s ease",
-          zIndex: 1000,
-        }}
+    <Box
+      sx={{ ...styles.container, height: "100%" }}
+      className="header-container"
+    >
+      {/* CSS responsivo pedido */}
+      <style>{`
+        @media screen and (max-width: 600px) {
+          .header-container{
+            padding-bottom: 5px;
+            widht: 100vw
+          }
+          .box-logo-pesquisa {
+            width: 100% !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .logo-text {
+            font-size: 28px !important;
+            margin-left: 8px !important;
+            margin-right: 0 !important;
+          }
+          .search-box {
+            min-width: 200px;
+            width: 60% !important;
+            margin-left: 8px !important;
+            height: 40px !important;
+          }
+          /* mostrar apenas o avatar do usuário */
+          .user-meta,
+          .arrow-icon {
+            display: none !important;
+          }
+          .user-box {
+            padding: 0 !important;
+            background: transparent !important;
+            margin-right: 5px !important;
+          }
+        }
+      `}</style>
+
+      {/* MENU */}
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Container maxWidth={false} disableGutters sx={{ height: "100%" }}>
-          <Box sx={{ ...styles.container, height: "100%" }}>
-            {/* LOGO TEXTO */}
-            <Typography onClick={() => navigate("/")} sx={styles.logoText}>
-              ConecTalento
-            </Typography>
+        <MenuItem onClick={() => navigate("/perfiluser")}>
+          Área do Usuário
+        </MenuItem>
+        <MenuItem onClick={() => navigate("/" + userData?.username)}>
+          Meu Portfólio
+        </MenuItem>
+        <MenuItem onClick={handleLogout}>Sair</MenuItem>
+      </Menu>
 
-            {/* PESQUISA */}
-            <form onSubmit={handleSearchSubmit} style={styles.searchBox}>
-              <InputBase
-                placeholder="Pesquisar projetos..."
-                sx={styles.inputBase}
-                value={searchQuery}
-                onChange={handleSearchChange}
-              />
-              <IconButton type="submit" sx={styles.searchIcon}>
-                <SearchIcon />
-              </IconButton>
-            </form>
+      <Box sx={styles.box_logo_pesquisa} className="box-logo-pesquisa">
+        {/* LOGO TEXTO */}
+        <Typography
+          onClick={() => navigate("/")}
+          sx={styles.logoText}
+          className="logo-text"
+        >
+          ConecTalento
+        </Typography>
 
-            {/* PERFIL / LOGIN */}
-            <Box
-              sx={styles.userBox}
-              onClick={(event) => {
-                if (!isLogged) {
-                  navigate("/login");
-                } else {
-                  setAnchorEl(event.currentTarget); // abre o menu
-                }
-              }}
-            >
-              <Avatar
-                src={isLogged && userData?.imagem ? userData.imagem : ""}
-                alt={userData?.username}
-                sx={{ width: 32, height: 32, bgcolor: "#888" }}
-              >
-                {!isLogged
-                  ? "?"
-                  : userData?.username?.[0]?.toUpperCase() || "U"}
-              </Avatar>
-
-              <Box sx={{ display: "flex", flexDirection: "column", ml: 1 }}>
-                <Typography sx={{ fontSize: 14, lineHeight: 1 }}>
-                  {isLogged
-                    ? userData?.username || userData?.name || "Usuário"
-                    : "Login"}
-                </Typography>
-
-                {isLogged && userPlan.authenticated && (
-                  <Typography sx={{ fontSize: 11, opacity: 0.8, mt: 0.3 }}>
-                    {userPlan.plan === false ? "Free" : "Premium"}
-                  </Typography>
-                )}
-              </Box>
-
-              {isLogged && (
-                <KeyboardArrowDownIcon
-                  sx={{
-                    ...styles.arrowIcon,
-                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.3s ease",
-                  }}
-                />
-              )}
-            </Box>
-
-            {/* MENU */}
-            <Menu
-              anchorEl={anchorEl}
-              open={open}
-              onClose={() => setAnchorEl(null)}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-              <MenuItem onClick={() => navigate("/perfiluser")}>
-                Área do Usuário
-              </MenuItem>
-              <MenuItem onClick={() => navigate("/" + userData?.username)}>
-                Meu Portfólio
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>Sair</MenuItem>
-            </Menu>
-          </Box>
-        </Container>
+        {/* PESQUISA */}
+        <form
+          onSubmit={handleSearchSubmit}
+          style={styles.searchBox}
+          className="search-box"
+        >
+          <InputBase
+            placeholder="Pesquisar projetos..."
+            sx={styles.inputBase}
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          <IconButton type="submit" sx={styles.searchIcon}>
+            <SearchIcon />
+          </IconButton>
+        </form>
       </Box>
 
-      <Box sx={{ pt: "70px", pb: 2 }} />
-    </>
+      {/* PERFIL / LOGIN */}
+      <Box sx={styles.box_perfil_menu} className="profile-area">
+        <Box
+          sx={styles.userBox}
+          className="user-box"
+          onClick={(event) => {
+            if (!isLogged) {
+              navigate("/login");
+            } else {
+              setAnchorEl(event.currentTarget); // abre o menu
+            }
+          }}
+        >
+          <Avatar
+            src={isLogged && userData?.imagem ? userData.imagem : ""}
+            alt={userData?.username}
+            sx={{ width: 32, height: 32, bgcolor: "#888" }}
+          >
+            {!isLogged ? "?" : userData?.username?.[0]?.toUpperCase() || "U"}
+          </Avatar>
+
+          {/* infos do usuário — serão ocultadas no mobile */}
+          <Box
+            sx={{ display: "flex", flexDirection: "column", ml: 1 }}
+            className="user-meta"
+          >
+            <Typography sx={{ fontSize: 14, lineHeight: 1 }}>
+              {isLogged
+                ? userData?.username || userData?.name || "Usuário"
+                : "Login"}
+            </Typography>
+
+            {isLogged && userPlan.authenticated && (
+              <Typography sx={{ fontSize: 11, opacity: 0.8, mt: 0.3 }}>
+                {userPlan.plan === false ? "Free" : "Premium"}
+              </Typography>
+            )}
+          </Box>
+
+          {isLogged && (
+            <KeyboardArrowDownIcon
+              className="arrow-icon"
+              sx={{
+                ...styles.arrowIcon,
+                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.3s ease",
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
@@ -223,9 +261,8 @@ function Styles() {
       alignItems: "center",
       justifyContent: "space-between",
       width: "100%",
-      height: "100%",
       backgroundColor: "#64058fff",
-      px: 2,
+      mb: 1,
     },
     logoText: {
       fontFamily: "Montserrat, sans-serif",
@@ -234,6 +271,8 @@ function Styles() {
       color: "white",
       cursor: "pointer",
       userSelect: "none",
+      marginLeft: 2,
+      marginRight: 1,
     },
     searchBox: {
       display: "flex",
@@ -269,6 +308,19 @@ function Styles() {
     },
     searchIcon: {
       color: "#555",
+    },
+    box_perfil_menu: {
+      marginRight: 1,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    box_logo_pesquisa: {
+      width: "68%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
     },
   };
 }

@@ -10,7 +10,6 @@ function Styles() {
       left: "50%",
       transform: "translate(-50%, -50%)",
       maxWidth: 400,
-      maxHeight: 300,
       minWidth: 200,
       bgcolor: "background.paper",
       borderRadius: 2,

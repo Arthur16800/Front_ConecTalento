@@ -9,6 +9,7 @@ import {
   Avatar,
   Snackbar,
   Alert,
+  Slider,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -16,6 +17,7 @@ import background2 from "../assets/background2.png";
 import api from "../axios/axios";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import Cropper from "react-easy-crop";
 
 function PerfilUser() {
   const styles = Styles();
@@ -26,6 +28,13 @@ function PerfilUser() {
   const [openModalSenha, setOpenModalSenha] = useState(false);
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [openModalContato, setOpenModalContato] = useState(false);
+
+  // --- NOVOS STATES PARA CROP ---
+  const [openCropModal, setOpenCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false);
@@ -67,6 +76,7 @@ function PerfilUser() {
   const [codigoValidado, setCodigoValidado] = useState(false);
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmSenha, setConfirmSenha] = useState("");
+  const [imageKey, setImageKey] = useState(0);
 
   const [userPlan, setUserPlan] = useState({
     plan: null,
@@ -215,13 +225,11 @@ function PerfilUser() {
       }));
       setAvatarPreview(updatedAvatar);
 
-      // Mostra alerta de sucesso
       showAlert(
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
       );
 
-      // Sai do modo edição
       setEditing(false);
     } catch (error) {
       console.error("Erro no updateUser:", error);
@@ -318,11 +326,58 @@ function PerfilUser() {
   }
 
   const handleAvatarClick = () => editing && fileInputRef.current.click();
+
+  // --- ALTERADO: abre crop antes de aplicar ---
   const handleImageChange = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
     if (!file) return;
-    setAvatarPreview(URL.createObjectURL(file));
-    setFormData((prev) => ({ ...prev, imagem: file }));
+
+    const imageURL = URL.createObjectURL(file);
+
+    // Resetar estados e forçar recriação do Cropper
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setSelectedImage(imageURL);
+    setImageKey((prev) => prev + 1); // força nova key
+    setOpenCropModal(true);
+
+    // Resetar valor do input para permitir a mesma seleção novamente
+    event.target.value = null;
+  };
+
+  // --- FUNÇÃO PARA FINALIZAR CORTE E SALVAR ---
+  const getCroppedImg = (imageSrc, cropPixels) =>
+    new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = cropPixels.width;
+        canvas.height = cropPixels.height;
+        ctx.drawImage(
+          image,
+          cropPixels.x,
+          cropPixels.y,
+          cropPixels.width,
+          cropPixels.height,
+          0,
+          0,
+          cropPixels.width,
+          cropPixels.height
+        );
+        resolve(canvas.toDataURL("image/jpeg"));
+      };
+    });
+
+  const onCropComplete = (_, croppedAreaPixels) =>
+    setCroppedAreaPixels(croppedAreaPixels);
+
+  const handleConfirmCrop = async () => {
+    const croppedImage = await getCroppedImg(selectedImage, croppedAreaPixels);
+    setAvatarPreview(croppedImage);
+    setFormData((prev) => ({ ...prev, imagem: croppedImage }));
+    setOpenCropModal(false);
   };
 
   const handleOpenModalEsqueciSenha = () => setOpenModalEsqueci(true);
@@ -334,6 +389,13 @@ function PerfilUser() {
     setCodigo("");
     setNovaSenha("");
     setConfirmSenha("");
+  };
+
+  const handleCancelCrop = () => {
+    setOpenCropModal(false);
+    setSelectedImage(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   const forgotPasswordSendCode = async () => {
@@ -396,8 +458,6 @@ function PerfilUser() {
     }
   };
 
-  
-
   return (
     <>
       {userPlan.plan === false && userPlan.authenticated === true && (
@@ -416,7 +476,6 @@ function PerfilUser() {
           </Alert>
         </Snackbar>
 
-        {/* Aqui: altura ajustada conforme editing */}
         <Box
           style={{
             ...styles.leftCard,
@@ -553,6 +612,84 @@ function PerfilUser() {
           )}
         </Box>
 
+        {/* --- MODAL DE CROP DE IMAGEM --- */}
+        <ModalBase open={openCropModal} onClose={handleCancelCrop}>
+          {selectedImage && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                height: "100%",
+                overflowY: "auto",
+              }}
+            >
+              <Box
+                sx={{
+                  position: "relative",
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  mt: 2,
+                  mb: 2,
+                }}
+              >
+                <Cropper
+                  key={imageKey} // força recriação ao trocar imagem
+                  image={selectedImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                  zoomWithScroll={true}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  width: "100%",
+                  mt: "auto",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleCancelCrop}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    px: 2,
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleConfirmCrop}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    background:
+                      "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                    color: "#fff",
+                    fontWeight: 600,
+                    px: 2,
+                  }}
+                >
+                  Confirmar
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </ModalBase>
+
+        {/* -- RESTANTE DOS MODAIS EXISTENTES -- */}
         {/* Modal de apagar usuário */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
@@ -814,33 +951,35 @@ function Styles() {
   return {
     container: {
       display: "flex",
-      justifyContent: "space-between",
+      justifyContent: "center",
       gap: 30,
-      padding: "24px 16px",
-      maxWidth: "70%",
+      padding:"30px",
+      width: "80%",
+      maxWidth: "100%",
       margin: "0 auto",
+      flexWrap: "wrap",
     },
     leftCard: {
-      maxWidth: 280,
-      minWidth: 250,
       flex: 2,
-      width: "100%",
+      maxWidth: "250px",
+      minWidth: "150px",
       backgroundColor: "#fff",
       border: "1px solid #E5E5E5",
       borderRadius: 16,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      transition: "height 0.3s ease", // animação suave da altura
+      transition: "height 0.3s ease",
     },
     box_IMG: {
-      height: 50,
+      width: "100%",
+      minHeight: "50px",
+      maxHeight: "200px",
       borderRadius: "16px 16px 0 0",
       backgroundImage: `url(${background2})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       marginBottom: 16,
-      width: "100%",
     },
     user_perfil: {
       display: "flex",
@@ -869,6 +1008,8 @@ function Styles() {
       color: "#fff",
       border: "none",
       width: "90%",
+      minWidth: "120px",
+      maxWidth: "250px",
     },
     formPanel: {
       flex: 1,
@@ -879,11 +1020,12 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      minWidth: 400,
-      maxWidth: 800,
+      minWidth: "200px",
+      maxWidth: "500px",
+      width: "100%",
     },
     formTitle: {
-      fontSize: 20,
+      fontSize: "clamp(16px, 2vw, 20px)",
       fontWeight: 600,
       marginBottom: 8,
       textAlign: "center",
@@ -900,6 +1042,8 @@ function Styles() {
       color: "#fff",
       border: "none",
       width: "60%",
+      minWidth: "150px",
+      maxWidth: "300px",
     },
   };
 }

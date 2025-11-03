@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -15,214 +15,161 @@ import { useNavigate, useLocation } from "react-router-dom";
 import LikeButton from "../Components/likeButton";
 import LoginPromptModal from "../Components/LoginPromptModal";
 import api from "../axios/axios";
-import Header from "../Components/Header";
 import BottonUpgrade from "../Components/BottonUpgrade";
 
 function Home() {
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+
   const [ordenacao, setOrdenacao] = useState("maisRecentes");
+
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const projetosPorPagina = 6;
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
-  // Fetch projects
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await api.getAllProjects();
-        let rawProjects = response?.data?.profile_projeto ?? [];
+  const navigate = useNavigate();
+  const location = useLocation();
 
-        const formattedProjects = rawProjects.map((p) => ({
-          ID_projeto: p.ID_projeto,
-          titulo: p.titulo || "Sem título",
-          total_curtidas: p.total_curtidas ?? 0,
-          imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
-        }));
+  // --- Utils ---
+  const applySearchFilter = (allProjects, query) => {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return allProjects;
+    return allProjects.filter((p) => (p.titulo || "").toLowerCase().includes(q));
+  };
 
-        const sorted = formattedProjects.sort((a, b) => b.ID_projeto - a.ID_projeto);
-
-        setProjects(sorted);
-        setFilteredProjects(sorted);
-      } catch (err) {
-        console.error("Erro ao buscar projetos:", err);
-        setSnackbarMessage("Erro ao buscar projetos");
-        setSnackbarOpen(true);
-      }
-    };
-
-    fetchProjects();
-  }, []);
-
-  // User plan
-  async function getUserById() {
-    const authenticated = localStorage.getItem("authenticated");
-    if (!authenticated) {
-      setUserPlan((prev) => ({ ...prev, authenticated: false }));
-      return null;
-    }
-    const id_user = localStorage.getItem("id_usuario");
-    try {
-      const response = await api.getUserById(id_user);
-      const plan = Boolean(response.data.profile.plano);
-      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
-      return plan;
-    } catch (error) {
-      console.error("Erro ao buscar usuário:", error);
-      setSnackbarMessage("Erro ao buscar usuário");
-      setSnackbarOpen(true);
-    }
-  }
-
-  useEffect(() => {
-    getUserById();
-  }, []);
-
-  // Sorting effect
-  useEffect(() => {
-    const ordenados = [...projects];
-
-    switch (ordenacao) {
+  const applySort = (items, criterio) => {
+    const ordenados = [...items];
+    switch (criterio) {
       case "maisCurtidos":
-        ordenados.sort((a, b) => b.total_curtidas - a.total_curtidas);
+        ordenados.sort((a, b) => (b.total_curtidas ?? 0) - (a.total_curtidas ?? 0));
         break;
       case "menosCurtidos":
-        ordenados.sort((a, b) => a.total_curtidas - b.total_curtidas);
+        ordenados.sort((a, b) => (a.total_curtidas ?? 0) - (b.total_curtidas ?? 0));
         break;
       case "tituloAZ":
-        ordenados.sort((a, b) => a.titulo.localeCompare(b.titulo));
+        ordenados.sort((a, b) => (a.titulo || "").localeCompare(b.titulo || ""));
         break;
       case "tituloZA":
-        ordenados.sort((a, b) => b.titulo.localeCompare(a.titulo));
+        ordenados.sort((a, b) => (b.titulo || "").localeCompare(a.titulo || ""));
         break;
       case "maisRecentes":
       default:
-        ordenados.sort((a, b) => b.ID_projeto - a.ID_projeto);
+        ordenados.sort((a, b) => (b.ID_projeto ?? 0) - (a.ID_projeto ?? 0));
         break;
     }
-
-    setFilteredProjects(ordenados);
-    setCurrentPage(1);
-  }, [ordenacao, projects]);
-
-  // handleSearch memoized so Header can call it directly when on "/"
-  const handleSearch = useCallback(
-    (query) => {
-      setCurrentPage(1);
-      if (!query) {
-        setFilteredProjects(projects);
-      } else {
-        const filtered = projects.filter((p) => p.titulo.toLowerCase().includes(query.toLowerCase()));
-        setFilteredProjects(filtered);
-      }
-    },
-    [projects]
-  );
-
-  // When location.search changes (ex: /?search=...), apply the search
-  useEffect(() => {
-    if (!projects || projects.length === 0) {
-      return;
-    }
-    const params = new URLSearchParams(location.search);
-    const q = params.get("search") || "";
-    handleSearch(q);
-  }, [location.search, projects, handleSearch]);
-
-  const handleCardClick = (projectId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setOpenModal(true);
-    } else {
-      navigate(`/detalhesprojeto/${projectId}`);
-    }
+    return ordenados;
   };
 
-  // Paginação
+  const handleCardClick = (id) => {
+    if (!id) return;
+    navigate(`/detalhesprojeto/${id}`);
+  };
+
+  // --- Fetch projects ---
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const response = await api.getAllProjects();
+        const rawProjects = response?.data?.profile_projeto ?? [];
+
+        const formatted = rawProjects.map((p) => {
+          const mime = p.tipo_imagem || "image/jpeg";
+          const hasImage = Boolean(p.imagem);
+          return {
+            ID_projeto: p.ID_projeto,
+            titulo: p.titulo || "Sem título",
+            total_curtidas: p.total_curtidas ?? 0,
+            imagem: hasImage ? `data:${mime};base64,${p.imagem}` : null,
+          };
+        });
+
+        // ordena por mais recentes ao carregar
+        const sorted = applySort(formatted, "maisRecentes");
+
+        if (alive) {
+          setProjects(sorted);
+          setFilteredProjects(sorted);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar projetos:", err);
+        if (alive) {
+          setSnackbarMessage("Erro ao buscar projetos");
+          setSnackbarOpen(true);
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- Fetch user plan (para exibir BottonUpgrade) ---
+  useEffect(() => {
+    let alive = true;
+    const getUserById = async () => {
+      const authenticated = localStorage.getItem("authenticated");
+      if (!authenticated) {
+        if (alive) setUserPlan((prev) => ({ ...prev, authenticated: false }));
+        return;
+      }
+      const id_user = localStorage.getItem("id_usuario");
+      try {
+        const response = await api.getUserById(id_user);
+        const plan = Boolean(response?.data?.profile?.plano);
+        if (alive) setUserPlan({ plan, authenticated: true });
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+        if (alive) {
+          setSnackbarMessage("Erro ao buscar usuário");
+          setSnackbarOpen(true);
+        }
+      }
+    };
+    getUserById();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // --- Observa ordenação e re-aplica sobre a lista filtrada atual ---
+  const orderedFiltered = useMemo(
+    () => applySort(filteredProjects, ordenacao),
+    [filteredProjects, ordenacao]
+  );
+
+  // --- Observa location.search e aplica filtro de busca vindo do Header global ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get("search") || "";
+    const filtrados = applySearchFilter(projects, query);
+    setFilteredProjects(filtrados);
+    setCurrentPage(1);
+  }, [location.search, projects]);
+
+  // --- Paginação ---
+  const totalPaginas = Math.max(1, Math.ceil(orderedFiltered.length / projetosPorPagina));
   const indexUltimoProjeto = currentPage * projetosPorPagina;
   const indexPrimeiroProjeto = indexUltimoProjeto - projetosPorPagina;
-  const projetosVisiveis = filteredProjects.slice(indexPrimeiroProjeto, indexUltimoProjeto);
-  const totalPaginas = Math.max(1, Math.ceil(filteredProjects.length / projetosPorPagina));
+  const projetosVisiveis = orderedFiltered.slice(indexPrimeiroProjeto, indexUltimoProjeto);
 
   return (
     <>
-      {/* CSS responsivo para melhorar a visualização dos cards, filtros e paginação */}
-      <style>{`
-        /* Base: pequenos ajustes transversais */
-        .ct-grid { padding: 0 8px; }
-
-        /* Barra de filtros rolável no mobile */
-        @media screen and (max-width: 680px) {
-          .ct-filters{
-            margin-top: 8px !important;
-            margin-bottom: 12px !important;
-            gap: 8px !important;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding: 0 12px;
-            -ms-overflow-style: none; /* IE/Edge */
-            scrollbar-width: none;     /* Firefox */
-          }
-          .ct-filters::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-
-          /* Cards mais largos e sem "zoom" no hover (melhor para toque) */
-          .ct-card{ 
-            max-width: 100% !important; 
-            box-shadow: 0 4px 14px rgba(0,0,0,.08) !important; 
-          }
-          .ct-card:hover{ transform: none !important; }
-
-          /* Imagem mais alta para destacar o projeto no mobile */
-          .ct-card-media{ height: 180px !important; }
-
-          /* Título mais legível e centralizado */
-          .ct-card-title{ 
-            font-size: 1rem !important; 
-            text-align: center !important; 
-            line-height: 1.25 !important;
-          }
-
-          /* Paginação compacta */
-          .ct-pagination .MuiPagination-ul li button{
-            min-width: 28px !important;
-            height: 28px !important;
-            font-size: 0.8rem !important;
-          }
-        }
-
-        /* Tablets e telas médias */
-        @media screen and (min-width: 681px) and (max-width: 1024px) {
-          .ct-card-media{ height: 190px !important; }
-          .ct-card-title{ font-size: 1.05rem !important; }
-        }
-
-        /* Notebooks comuns */
-        @media screen and (min-width: 1025px) and (max-width: 1400px) {
-          .ct-card-media{ height: 200px !important; }
-        }
-
-        /* Telas grandes */
-        @media screen and (min-width: 1401px) {
-          .ct-card-media{ height: 220px !important; }
-          .ct-card-title{ font-size: 1.15rem !important; }
-        }
-      `}</style>
-
+      {/* Banner de upgrade quando logado no plano Free */}
       {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null}
 
-      <Header onSearch={handleSearch} />
-
+      {/* Filtros */}
       <Stack
         direction="row"
         spacing={1}
         className="ct-filters"
-        sx={{ flexWrap: "wrap", justifyContent: "center", mt: -10, mb: 3, gap: 1.5}}
+        sx={{ flexWrap: "wrap", justifyContent: "center", mt: 2, mb: 3, gap: 1.5 }}
       >
         {[
           { label: "Mais recentes", value: "maisRecentes" },
@@ -237,7 +184,10 @@ function Home() {
             clickable
             variant={ordenacao === filtro.value ? "filled" : "outlined"}
             color={ordenacao === filtro.value ? "primary" : "default"}
-            onClick={() => setOrdenacao(filtro.value)}
+            onClick={() => {
+              setOrdenacao(filtro.value);
+              setCurrentPage(1);
+            }}
             sx={{
               fontWeight: ordenacao === filtro.value ? 600 : 400,
               boxShadow: ordenacao === filtro.value ? "0px 3px 6px rgba(0, 0, 0, 0.15)" : "none",
@@ -249,6 +199,7 @@ function Home() {
         ))}
       </Stack>
 
+      {/* Grid de cards */}
       <Grid container spacing={2} sx={{ mb: 5 }} className="ct-grid">
         {projetosVisiveis.length > 0 ? (
           projetosVisiveis.map((project) => (
@@ -321,7 +272,13 @@ function Home() {
                 </Box>
 
                 <CardContent sx={{ padding: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <Typography variant="h6" color="#000" sx={{ mb: 1 }} className="ct-card-title">
+                  <Typography
+                    variant="h6"
+                    color="#000"
+                    sx={{ mb: 1 }}
+                    className="ct-card-title"
+                    title={project.titulo}
+                  >
                     {project.titulo}
                   </Typography>
                 </CardContent>
@@ -335,14 +292,22 @@ function Home() {
         )}
       </Grid>
 
+      {/* Paginação */}
       {totalPaginas > 1 && (
         <Stack alignItems="center" mt={4} mb={6} className="ct-pagination">
-          <Pagination count={totalPaginas} page={currentPage} onChange={(e, value) => setCurrentPage(value)} color="primary" />
+          <Pagination
+            count={totalPaginas}
+            page={currentPage}
+            onChange={(e, value) => setCurrentPage(value)}
+            color="primary"
+          />
         </Stack>
       )}
 
+      {/* Modal para solicitar login quando curtir */}
       <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
 
+      {/* Snackbar de erros */}
       <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
         <Alert severity="error">{snackbarMessage}</Alert>
       </Snackbar>

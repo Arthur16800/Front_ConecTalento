@@ -5,8 +5,10 @@ import {
   Typography,
   Snackbar,
   Alert,
+  Button,
 } from "@mui/material";
-import Button from "@mui/material/Button";
+import DeleteIcon from "@mui/icons-material/Delete";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useEffect, useState } from "react";
 import api from "../axios/axios";
 import BottonUpgrade from "../Components/BottonUpgrade";
@@ -14,27 +16,21 @@ import BottonUpgrade from "../Components/BottonUpgrade";
 function CriarProjeto() {
   const styles = Styles();
   const ID_user = localStorage.getItem("id_usuario");
-  const [userPlan, setUserPlan] = useState({
-      plan: null,
-      authenticated: null,
-    });
+  const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
-  const [form, setForm] = useState({
-    titulo: "",
-    descricao: "",
-  });
+  const [form, setForm] = useState({ titulo: "", descricao: "" });
   const [imagens, setImagens] = useState([]);
+  const [previews, setPreviews] = useState([]);
 
-  // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  const handleSnackbarClose = (event, reason) => {
+  const handleSnackbarClose = (_, reason) => {
     if (reason === "clickaway") return;
-    setSnackbar({ ...snackbar, open: false });
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   const handleChange = (e) => {
@@ -42,7 +38,29 @@ function CriarProjeto() {
   };
 
   const handleFileChange = (e) => {
-    setImagens(Array.from(e.target.files)); // converte FileList em array
+    const files = Array.from(e.target.files);
+    setImagens((prev) => [...prev, ...files]);
+
+    const readers = files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    );
+
+    Promise.all(readers)
+      .then((base64Images) =>
+        setPreviews((prev) => [...prev, ...base64Images])
+      )
+      .catch((err) => console.error("Erro ao gerar prévias:", err));
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
+    setPreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleSubmit = async (e) => {
@@ -54,30 +72,24 @@ function CriarProjeto() {
         message: response.data.message,
         severity: "success",
       });
-      console.log(imagens);
     } catch (error) {
-      console.error(error);
       const msg = error.response?.data?.error || "Erro ao criar projeto";
       setSnackbar({ open: true, message: msg, severity: "error" });
-      console.log(imagens);
     }
   };
 
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
     if (!authenticated) {
-      setUserPlan(prev => ({ ...prev, authenticated: false }));
-      return null;
+      setUserPlan((prev) => ({ ...prev, authenticated: false }));
+      return;
     }
-    const id_user = localStorage.getItem("id_usuario");
     try {
-      const response = await api.getUserById(id_user);
+      const response = await api.getUserById(ID_user);
       const plan = Boolean(response.data.profile.plano);
-      setUserPlan(prev => ({ ...prev, plan, authenticated: true }));
-      return plan;
+      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
-      alert("error");
     }
   }
 
@@ -87,33 +99,126 @@ function CriarProjeto() {
 
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? <BottonUpgrade /> : null }
-      <Container maxWidth="sx">
-        <form style={styles.box_principal} onSubmit={handleSubmit}>
-          <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
+      {/* CSS RESPONSIVO */}
+      <style>{`
+        /* Base refinada (desktop médio) */
+        .criar-projeto { padding-left: 12px; padding-right: 12px; }
+        .form-projeto { max-width: 1100px; }
+        .thumb { width: 120px; height: 120px; }
+        .campo { max-width: 720px; } /* acompanha seu width:50% (quando a tela é larga) */
 
-          <Typography style={styles.label}>Adicionar imagens:</Typography>
+        /* <= 1024px: inputs mais largos e thumbs menores */
+        @media (max-width: 1024px) {
+          .campo { width: 70% !important; max-width: 640px !important; }
+          .thumb { width: 110px !important; height: 110px !important; }
+          .preview-list { gap: 12px !important; }
+        }
+
+        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
+        @media (max-width: 768px) {
+          .form-projeto {
+            margin: 16px auto !important;
+            align-items: stretch !important;
+            padding-right: 4px; 
+          }
+          .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
+          .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
+
+          .campo {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 52px !important;
+          }
+          .upload-btn { width: 200px !important; justify-content: center !important; font-size: 12px; }
+          .thumb { width: 100px !important; height: 100px !important; }
+          .preview-list { gap: 10px !important; }
+          .btn-submit { width: 100px !important; padding: 12px 20px !important; }
+        }
+
+        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
+        @media (max-width: 480px) {
+          .titulo-pagina { font-size: 24px !important; }
+          .label-padrao { font-size: 14px !important; }
+          .thumb { width: 88px !important; height: 88px !important; }
+          .btn-submit { font-size: 15px !important;}
+        }
+
+        @media (max-width: 400px){
+          .btn-submit {margin: auto}
+        }
+      `}</style>
+
+      {userPlan.plan === false && userPlan.authenticated === true && (
+        <BottonUpgrade />
+      )}
+
+      <Container maxWidth="sx" className="criar-projeto">
+        <form
+          style={styles.box_principal}
+          className="form-projeto"
+          onSubmit={handleSubmit}
+        >
+          <Typography style={styles.font_Titulo} className="titulo-pagina">
+            Criar novo projeto
+          </Typography>
+
+          <Typography style={styles.label} className="label-padrao">
+            Adicionar imagens:
+          </Typography>
 
           <Box>
             <input
               type="file"
               multiple
               accept="image/*"
+              id="upload-images"
+              style={{ display: "none" }}
               onChange={handleFileChange}
             />
+            <label htmlFor="upload-images">
+              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
+                <UploadFileIcon fontSize="small" />
+                Selecionar imagens
+              </Button>
+            </label>
           </Box>
 
-          {/* lista de nomes das imagens */}
-          <Box mt={2}>
-            {imagens.length > 0 && (
-              <Box>
-                {imagens.map((img, index) => (
-                  <Typography key={index} variant="body2">
-                    {index + 1}. {img.name}
-                  </Typography>
-                ))}
+          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
+            {previews.map((src, index) => (
+              <Box
+                key={index}
+                sx={{
+                  position: "relative",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  boxShadow: 1,
+                  border: "1px solid #ccc",
+                  width: 120,
+                  height: 120,
+                }}
+                className="thumb"
+              >
+                <img
+                  src={src}
+                  alt={`preview-${index}`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <DeleteIcon
+                  onClick={() => handleRemoveImage(index)}
+                  sx={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    background: "rgba(255,255,255,0.85)",
+                    borderRadius: "50%",
+                    padding: "2px",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    color: "#d32f2f",
+                  }}
+                />
               </Box>
-            )}
+            ))}
           </Box>
 
           <TextField
@@ -126,6 +231,7 @@ function CriarProjeto() {
             variant="outlined"
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
@@ -141,15 +247,17 @@ function CriarProjeto() {
             variant="outlined"
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
           />
 
-          <Button type="submit" style={styles.button}>
+          <Button type="submit" style={styles.button} className="btn-submit">
             Criar
           </Button>
         </form>
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}
@@ -166,7 +274,6 @@ function CriarProjeto() {
         </Snackbar>
       </Container>
     </>
-
   );
 }
 
@@ -206,14 +313,24 @@ function Styles() {
       borderRadius: 5,
       height: 55,
     },
-    buttonFile: {
-      backgroundColor: "#f0f0f0",
-      color: "black",
-      borderRadius: "5px",
-      fontSize: "14px",
+    uploadBtn: {
+      backgroundColor: "rgb(133, 0, 194)",
+      color: "white",
+      fontWeight: 100,
+      borderRadius: "8px",
+      padding: "12px 28px",
       textTransform: "none",
-      padding: "10px 20px",
-      borderColor: "black",
+      fontSize: "16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      transition: "all 0.3s ease",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      "&:hover": {
+        transform: "translateY(-2px)",
+        boxShadow: "0 6px 16px rgba(0,0,0,0.2)",
+      },
     },
   };
 }
