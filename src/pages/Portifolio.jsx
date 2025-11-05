@@ -165,7 +165,6 @@ function Portfolio() {
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
-      alert("error");
     }
   }
 
