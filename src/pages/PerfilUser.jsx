@@ -58,7 +58,7 @@ function PerfilUser() {
   const [formContatoData, setFormContatoData] = useState({
     telefone: "",
     instagram: "",
-    linkedin: "",
+    facebook: "",
     github: "",
     pinterest: "",
   });
@@ -127,7 +127,7 @@ function PerfilUser() {
         setFormContatoData({
           telefone: data.numero_telefone,
           instagram: data.link_insta,
-          linkedin: data.link_facebook,
+          facebook: data.link_facebook,
           github: data.link_github,
           pinterest: data.link_pinterest,
         });
@@ -267,7 +267,7 @@ function PerfilUser() {
     try {
       const response = await api.updateExtraInfo({
         link_insta: formContatoData.instagram,
-        link_facebook: formContatoData.linkedin,
+        link_facebook: formContatoData.facebook,
         link_github: formContatoData.github,
         link_pinterest: formContatoData.pinterest,
         numero_telefone: formContatoData.telefone,
@@ -753,9 +753,9 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="Link do LinkedIn"
-                name="linkedin"
-                value={formContatoData.linkedin || ""}
+                label="Link do facebook"
+                name="facebook"
+                value={formContatoData.facebook || ""}
                 onChange={handleContatoChange}
               />
               <TextField
