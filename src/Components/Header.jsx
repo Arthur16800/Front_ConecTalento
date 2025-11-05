@@ -166,7 +166,7 @@ const Header = ({ onSearch }) => {
           Área do Usuário
         </MenuItem>
         <MenuItem onClick={() => navigate("/" + userData?.username)}>
-          Meu Portfólio
+          Meu Portifólio
         </MenuItem>
         <MenuItem onClick={handleLogout}>Sair</MenuItem>
       </Menu>
