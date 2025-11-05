@@ -8,7 +8,7 @@ import DetalhesProjeto from "./pages/DetalheProjeto";
 import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
 import DefaultLayout from "./Components/DefaultLayout";
-import UpdateProjeto from "./pages/updateProjeto";
+import UpdateProjeto from "./pages/UpdateProjeto";
 import Pagamento from "./pages/Pagameto";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./Components/ProtectedRoutes";
