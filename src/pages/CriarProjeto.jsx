@@ -99,7 +99,6 @@ function CriarProjeto() {
 
   return (
     <>
-      {/* CSS RESPONSIVO */}
       <style>{`
         /* Base refinada (desktop médio) */
         .criar-projeto { padding-left: 12px; padding-right: 12px; }

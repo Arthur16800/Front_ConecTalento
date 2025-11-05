@@ -227,7 +227,6 @@ function UpdateProjeto() {
 
   return (
     <>
-      {/* CSS RESPONSIVO — igual ao padrão do CriarProjeto */}
       <style>{`
         /* Base refinada (desktop médio) */
         .update-projeto { padding-left: 12px; padding-right: 12px; }

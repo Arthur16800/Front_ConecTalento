@@ -61,7 +61,6 @@ function BottonUpgrade() {
 
   return (
     <Box style={styles.mainBox}>
-      {/* CSS responsivo: até 400px esconde o texto e mantém só o ícone */}
       <style>{`
         @media screen and (max-width: 400px) {
           .ct-upgrade-text { 

@@ -31,7 +31,7 @@ function Cadastro() {
   });
 
   const [openModal, setOpenModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutos em segundos
+  const [timeLeft, setTimeLeft] = useState(15 * 60); 
   const [isTimerActive, setIsTimerActive] = useState(false);
 
   const [alert, setAlert] = useState({
@@ -137,7 +137,6 @@ function Cadastro() {
 
   return (
     <Box style={styles.principal}>
-      {/* CSS responsivo com @media screen */}
       <style>{`
         @media screen and (max-width: 844px) {
           .ct-container {
@@ -170,7 +169,7 @@ function Cadastro() {
           }
         }
 
-        /* ✅ Entre 845px e 1200px, diminuir o texto do banner lateral para 22px */
+        /* Entre 845px e 1200px, diminuir o texto do banner lateral para 22px */
         @media screen and (min-width: 845px) and (max-width: 1200px) {
           .ct-welcome-text {
             font-size: 22px !important;

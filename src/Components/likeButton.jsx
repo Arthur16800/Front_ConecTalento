@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import LoginPromptModal from "./LoginPromptModal";
 import sheets from "../axios/axios";
 
-// Função para formatar números
 function formatNumber(num) {
   if (num < 1000) return num.toString();
   const units = [
@@ -30,7 +29,7 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
   const isLoggedIn = Boolean(localStorage.getItem("token"));
   const userId = localStorage.getItem("id_usuario");
 
-  // ✅ Ao carregar o componente, verifica se o usuário já curtiu
+  // Ao carregar o componente, verifica se o usuário já curtiu
   useEffect(() => {
     if (isLoggedIn && userId) {
       sheets.getProjectsLikedUser(userId)
@@ -42,14 +41,14 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
     }
   }, [projectId, isLoggedIn, userId]);
 
-  // ❤️ Animação do coração flutuante
+  // Animação do coração flutuante
   const triggerHeartAnimation = () => {
     const id = Date.now();
     setHearts((prev) => [...prev, id]);
     setTimeout(() => setHearts((prev) => prev.filter((h) => h !== id)), 1000);
   };
 
-  // 🔄 Curtir / Descurtir
+  // Curtir / Descurtir
   const toggleLike = async (e) => {
 
     e.stopPropagation();
@@ -127,7 +126,6 @@ export default function LikeButton({ projectId, initialLikes = 0 }) {
   );
 }
 
-// 🎨 Estilos
 const styles = {
   badgeWrapper: {
     position: "absolute",

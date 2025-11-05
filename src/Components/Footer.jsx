@@ -26,7 +26,7 @@ const Footer = () => {
           "linear-gradient(180deg, #6A00B6 0%, #56039A 55%, #35045F 100%)",
         mt: "auto",
         pt: 5,
-        pb: 10, // Espaço extra para a logo não sobrepor o texto
+        pb: 10,
       }}
     >
       {/* Radial Background Effect */}
@@ -117,7 +117,7 @@ const Footer = () => {
         </Box>
       </Box>
 
-      {/* Logo no canto inferior direito */}
+      {/* Logo */}
       <Box
         sx={{
           position: "absolute",
@@ -133,6 +133,12 @@ const Footer = () => {
           sx={{
             width: 100,
             height: "auto",
+            // em telas de até 610px de largura, o logo fica com 50px
+            "@media (max-width:610px)": {
+              width: 50,
+            },
+            // se quiser aplicar apenas exatamente em 610px, troque a linha acima por:
+            // "@media (width: 610px)": { width: 50 },
           }}
         />
       </Box>

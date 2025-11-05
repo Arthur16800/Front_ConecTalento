@@ -116,7 +116,6 @@ const Header = ({ onSearch }) => {
       sx={{ ...styles.container, height: "100%" }}
       className="header-container"
     >
-      {/* CSS responsivo pedido */}
       <style>{`
         @media screen and (max-width: 600px) {
           .header-container{

@@ -143,7 +143,6 @@ function Login() {
 
   return (
     <Box style={styles.main}>
-      {/* CSS com @media screen para responsividade mobile */}
       <style>{`
         @media screen and (max-width: 844px) {
           .ct-container {

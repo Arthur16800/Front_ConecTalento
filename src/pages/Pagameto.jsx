@@ -96,11 +96,10 @@ function Pagamento() {
     return <NotFound />;
   }
 
-  // flags de breakpoint para responsividade
   const theme = useTheme();
-  const downSm = useMediaQuery(theme.breakpoints.down("sm"));   // <600
-  const downMd = useMediaQuery(theme.breakpoints.down("md"));   // <900
-  const upMd = useMediaQuery(theme.breakpoints.up("md"));       // >=900
+  const downSm = useMediaQuery(theme.breakpoints.down("sm"));  
+  const downMd = useMediaQuery(theme.breakpoints.down("md")); 
+  const upMd = useMediaQuery(theme.breakpoints.up("md"));
 
   const styles = Styles({ downSm, downMd, upMd });
 
@@ -195,7 +194,6 @@ function Pagamento() {
   );
 }
 
-// responsividade centralizada aqui, sem alterar a estrutura do JSX
 function Styles() {
   return {
     container: {

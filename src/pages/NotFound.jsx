@@ -17,7 +17,6 @@ function NotFound() {
         py: 8,
       }}
     >
-      {/* Card central (mantém cores e estilo) */}
       <Box
         sx={{
           textAlign: "center",
@@ -30,7 +29,6 @@ function NotFound() {
             "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)",
         }}
       >
-        {/* Ícone dentro de círculo */}
         <Box
           sx={{
             display: "inline-flex",
@@ -47,7 +45,6 @@ function NotFound() {
           <SearchOffIcon sx={{ fontSize: 34 }} />
         </Box>
 
-        {/* 404 com gradiente roxo */}
         <Typography
           sx={{
             fontWeight: 900,
@@ -71,8 +68,6 @@ function NotFound() {
           A página que você procura pode ter sido movida, removida ou o link está
           incorreto.
         </Typography>
-
-        {/* Somente o botão Voltar (removido "Ir para a Home") */}
         <Button
           variant="contained"
           onClick={() => navigate(-1)}

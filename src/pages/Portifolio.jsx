@@ -40,12 +40,10 @@ function Portfolio() {
 
   const isOwner = usernameLocal === username;
 
-  // paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const itemsPerPage = 4;
 
-  // Modal
   const [openModal, setOpenModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -54,7 +52,6 @@ function Portfolio() {
     authenticated: null,
   });
 
-  // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -191,7 +188,6 @@ function Portfolio() {
   if (notFound) return <NotFound />;
   if (!user) return null;
 
-  // paginação
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedProjects = projects.slice(
     startIndex,
@@ -200,7 +196,6 @@ function Portfolio() {
 
   return (
     <>
-      {/* CSS RESPONSIVO */}
       <style>{`
   '''''/* Base: leve redução já no desktop médio */
   .portfolio-container { max-width: 1200px; }
@@ -490,7 +485,7 @@ function Portfolio() {
           )}
         </Box>
 
-        {/* Modal, Snackbar (inalterados) */}
+        {/* Modal, Snackbar */}
         <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
           <Box
             sx={{

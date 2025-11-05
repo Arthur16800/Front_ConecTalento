@@ -29,7 +29,6 @@ function PerfilUser() {
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [openModalContato, setOpenModalContato] = useState(false);
 
-  // --- NOVOS STATES PARA CROP ---
   const [openCropModal, setOpenCropModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -327,25 +326,21 @@ function PerfilUser() {
 
   const handleAvatarClick = () => editing && fileInputRef.current.click();
 
-  // --- ALTERADO: abre crop antes de aplicar ---
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const imageURL = URL.createObjectURL(file);
 
-    // Resetar estados e forçar recriação do Cropper
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setSelectedImage(imageURL);
-    setImageKey((prev) => prev + 1); // força nova key
+    setImageKey((prev) => prev + 1); 
     setOpenCropModal(true);
 
-    // Resetar valor do input para permitir a mesma seleção novamente
     event.target.value = null;
   };
 
-  // --- FUNÇÃO PARA FINALIZAR CORTE E SALVAR ---
   const getCroppedImg = (imageSrc, cropPixels) =>
     new Promise((resolve) => {
       const image = new Image();
@@ -612,7 +607,7 @@ function PerfilUser() {
           )}
         </Box>
 
-        {/* --- MODAL DE CROP DE IMAGEM --- */}
+        {/* --- MODAL DA IMAGEM --- */}
         <ModalBase open={openCropModal} onClose={handleCancelCrop}>
           {selectedImage && (
             <Box
@@ -637,7 +632,7 @@ function PerfilUser() {
                 }}
               >
                 <Cropper
-                  key={imageKey} // força recriação ao trocar imagem
+                  key={imageKey}
                   image={selectedImage}
                   crop={crop}
                   zoom={zoom}
@@ -689,8 +684,6 @@ function PerfilUser() {
           )}
         </ModalBase>
 
-        {/* -- RESTANTE DOS MODAIS EXISTENTES -- */}
-        {/* Modal de apagar usuário */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600}>
