@@ -29,7 +29,7 @@ function Styles() {
 const ModalBase = ({ open, onClose, children }) => {
   const styles = Styles();
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} disableScrollLock>
       <Box sx={styles.modalStyle}>
         <img src={logo} alt="Logo" style={styles.logo} />
         {children}

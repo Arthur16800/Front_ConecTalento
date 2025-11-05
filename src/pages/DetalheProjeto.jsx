@@ -86,7 +86,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
 
 
   // 🔹 Converter formatos de imagem
-  const origin = "https://api-conenctalento.eastus2.cloudapp.azure.com:5000/api/v1";
+  const origin = "http://10.89.240.71:5000/api/v1";
   const imageUrls =
     imagens && imagens.length > 0
       ? imagens.map((img) => {

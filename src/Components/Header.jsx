@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import MenuIcon from "@mui/icons-material/Menu";
 import api from "../axios/axios";
 
 const Header = ({ onSearch }) => {
@@ -149,7 +148,7 @@ const Header = ({ onSearch }) => {
           .user-box {
             padding: 0 !important;
             background: transparent !important;
-            margin-right: 5px !important;
+            margin-right: 20px !important;
           }
         }
       `}</style>
@@ -161,6 +160,7 @@ const Header = ({ onSearch }) => {
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
+        disableScrollLock
       >
         <MenuItem onClick={() => navigate("/perfiluser")}>
           Área do Usuário
@@ -208,7 +208,7 @@ const Header = ({ onSearch }) => {
             if (!isLogged) {
               navigate("/login");
             } else {
-              setAnchorEl(event.currentTarget); // abre o menu
+              setAnchorEl(event.currentTarget);
             }
           }}
         >

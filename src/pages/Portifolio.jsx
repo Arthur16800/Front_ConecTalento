@@ -250,24 +250,33 @@ function Portfolio() {
     .card-project .preview { padding-top: 48% !important; }
   }
 
-    /* <= 600px: mais redução de espaços e botão de like menor */
-    @media (max-width: 600px) {
-      .projects-grid { gap: 14px !important; }
-      .card-project { border-radius: 6px !important; }
-      .card-project .preview { padding-top: 46% !important; }
-      .user-name { font-size: 16px !important; }
-      .bio-text { font-size: 14px !important; line-height: 1.5 !important; }
-      .likeBtn { width: 32px !important; height: 32px !important; top: 6px !important; right: 6px !important; }
-      .caption { font-size: 13px !important; }
+  /* <= 765px: centralizar o painel do usuário no meio da página */
+  @media (max-width: 765px) {
+    .user-panel {
+      align-self: center !important;   /* força centralização horizontal no container */
+      margin: 0 auto !important;       /* garante centralização mesmo sem align-items */
+      flex: 0 0 auto !important;       /* evita o estiramento causado por flex:1 do estilo base */
     }
+  }
 
-    /* <= 480px: o mais compacto (evita “pular” e barra horizontal) */
-    @media (max-width: 480px) {
-      .projects-grid { gap: 12px !important; }
-      .card-project { max-width: 100% !important; }
-      .card-project .preview { padding-top: 44% !important; }
-      .caption { font-size: 12.5px !important; }
-    }
+  /* <= 600px: mais redução de espaços e botão de like menor */
+  @media (max-width: 600px) {
+    .projects-grid { gap: 14px !important; }
+    .card-project { border-radius: 6px !important; }
+    .card-project .preview { padding-top: 46% !important; }
+    .user-name { font-size: 16px !important; }
+    .bio-text { font-size: 14px !important; line-height: 1.5 !important; }
+    .likeBtn { width: 32px !important; height: 32px !important; top: 6px !important; right: 6px !important; }
+    .caption { font-size: 13px !important; }
+  }
+
+  /* <= 480px: o mais compacto (evita “pular” e barra horizontal) */
+  @media (max-width: 480px) {
+    .projects-grid { gap: 12px !important; }
+    .card-project { max-width: 100% !important; }
+    .card-project .preview { padding-top: 44% !important; }
+    .caption { font-size: 12.5px !important; }
+  }
 `}</style>
 
       {userPlan.plan === false && userPlan.authenticated === true ? (
@@ -416,7 +425,7 @@ function Portfolio() {
                     backgroundImage: `url(${p.imagem || background2})`,
                   }}
                 >
-                  <Box style={styles.likeBtn}>
+                  <Box style={styles.likeBtn} className="likeBtn">
                     <LikeButton
                       projectId={p.id}
                       userId={localStorage.getItem("id_usuario")}
@@ -433,7 +442,9 @@ function Portfolio() {
                     padding: "8px 12px",
                   }}
                 >
-                  <Typography style={styles.caption}>{p.title}</Typography>
+                  <Typography style={styles.caption} className="caption">
+                    {p.title}
+                  </Typography>
 
                   {isOwner && (
                     <Box sx={{ display: "flex" }}>
