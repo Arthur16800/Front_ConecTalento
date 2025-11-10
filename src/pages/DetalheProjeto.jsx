@@ -34,7 +34,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
     authenticated: null,
   });
 
-  // 🔹 Buscar imagens do projeto
+  // Buscar imagens do projeto
   useEffect(() => {
     let ativo = true;
 
@@ -85,8 +85,8 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   }, []);
 
 
-  // 🔹 Converter formatos de imagem
-  const origin = "https://api-conectalento.eastus2.cloudapp.azure.com:5000";
+  // Converter formatos de imagem
+  const origin = "http://10.89.240.71:5000/api/v1";
   const imageUrls =
     imagens && imagens.length > 0
       ? imagens.map((img) => {
@@ -107,7 +107,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
         (_, i) => `${origin}/api/v1/projectdetail/${projetoId}?index=${i}`
       );
 
-  // 🔹 Garantir índice válido
+  // Garantir índice válido
   useEffect(() => {
     if (selectedIndex >= imageUrls.length) setSelectedIndex(0);
   }, [imageUrls]);
@@ -163,7 +163,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
               )}
             </Card>
 
-            {/* 🔹 Miniaturas */}
+            {/* Miniaturas */}
             <Grid container spacing={2} sx={styles.gridMiniaturas}>
               {imageUrls.map((src, index) => (
                 <Grid item xs={6} sm={3} key={index}>
@@ -194,14 +194,14 @@ function DetalhesProjeto({ imagesCount = 4 }) {
               ))}
             </Grid>
 
-            {/* 🔹 Descrição */}
+            {/*Descrição */}
             <Typography sx={styles.tituloDesc}>Descrição:</Typography>
             <Typography sx={styles.descricao}>
               {projeto?.descricao || "Sem descrição disponível."}
             </Typography>
           </Grid>
 
-          {/* 🔹 Coluna Direita - Perfil do Autor */}
+          {/*Coluna Direita - Perfil do Autor */}
           <Grid item xs={12} md={4}>
             <Card sx={styles.cardPerfil}>
               <Avatar
@@ -233,7 +233,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
           </Grid>
         </Grid>
 
-        {/* 🔹 Modal de login para curtidas */}
+        {/* Modal de login para curtidas */}
         <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
       </Container>
     </>
@@ -241,7 +241,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
   );
 }
 
-/* 🎨 Estilos */
+/* Estilos */
 function Styles() {
   return {
     container: {

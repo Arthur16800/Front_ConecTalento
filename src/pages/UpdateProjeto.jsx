@@ -227,36 +227,71 @@ function UpdateProjeto() {
 
   return (
     <>
+      <style>{`
+        /* Base refinada (desktop médio) */
+        .update-projeto { padding-left: 12px; padding-right: 12px; }
+        .form-projeto { max-width: 1100px; }
+        .thumb { width: 120px; height: 120px; }
+        .campo { max-width: 720px; } /* acompanha width:50% do inline em telas largas */
+
+        /* <= 1024px: inputs mais largos e thumbs menores */
+        @media (max-width: 1024px) {
+          .campo { width: 70% !important; max-width: 640px !important; }
+          .thumb { width: 110px !important; height: 110px !important; }
+          .preview-list { gap: 12px !important; }
+        }
+
+        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
+        @media (max-width: 768px) {
+          .form-projeto {
+            margin: 16px auto !important;
+            align-items: stretch !important;
+            padding-right: 4px;
+          }
+          .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
+          .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
+
+          .campo {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 52px !important;
+          }
+          .upload-btn { width: 200px !important; justify-content: center !important; font-size: 12px; }
+          .thumb { width: 100px !important; height: 100px !important; }
+          .preview-list { gap: 10px !important; }
+          .btn-submit { width: 140px !important; padding: 12px 20px !important; }
+        }
+
+        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
+        @media (max-width: 480px) {
+          .titulo-pagina { font-size: 24px !important; }
+          .label-padrao { font-size: 14px !important; }
+          .thumb { width: 88px !important; height: 88px !important; }
+          .btn-submit { font-size: 15px !important; }
+        }
+
+        @media (max-width: 400px) {
+          .btn-submit { margin: auto; }
+        }
+      `}</style>
+
       {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
       )}
-      <Container maxWidth="sx">
-        <form style={styles.box_principal} onSubmit={handleSubmit}>
-          <Typography style={styles.font_Titulo}>Atualizar projeto</Typography>
 
-          <Typography style={styles.label}>
-            Adicione ou remova as imagens:
+      <Container maxWidth="sx" className="update-projeto">
+        <form
+          style={styles.box_principal}
+          className="form-projeto"
+          onSubmit={handleSubmit}
+        >
+          <Typography style={styles.font_Titulo} className="titulo-pagina">
+            Atualizar projeto
           </Typography>
-          <Box>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              id="upload-novas"
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-            />
-            <label htmlFor="upload-novas">
-              <Button component="span" sx={styles.uploadBtn}>
-                <UploadFileIcon fontSize="small" />
-                Selecionar imagens
-              </Button>
-            </label>
-          </Box>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
             {previewsNovas.map((src, index) => (
-              <Box key={index} sx={styles.previewBox}>
+              <Box key={index} sx={styles.previewBox} className="thumb">
                 <img
                   src={src}
                   alt={`preview-nova-${index}`}
@@ -272,7 +307,7 @@ function UpdateProjeto() {
               </Box>
             ))}
             {imagensExistentes.map((img, index) => (
-              <Box key={index} sx={styles.previewBox}>
+              <Box key={index} sx={styles.previewBox} className="thumb">
                 <img
                   src={img}
                   alt={`Imagem existente ${index + 1}`}
@@ -289,6 +324,26 @@ function UpdateProjeto() {
             ))}
           </Box>
 
+          <Typography style={styles.label} className="label-padrao">
+            Adicione ou remova as imagens:
+          </Typography>
+          <Box>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              id="upload-novas"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+            <label htmlFor="upload-novas">
+              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
+                <UploadFileIcon fontSize="small" />
+                Selecionar imagens
+              </Button>
+            </label>
+          </Box>
+
           <TextField
             required
             fullWidth
@@ -300,6 +355,7 @@ function UpdateProjeto() {
             value={form.titulo}
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
@@ -316,12 +372,13 @@ function UpdateProjeto() {
             value={form.descricao}
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
           />
 
-          <Button type="submit" style={styles.button} disabled={loading}>
+          <Button type="submit" style={styles.button} className="btn-submit" disabled={loading}>
             {loading ? "Atualizando..." : "Atualizar"}
           </Button>
         </form>
@@ -367,7 +424,6 @@ function Styles() {
     font_Titulo: {
       fontWeight: "600",
       fontSize: "35px",
-      marginBottom: "20px",
     },
     label: {
       fontWeight: "600",
@@ -407,6 +463,7 @@ function Styles() {
       overflow: "hidden",
       boxShadow: 1,
       border: "1px solid #ccc",
+      mb: 3
     },
     previewImg: {
       width: "100%",

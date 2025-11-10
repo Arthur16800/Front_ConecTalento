@@ -41,14 +41,15 @@ function CriarProjeto() {
     const files = Array.from(e.target.files);
     setImagens((prev) => [...prev, ...files]);
 
-    const readers = files.map((file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
+    const readers = files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    );
 
     Promise.all(readers)
       .then((base64Images) =>
@@ -98,14 +99,71 @@ function CriarProjeto() {
 
   return (
     <>
+      <style>{`
+        /* Base refinada (desktop médio) */
+        .criar-projeto { padding-left: 12px; padding-right: 12px; }
+        .form-projeto { max-width: 1100px; }
+        .thumb { width: 120px; height: 120px; }
+        .campo { max-width: 720px; } /* acompanha seu width:50% (quando a tela é larga) */
+
+        /* <= 1024px: inputs mais largos e thumbs menores */
+        @media (max-width: 1024px) {
+          .campo { width: 70% !important; max-width: 640px !important; }
+          .thumb { width: 110px !important; height: 110px !important; }
+          .preview-list { gap: 12px !important; }
+        }
+
+        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
+        @media (max-width: 768px) {
+          .form-projeto {
+            margin: 16px auto !important;
+            align-items: stretch !important;
+            padding-right: 4px; 
+          }
+          .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
+          .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
+
+          .campo {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 52px !important;
+          }
+          .upload-btn { width: 200px !important; justify-content: center !important; font-size: 12px; }
+          .thumb { width: 100px !important; height: 100px !important; }
+          .preview-list { gap: 10px !important; }
+          .btn-submit { width: 100px !important; padding: 12px 20px !important; }
+        }
+
+        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
+        @media (max-width: 480px) {
+          .titulo-pagina { font-size: 24px !important; }
+          .label-padrao { font-size: 14px !important; }
+          .thumb { width: 88px !important; height: 88px !important; }
+          .btn-submit { font-size: 15px !important;}
+        }
+
+        @media (max-width: 400px){
+          .btn-submit {margin: auto}
+        }
+      `}</style>
+
       {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
       )}
-      <Container maxWidth="sx">
-        <form style={styles.box_principal} onSubmit={handleSubmit}>
-          <Typography style={styles.font_Titulo}>Criar novo projeto</Typography>
 
-          <Typography style={styles.label}>Adicionar imagens:</Typography>
+      <Container maxWidth="sx" className="criar-projeto">
+        <form
+          style={styles.box_principal}
+          className="form-projeto"
+          onSubmit={handleSubmit}
+        >
+          <Typography style={styles.font_Titulo} className="titulo-pagina">
+            Criar novo projeto
+          </Typography>
+
+          <Typography style={styles.label} className="label-padrao">
+            Adicionar imagens:
+          </Typography>
 
           <Box>
             <input
@@ -117,26 +175,27 @@ function CriarProjeto() {
               onChange={handleFileChange}
             />
             <label htmlFor="upload-images">
-              <Button component="span" sx={styles.uploadBtn}>
+              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
                 <UploadFileIcon fontSize="small" />
                 Selecionar imagens
               </Button>
             </label>
           </Box>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2}>
+          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
             {previews.map((src, index) => (
               <Box
                 key={index}
                 sx={{
                   position: "relative",
-                  width: 120,
-                  height: 120,
                   borderRadius: 2,
                   overflow: "hidden",
                   boxShadow: 1,
                   border: "1px solid #ccc",
+                  width: 120,
+                  height: 120,
                 }}
+                className="thumb"
               >
                 <img
                   src={src}
@@ -149,7 +208,7 @@ function CriarProjeto() {
                     position: "absolute",
                     top: 4,
                     right: 4,
-                    background: "rgba(255,255,255,0.8)",
+                    background: "rgba(255,255,255,0.85)",
                     borderRadius: "50%",
                     padding: "2px",
                     fontSize: 20,
@@ -171,6 +230,7 @@ function CriarProjeto() {
             variant="outlined"
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
@@ -186,12 +246,13 @@ function CriarProjeto() {
             variant="outlined"
             onChange={handleChange}
             style={styles.textfield}
+            className="campo"
             sx={{
               "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
             }}
           />
 
-          <Button type="submit" style={styles.button}>
+          <Button type="submit" style={styles.button} className="btn-submit">
             Criar
           </Button>
         </form>

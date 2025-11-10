@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, useTheme, useMediaQuery } from "@mui/material";
 import { useLocation, useParams } from "react-router-dom";
 import NotFound from "./NotFound";
 import ModalBase from "../Components/ModalBase";
@@ -96,7 +96,12 @@ function Pagamento() {
     return <NotFound />;
   }
 
-  const styles = Styles();
+  const theme = useTheme();
+  const downSm = useMediaQuery(theme.breakpoints.down("sm"));  
+  const downMd = useMediaQuery(theme.breakpoints.down("md")); 
+  const upMd = useMediaQuery(theme.breakpoints.up("md"));
+
+  const styles = Styles({ downSm, downMd, upMd });
 
   async function handleCopy() {
     try {
@@ -122,6 +127,7 @@ function Pagamento() {
             onClick={() => setOpenModal(false)}
             style={styles.modalCta}
             disableElevation
+            fullWidth={downSm}
           >
             Quero fazer parte
           </Button>
@@ -145,6 +151,7 @@ function Pagamento() {
               variant="contained"
               sx={styles.successBtn}
               onClick={() => (window.location.href = "/")}
+              fullWidth={downSm}
             >
               Ir para o início
             </Button>
@@ -177,6 +184,7 @@ function Pagamento() {
             onClick={handleCopy}
             style={styles.copyBtn}
             disableElevation
+            fullWidth={downSm}
           >
             {copied ? "Copiado" : "Copiar"}
           </Button>
@@ -190,13 +198,16 @@ function Styles() {
   return {
     container: {
       width: "100%",
+      maxWidth: "min(92vw, 680px)",
+      margin: "0 auto",
       borderRadius: 12,
-      padding: "32px 24px",
+      padding: "clamp(16px, 4vw, 32px) clamp(12px, 3vw, 24px)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: 18,
+      gap: "clamp(12px, 2.5vw, 18px)",
       background: "#fff",
+      boxSizing: "border-box",
     },
     title: {
       fontWeight: 700,
@@ -204,18 +215,21 @@ function Styles() {
       color: "#1a1a1a",
       textAlign: "center",
       marginBottom: 8,
+      fontSize: "clamp(18px, 2.6vw, 22px)",
+      lineHeight: 1.25,
     },
     qr: {
-      width: 220,
-      height: 220,
+      width: "clamp(160px, 36vw, 260px)",
+      height: "clamp(160px, 36vw, 260px)",
       imageRendering: "crisp-edges",
     },
     code: {
-      maxWidth: 520,
+      maxWidth: "min(92vw, 520px)",
       textAlign: "center",
-      wordBreak: "break-all",
+      wordBreak: "break-word",
+      overflowWrap: "anywhere",
       fontFamily: "monospace",
-      fontSize: 14,
+      fontSize: "clamp(12px, 1.6vw, 14px)",
       color: "#1a1a1a",
       marginTop: 8,
     },
@@ -225,18 +239,21 @@ function Styles() {
       textTransform: "none",
       fontWeight: 700,
       borderRadius: 8,
-      padding: "8px 28px",
+      padding: "clamp(10px, 1.2vw, 12px) clamp(16px, 3vw, 28px)",
+      width: "min(92vw, 380px)",
     },
     modalWrapper: {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       textAlign: "center",
-      gap: 18,
+      gap: "clamp(12px, 2.2vw, 18px)",
       paddingTop: 16,
+      maxWidth: "min(92vw, 520px)",
+      margin: "0 auto",
     },
     modalTitle: {
-      fontSize: 22,
+      fontSize: "clamp(20px, 2.8vw, 22px)",
       fontWeight: 700,
       color: "#1a1a1a",
     },
@@ -245,7 +262,9 @@ function Styles() {
       padding: 0,
       listStyle: "none",
       color: "#333",
-      lineHeight: 1.8,
+      lineHeight: 1.7,
+      fontSize: "clamp(14px, 1.8vw, 16px)",
+      textAlign: "left",
     },
     modalCta: {
       marginTop: 6,
@@ -253,53 +272,53 @@ function Styles() {
       textTransform: "none",
       fontWeight: 700,
       borderRadius: 9999,
-      padding: "10px 18px",
+      padding: "clamp(10px, 1.2vw, 12px) clamp(16px, 2.4vw, 18px)",
+      width: "min(92vw, 360px)",
     },
     successWrapper: {
-      width: "100%",
+      width: "80%",
       minHeight: "60vh",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      marginBottom:"40px",
-      marginTop:"20px"
+      margin: "clamp(12px, 3vh, 20px) auto clamp(24px, 4vh, 40px)",
+      paddingLeft: "max(env(safe-area-inset-left), 12px)",
+      paddingRight: "max(env(safe-area-inset-right), 12px)",
     },
     successCard: {
       background: "#fff",
       borderRadius: 20,
-      padding: "48px 32px",
-      maxWidth: 480,
-      width: "30%",
+      padding: "clamp(28px, 5vw, 48px) clamp(20px, 4vw, 32px)",
+      width: "min(80vw, 520px)",
       textAlign: "center",
       boxShadow: "0 12px 32px rgba(122, 44, 246, 0.2)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: 7,
+      gap: "clamp(6px, 1.2vw, 10px)",
     },
-        checkCircle: {
-      width: 80,
-      height: 80,
+    checkCircle: {
+      width: "clamp(64px, 9vw, 80px)",
+      height: "clamp(64px, 9vw, 80px)",
       borderRadius: "50%",
       background: "linear-gradient(to right, #7A2CF6, #9D4EDD)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      animation: "scaleUp 0.6s ease",
     },
     checkIcon: {
-      fontSize: 40,
+      fontSize: "clamp(32px, 5vw, 40px)",
       color: "#fff",
       fontWeight: 700,
     },
     successTitle: {
-      fontSize: 26,
+      fontSize: "clamp(22px, 3vw, 26px)",
       fontWeight: 700,
       fontFamily: "Montserrat, sans-serif",
       color: "#1a1a1a",
     },
     successSubtitle: {
-      fontSize: 16,
+      fontSize: "clamp(14px, 2vw, 16px)",
       lineHeight: 1.6,
       color: "#555",
       fontFamily: "Montserrat, sans-serif",
@@ -310,13 +329,12 @@ function Styles() {
       fontWeight: 600,
       textTransform: "none",
       borderRadius: 8,
-      padding: "10px 24px",
+      padding: "clamp(10px, 1.2vw, 12px) clamp(20px, 2vw, 24px)",
       boxShadow: "0 4px 12px rgba(122, 44, 246, 0.3)",
-      "&:hover": {
-        background: "#6920e6",
-      },
+      width: "min(75vw, 420px)",
     },
   };
 }
+
 
 export default Pagamento;

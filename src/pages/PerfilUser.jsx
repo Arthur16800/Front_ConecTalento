@@ -29,7 +29,6 @@ function PerfilUser() {
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [openModalContato, setOpenModalContato] = useState(false);
 
-  // --- NOVOS STATES PARA CROP ---
   const [openCropModal, setOpenCropModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -43,7 +42,7 @@ function PerfilUser() {
 
   const [formData, setFormData] = useState({
     name: "",
-    username: "",
+    username_: "",
     email: "",
     biografia: "",
     imagem: null,
@@ -58,7 +57,7 @@ function PerfilUser() {
   const [formContatoData, setFormContatoData] = useState({
     telefone: "",
     instagram: "",
-    facebook: "",
+    linkedin: "",
     github: "",
     pinterest: "",
   });
@@ -103,7 +102,7 @@ function PerfilUser() {
 
         setFormData({
           name: data.name,
-          username: data.username,
+          username_: data.username, // mantém no estado com underscore
           email: data.email,
           biografia: data.biografia,
           imagem: base64Src,
@@ -127,7 +126,7 @@ function PerfilUser() {
         setFormContatoData({
           telefone: data.numero_telefone,
           instagram: data.link_insta,
-          facebook: data.link_facebook,
+          linkedin: data.link_facebook,
           github: data.link_github,
           pinterest: data.link_pinterest,
         });
@@ -144,8 +143,13 @@ function PerfilUser() {
     setAlert({ open: true, severity, message });
   const handleCloseAlert = () => setAlert((prev) => ({ ...prev, open: false }));
 
-  const handleInputChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  // mapeamento defensivo: se algum campo vier com name="username", grava em username_
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    const key = name === "username" ? "username_" : name;
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSenhaChange = (e) =>
     setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -195,7 +199,7 @@ function PerfilUser() {
 
       data.append("email", formData.email);
       data.append("biografia", biografiaToSend);
-      data.append("username", formData.username);
+      data.append("username_", formData.username_); // mantém o underscore para a API
       data.append("name", formData.name);
 
       let imageToSend = formData.imagem;
@@ -218,7 +222,7 @@ function PerfilUser() {
       setFormData((prev) => ({
         ...prev,
         name: formData.name,
-        username: formData.username,
+        username_: formData.username_,
         email: formData.email,
         biografia: biografiaToSend,
         imagem: updatedAvatar,
@@ -267,7 +271,7 @@ function PerfilUser() {
     try {
       const response = await api.updateExtraInfo({
         link_insta: formContatoData.instagram,
-        link_facebook: formContatoData.facebook,
+        link_facebook: formContatoData.linkedin,
         link_github: formContatoData.github,
         link_pinterest: formContatoData.pinterest,
         numero_telefone: formContatoData.telefone,
@@ -327,25 +331,21 @@ function PerfilUser() {
 
   const handleAvatarClick = () => editing && fileInputRef.current.click();
 
-  // --- ALTERADO: abre crop antes de aplicar ---
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const imageURL = URL.createObjectURL(file);
 
-    // Resetar estados e forçar recriação do Cropper
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setSelectedImage(imageURL);
-    setImageKey((prev) => prev + 1); // força nova key
+    setImageKey((prev) => prev + 1);
     setOpenCropModal(true);
 
-    // Resetar valor do input para permitir a mesma seleção novamente
     event.target.value = null;
   };
 
-  // --- FUNÇÃO PARA FINALIZAR CORTE E SALVAR ---
   const getCroppedImg = (imageSrc, cropPixels) =>
     new Promise((resolve) => {
       const image = new Image();
@@ -560,8 +560,8 @@ function PerfilUser() {
           <TextField
             fullWidth
             label="Username"
-            name="username"
-            value={formData.username}
+            name="username_"          // corrigido: usa a key do estado esperada pela API
+            value={formData.username_}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
@@ -612,7 +612,7 @@ function PerfilUser() {
           )}
         </Box>
 
-        {/* --- MODAL DE CROP DE IMAGEM --- */}
+        {/* --- MODAL DA IMAGEM --- */}
         <ModalBase open={openCropModal} onClose={handleCancelCrop}>
           {selectedImage && (
             <Box
@@ -637,7 +637,7 @@ function PerfilUser() {
                 }}
               >
                 <Cropper
-                  key={imageKey} // força recriação ao trocar imagem
+                  key={imageKey}
                   image={selectedImage}
                   crop={crop}
                   zoom={zoom}
@@ -689,8 +689,6 @@ function PerfilUser() {
           )}
         </ModalBase>
 
-        {/* -- RESTANTE DOS MODAIS EXISTENTES -- */}
-        {/* Modal de apagar usuário */}
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600}>
@@ -753,9 +751,9 @@ function PerfilUser() {
               <TextField
                 fullWidth
                 size="small"
-                label="Link do facebook"
-                name="facebook"
-                value={formContatoData.facebook || ""}
+                label="Link do LinkedIn"
+                name="linkedin"
+                value={formContatoData.linkedin || ""}
                 onChange={handleContatoChange}
               />
               <TextField
@@ -953,7 +951,7 @@ function Styles() {
       display: "flex",
       justifyContent: "center",
       gap: 30,
-      padding:"30px",
+      padding: "30px",
       width: "80%",
       maxWidth: "100%",
       margin: "0 auto",
