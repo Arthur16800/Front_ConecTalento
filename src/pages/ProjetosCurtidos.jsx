@@ -131,7 +131,6 @@ function ProjetosCurtidos() {
           <Typography
             variant="h4"
             sx={{
-              fontWeight: 700,
               fontSize: { xs: "1.6rem", sm: "2rem", md: "2.4rem" },
               color: "black",
               WebkitBackgroundClip: "text",
@@ -151,7 +150,7 @@ function ProjetosCurtidos() {
         spacing={2}
         sx={{
           mb: 5,
-          px: { xs: 2, sm: 4 }, // padding lateral igual à Home
+          px: { xs: 2, sm: 4 },
           justifyContent: "flex-start",
           mt: 0,
         }}
