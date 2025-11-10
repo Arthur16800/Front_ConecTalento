@@ -24,6 +24,7 @@ function CriarProjeto() {
   const [form, setForm] = useState({ titulo: "", descricao: "" });
   const [imagens, setImagens] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [draggingIndex, setDraggingIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -43,6 +44,7 @@ function CriarProjeto() {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setImagens((prev) => [...prev, ...files]);
+
     const readers = files.map(
       (file) =>
         new Promise((resolve, reject) => {
@@ -52,6 +54,7 @@ function CriarProjeto() {
           reader.readAsDataURL(file);
         })
     );
+
     Promise.all(readers)
       .then((base64Images) => setPreviews((prev) => [...prev, ...base64Images]))
       .catch((err) => console.error("Erro ao gerar prévias:", err));
@@ -61,6 +64,29 @@ function CriarProjeto() {
     setImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
     setPreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
+
+  // Drag & Drop
+  const handleDragStart = (index) => setDraggingIndex(index);
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return;
+
+    const newPreviews = [...previews];
+    const newImagens = [...imagens];
+    const draggedPreview = newPreviews[draggingIndex];
+    const draggedImagem = newImagens[draggingIndex];
+
+    newPreviews.splice(draggingIndex, 1);
+    newImagens.splice(draggingIndex, 1);
+
+    newPreviews.splice(index, 0, draggedPreview);
+    newImagens.splice(index, 0, draggedImagem);
+
+    setPreviews(newPreviews);
+    setImagens(newImagens);
+    setDraggingIndex(index);
+  };
+  const handleDragEnd = () => setDraggingIndex(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -190,25 +216,35 @@ function CriarProjeto() {
             flexWrap="wrap"
             gap={2}
             className="preview-list"
+            sx={{ cursor: "grab" }}
           >
             {previews.map((src, index) => (
               <Box
                 key={index}
+                className="thumb"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
                 sx={{
                   position: "relative",
                   borderRadius: 2,
                   overflow: "hidden",
                   boxShadow: 1,
                   border: "1px solid #ccc",
-                  width: 120,
-                  height: 120,
+                  opacity: draggingIndex === index ? 0.4 : 1,
+                  transition: "opacity 0.2s ease",
                 }}
-                className="thumb"
               >
                 <img
                   src={src}
                   alt={`preview-${index}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    userSelect: "none",
+                  }}
                 />
                 <DeleteIcon
                   onClick={() => handleRemoveImage(index)}
@@ -332,7 +368,6 @@ function Styles() {
     uploadBtn: {
       backgroundColor: "rgb(133, 0, 194)",
       color: "white",
-      fontWeight: 100,
       borderRadius: "8px",
       padding: "12px 28px",
       textTransform: "none",
