@@ -36,8 +36,8 @@ function BottonUpgrade() {
         setFormData((prev) => ({ ...prev, email }));
         return email;
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-        showAlert("error", error?.response?.data?.error || "Erro ao buscar usuário");
+        console.error("Erro ao criar o pix:", error);
+        showAlert("error", error?.response?.data?.error || "Erro ao criar o pix");
         setLoading(false);
         return null;
       }
