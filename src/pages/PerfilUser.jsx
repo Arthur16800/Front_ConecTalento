@@ -9,7 +9,6 @@ import {
   Avatar,
   Snackbar,
   Alert,
-  Slider,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -28,17 +27,21 @@ function PerfilUser() {
   const [openModalSenha, setOpenModalSenha] = useState(false);
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [openModalContato, setOpenModalContato] = useState(false);
+  const [openModalEmail, setOpenModalEmail] = useState(false);
 
   const [openCropModal, setOpenCropModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [imageKey, setImageKey] = useState(0);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingSenha, setLoadingSenha] = useState(false);
+
+  const [originalEmail, setOriginalEmail] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -46,6 +49,7 @@ function PerfilUser() {
     email: "",
     biografia: "",
     imagem: null,
+    code: "",
   });
 
   const [senhaData, setSenhaData] = useState({
@@ -62,6 +66,23 @@ function PerfilUser() {
     pinterest: "",
   });
 
+  const [extraInfoPayload, setExtraInfoPayload] = useState({
+    link_insta: "",
+    link_facebook: "",
+    link_github: "",
+    link_pinterest: "",
+    numero_telefone: "",
+    ID_user: id_user,
+  });
+
+  const [forgotPayload, setForgotPayload] = useState({
+    email: "",
+    code: "",
+    password: "",
+    confirmPassword: "",
+    atualizar: false,
+  });
+
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [alert, setAlert] = useState({
     open: false,
@@ -69,13 +90,8 @@ function PerfilUser() {
     message: "",
   });
 
-  const [emailRecuperacao, setEmailRecuperacao] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoValidado, setCodigoValidado] = useState(false);
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmSenha, setConfirmSenha] = useState("");
-  const [imageKey, setImageKey] = useState(0);
 
   const [userPlan, setUserPlan] = useState({
     plan: null,
@@ -100,16 +116,22 @@ function PerfilUser() {
             : `data:image/jpeg;base64,${data.imagem}`
           : null;
 
-        setFormData({
-          name: data.name,
-          username_: data.username, // mantém no estado com underscore
-          email: data.email,
-          biografia: data.biografia,
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          username_: data.username || "",
+          email: data.email || "",
+          biografia: data.biografia || "",
           imagem: base64Src,
-        });
+          code: "",
+        }));
         setAvatarPreview(base64Src);
+
+        setForgotPayload((prev) => ({ ...prev, email: data.email || "" }));
+
         const plan = Boolean(response.data.profile.plano);
         setUserPlan({ plan, authenticated: true });
+        setOriginalEmail(data.email || "");
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
         showAlert(
@@ -124,11 +146,11 @@ function PerfilUser() {
         const response = await api.getExtraInfo(id_user);
         const data = response.data;
         setFormContatoData({
-          telefone: data.numero_telefone,
-          instagram: data.link_insta,
-          linkedin: data.link_facebook,
-          github: data.link_github,
-          pinterest: data.link_pinterest,
+          telefone: data.numero_telefone || "",
+          instagram: data.link_insta || "",
+          linkedin: data.link_facebook || "",
+          github: data.link_github || "",
+          pinterest: data.link_pinterest || "",
         });
       } catch (error) {
         console.error("Erro ao buscar informações de contato:", error);
@@ -139,11 +161,25 @@ function PerfilUser() {
     fetchContactInfo();
   }, [id_user]);
 
+  useEffect(() => {
+    setExtraInfoPayload({
+      link_insta: formContatoData.instagram,
+      link_facebook: formContatoData.linkedin,
+      link_github: formContatoData.github,
+      link_pinterest: formContatoData.pinterest,
+      numero_telefone: formContatoData.telefone,
+      ID_user: id_user,
+    });
+  }, [formContatoData, id_user]);
+
+  useEffect(() => {
+    setForgotPayload((prev) => ({ ...prev, email: formData.email || "" }));
+  }, [formData.email]);
+
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
   const handleCloseAlert = () => setAlert((prev) => ({ ...prev, open: false }));
 
-  // mapeamento defensivo: se algum campo vier com name="username", grava em username_
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const key = name === "username" ? "username_" : name;
@@ -165,6 +201,8 @@ function PerfilUser() {
   const handleCloseModalSenha = () => setOpenModalSenha(false);
   const handleOpenModalContato = () => setOpenModalContato(true);
   const handleCloseModalContato = () => setOpenModalContato(false);
+  const handleOpenModalEmail = () => setOpenModalEmail(true);
+  const handleCloseModalEmail = () => setOpenModalEmail(false);
 
   const handleDeleteUser = () => {
     deleteUser();
@@ -172,7 +210,23 @@ function PerfilUser() {
   };
 
   const handleEditClick = () => setEditing(true);
-  const handleSaveClick = () => updateUser();
+
+  // Mantido: botão Salvar chama updateUser; a própria updateUser agora resolve o 2-pass do email
+  const handleSaveClick = () => {
+    updateUser();
+  };
+
+  const handleConfirmEmailCode = () => {
+    const code = (formData.code || "").trim();
+
+    if (!code) {
+      showAlert("error", "Por favor, insira o código de verificação.");
+      return;
+    }
+
+    // se tiver código preenchido, segue o fluxo normal
+    updateUser();
+  };
 
   function base64ToFile(base64, filename) {
     if (!base64) return null;
@@ -181,34 +235,51 @@ function PerfilUser() {
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
     return new File([u8arr], filename, { type: mime });
   }
 
   async function updateUser() {
     setLoading(true);
     try {
-      const data = new FormData();
+      const fd = new FormData();
 
       const biografiaToSend =
         !formData.biografia || formData.biografia.trim() === ""
           ? "Nenhuma biografia cadastrada."
           : formData.biografia;
 
-      data.append("email", formData.email);
-      data.append("biografia", biografiaToSend);
-      data.append("username_", formData.username_); // mantém o underscore para a API
-      data.append("name", formData.name);
+      fd.append("email", formData.email);
+      fd.append("biografia", biografiaToSend);
+      fd.append("username_", formData.username_);
+      fd.append("name", formData.name);
 
       let imageToSend = formData.imagem;
       if (imageToSend && typeof imageToSend === "string") {
         imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
       }
-      if (imageToSend) data.append("imagens", imageToSend);
+      if (imageToSend) fd.append("imagens", imageToSend);
 
-      const response = await api.updateUser(id_user, data);
+      const emailMudou = formData.email !== originalEmail;
+
+      const temCodigo = (formData.code || "").trim() !== "";
+
+      // Passo 1: se o email mudou e ainda não há código, NÃO envia 'code' no payload.
+      // A API responderá 202 e enviará o código ao novo e-mail.
+      if (emailMudou && !temCodigo) {
+        const res = await api.updateUser(id_user, fd);
+        showAlert("success", res.data?.message || "Código enviado ao email.");
+        setOpenModalEmail(true);
+        setLoading(false);
+        return;
+      }
+
+      // Passo 2: se tem código (ou o email não mudou), segue com a atualização.
+      if (temCodigo) {
+        fd.append("code", formData.code);
+      }
+
+      const response = await api.updateUser(id_user, fd);
 
       const img = response.data?.profile?.imagem;
       let updatedAvatar = avatarPreview;
@@ -225,16 +296,21 @@ function PerfilUser() {
         username_: formData.username_,
         email: formData.email,
         biografia: biografiaToSend,
+        code: "",
         imagem: updatedAvatar,
       }));
       setAvatarPreview(updatedAvatar);
+
+      if (emailMudou) {
+        setOriginalEmail(formData.email);
+      }
 
       showAlert(
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
       );
-
       setEditing(false);
+      setOpenModalEmail(false);
     } catch (error) {
       console.error("Erro no updateUser:", error);
       showAlert(
@@ -269,14 +345,7 @@ function PerfilUser() {
 
   async function handleUpdateContactInfo() {
     try {
-      const response = await api.updateExtraInfo({
-        link_insta: formContatoData.instagram,
-        link_facebook: formContatoData.linkedin,
-        link_github: formContatoData.github,
-        link_pinterest: formContatoData.pinterest,
-        numero_telefone: formContatoData.telefone,
-        ID_user: id_user,
-      });
+      const response = await api.updateExtraInfo(extraInfoPayload);
       showAlert(
         "success",
         response.data.message || "Informações de contato atualizadas!"
@@ -370,8 +439,7 @@ function PerfilUser() {
       };
     });
 
-  const onCropComplete = (_, croppedAreaPixels) =>
-    setCroppedAreaPixels(croppedAreaPixels);
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels);
 
   const handleConfirmCrop = async () => {
     const croppedImage = await getCroppedImg(selectedImage, croppedAreaPixels);
@@ -385,23 +453,21 @@ function PerfilUser() {
     setOpenModalEsqueci(false);
     setCodigoEnviado(false);
     setCodigoValidado(false);
-    setEmailRecuperacao("");
-    setCodigo("");
-    setNovaSenha("");
-    setConfirmSenha("");
-  };
-
-  const handleCancelCrop = () => {
-    setOpenCropModal(false);
-    setSelectedImage(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
+    setForgotPayload({
+      email: formData.email || "",
+      code: "",
+      password: "",
+      confirmPassword: "",
+      atualizar: false,
+    });
   };
 
   const forgotPasswordSendCode = async () => {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({ email: emailRecuperacao });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoEnviado(true);
     } catch (err) {
@@ -415,11 +481,14 @@ function PerfilUser() {
   const validarCodigo = async () => {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        atualizar: false,
-      });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      if (!payload.code || payload.code.toString().trim() === "") {
+        setLoading(false);
+        showAlert("error", "Por favor, insira o código de verificação.");
+        return;
+      }
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoValidado(true);
     } catch (err) {
@@ -431,20 +500,16 @@ function PerfilUser() {
   };
 
   const atualizarSenhaEsquecida = async () => {
-    if (novaSenha !== confirmSenha) {
+    if (forgotPayload.password !== forgotPayload.confirmPassword) {
       showAlert("error", "As senhas não coincidem.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        password: novaSenha,
-        confirmPassword: confirmSenha,
-        atualizar: true,
-      });
+      const payload = { ...forgotPayload, atualizar: true };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       handleCloseModalEsqueciSenha();
     } catch (err) {
@@ -560,7 +625,7 @@ function PerfilUser() {
           <TextField
             fullWidth
             label="Username"
-            name="username_"          // corrigido: usa a key do estado esperada pela API
+            name="username_"
             value={formData.username_}
             onChange={handleInputChange}
             disabled={!editing}
@@ -612,8 +677,7 @@ function PerfilUser() {
           )}
         </Box>
 
-        {/* --- MODAL DA IMAGEM --- */}
-        <ModalBase open={openCropModal} onClose={handleCancelCrop}>
+        <ModalBase open={openCropModal} onClose={() => setOpenCropModal(false)}>
           {selectedImage && (
             <Box
               sx={{
@@ -645,7 +709,7 @@ function PerfilUser() {
                   onCropChange={setCrop}
                   onZoomChange={setZoom}
                   onCropComplete={onCropComplete}
-                  zoomWithScroll={true}
+                  zoomWithScroll
                 />
               </Box>
 
@@ -659,7 +723,12 @@ function PerfilUser() {
               >
                 <Button
                   variant="outlined"
-                  onClick={handleCancelCrop}
+                  onClick={() => {
+                    setOpenCropModal(false);
+                    setSelectedImage(null);
+                    setCrop({ x: 0, y: 0 });
+                    setZoom(1);
+                  }}
                   sx={{
                     textTransform: "none",
                     borderRadius: 2,
@@ -724,78 +793,109 @@ function PerfilUser() {
           </Box>
         </ModalBase>
 
-        {/* Modal de contato */}
-        <ModalBase open={openModalContato} onClose={handleCloseModalContato}>
-          <Box textAlign="center" p={3} mt={-6}>
-            <Typography variant="h6" fontWeight={600} mb={1}>
+        <ModalBase
+          open={openModalContato}
+          onClose={handleCloseModalContato}
+        >
+          <Box textAlign="center" p={3} mt={-2}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
               Informações de Contato
             </Typography>
-
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Telefone"
-                name="telefone"
-                value={formContatoData.telefone}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Link do Instagram"
-                name="instagram"
-                value={formContatoData.instagram || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Link do LinkedIn"
-                name="linkedin"
-                value={formContatoData.linkedin || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Link do GitHub"
-                name="github"
-                value={formContatoData.github || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Link do Pinterest"
-                name="pinterest"
-                value={formContatoData.pinterest || ""}
-                onChange={handleContatoChange}
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Button
-                  variant="contained"
-                  sx={{
-                    borderRadius: 1,
-                    width: "65%",
-                    background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
-                  }}
-                  onClick={handleUpdateContactInfo}
-                >
-                  Salvar Informações
-                </Button>
-              </Box>
-            </Box>
+            <TextField
+              fullWidth
+              label="Telefone"
+              name="telefone"
+              value={formContatoData.telefone}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Instagram"
+              name="instagram"
+              value={formContatoData.instagram}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="LinkedIn"
+              name="linkedin"
+              value={formContatoData.linkedin}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="GitHub"
+              name="github"
+              value={formContatoData.github}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Pinterest"
+              name="pinterest"
+              value={formContatoData.pinterest}
+              onChange={handleContatoChange}
+              sx={{ mb: 3 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                borderRadius: 1,
+                width: "80%",
+                background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+              }}
+              onClick={handleUpdateContactInfo}
+              disabled={loading}
+            >
+              {loading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                "Salvar Informações"
+              )}
+            </Button>
           </Box>
         </ModalBase>
 
-        {/* Modal de alterar senha */}
+        {/* Modal para confirmar código quando email muda */}
+        <ModalBase open={openModalEmail} onClose={handleCloseModalEmail}>
+          <Box textAlign="center" p={3} mt={-4}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Alterar E-mail
+            </Typography>
+            <TextField
+              fullWidth
+              label="Código de Verificação"
+              type="text"
+              name="code"
+              value={formData.code}
+              onChange={handleInputChange}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                borderRadius: 1,
+                width: "65%",
+                background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+              }}
+              onClick={handleConfirmEmailCode}
+              disabled={loading}
+            >
+              {loading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                "Confirmar Código"
+              )}
+            </Button>
+          </Box>
+        </ModalBase>
+
         <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
           <Box textAlign="center" p={2} mt={-4}>
             <Typography variant="h6" fontWeight={600} mb={1}>
@@ -861,7 +961,6 @@ function PerfilUser() {
           </Box>
         </ModalBase>
 
-        {/* Modal de esqueci minha senha */}
         <ModalBase
           open={openModalEsqueci}
           onClose={handleCloseModalEsqueciSenha}
@@ -875,17 +974,22 @@ function PerfilUser() {
                 <TextField
                   fullWidth
                   label="E-mail"
-                  value={emailRecuperacao}
-                  onChange={(e) => setEmailRecuperacao(e.target.value)}
-                  disabled={codigoEnviado}
+                  value={forgotPayload.email}
+                  disabled
                   sx={{ mb: 2 }}
                 />
+
                 {codigoEnviado && (
                   <TextField
                     fullWidth
                     label="Código"
-                    value={codigo}
-                    onChange={(e) => setCodigo(e.target.value)}
+                    value={forgotPayload.code}
+                    onChange={(e) =>
+                      setForgotPayload((prev) => ({
+                        ...prev,
+                        code: e.target.value,
+                      }))
+                    }
                     sx={{ mb: 2 }}
                   />
                 )}
@@ -912,16 +1016,26 @@ function PerfilUser() {
                   fullWidth
                   label="Nova Senha"
                   type="password"
-                  value={novaSenha}
-                  onChange={(e) => setNovaSenha(e.target.value)}
+                  value={forgotPayload.password}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   sx={{ mb: 2 }}
                 />
                 <TextField
                   fullWidth
                   label="Confirmar Senha"
                   type="password"
-                  value={confirmSenha}
-                  onChange={(e) => setConfirmSenha(e.target.value)}
+                  value={forgotPayload.confirmPassword}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
                   sx={{ mb: 3 }}
                 />
                 <Button

@@ -111,6 +111,10 @@ function Cadastro() {
   }
 
   async function validateCode() {
+    if(user.code.trim() === "") {
+      showAlert("error", "Por favor, insira o código de verificação.");
+      return;
+    }
     await api.postCadastro(user).then(
       (response) => {
         showAlert("success", response.data.message);
