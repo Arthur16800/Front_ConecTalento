@@ -14,16 +14,26 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
 import { Snackbar, Alert, CircularProgress } from "@mui/material";
-import ModalBase from "../Components/ModalBase"; 
+import ModalBase from "../Components/ModalBase";
 
 function Login() {
   const styles = Styles();
   const navigate = useNavigate();
 
+  // Todos os dados enviados à API via useState
   const [user, setUser] = useState({
     email: "",
     password: "",
-    showPassword: false,
+    showPassword: false, // não é enviado, mas faz parte do estado do formulário
+  });
+
+  // Estado único para todos os payloads do fluxo "esqueci minha senha"
+  const [forgotPayload, setForgotPayload] = useState({
+    email: "",
+    code: "",
+    password: "",
+    confirmPassword: "",
+    atualizar: false, // controlará quando é atualização de senha
   });
 
   const [loading, setLoading] = useState(false);
@@ -34,13 +44,11 @@ function Login() {
   });
 
   const id_user = localStorage.getItem("id_usuario");
+
+  // Estados de UI (não enviados à API)
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
-  const [emailRecuperacao, setEmailRecuperacao] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoValidado, setCodigoValidado] = useState(false);
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmSenha, setConfirmSenha] = useState("");
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -52,7 +60,7 @@ function Login() {
   };
 
   const handleCloseAlert = () => {
-    setAlert({ ...alert, open: false });
+    setAlert((prev) => ({ ...prev, open: false }));
   };
 
   const handleSubmit = async (event) => {
@@ -62,11 +70,11 @@ function Login() {
 
   async function loginUser() {
     setLoading(true);
-    await api.postLogin(user).then(
+    await api.postLogin({ email: user.email, password: user.password }).then(
       (response) => {
         showAlert("success", response.data.message);
         setLoading(false);
-        localStorage.setItem("authenticated", true);
+        localStorage.setItem("authenticated", "true");
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("id_usuario", response.data.user.ID_user);
         navigate("/");
@@ -83,34 +91,45 @@ function Login() {
     setOpenModalEsqueci(false);
     setCodigoEnviado(false);
     setCodigoValidado(false);
-    setEmailRecuperacao("");
-    setCodigo("");
-    setNovaSenha("");
-    setConfirmSenha("");
+    // reset do payload que é enviado à API
+    setForgotPayload({
+      email: "",
+      code: "",
+      password: "",
+      confirmPassword: "",
+      atualizar: false,
+    });
   };
 
+  // 1) Enviar código – payload vindo do estado forgotPayload
   async function forgotPasswordSendCode() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({ email: emailRecuperacao });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoEnviado(true);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      showAlert("error", err.response?.data?.error);
+      showAlert("error", err.response?.data?.error || "Erro ao enviar código");
       setLoading(false);
     }
   }
 
+  // 2) Validar código – payload vindo do estado forgotPayload
   async function validarCodigo() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        atualizar: false,
-      });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      if (!payload.code || payload.code.toString().trim() === "") {
+        setLoading(false);
+        showAlert("error", "Por favor, insira o código de verificação.");
+        return;
+      }
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoValidado(true);
       setLoading(false);
@@ -121,22 +140,22 @@ function Login() {
     }
   }
 
+  // 3) Atualizar senha – payload vindo do estado forgotPayload
   async function atualizarSenhaEsquecida() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        password: novaSenha,
-        confirmPassword: confirmSenha,
-        atualizar: true,
-      });
+      const payload = { ...forgotPayload, atualizar: true };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       handleCloseModalEsqueciSenha();
       setLoading(false);
     } catch (err) {
       console.error(err);
-      showAlert("error", err.response?.data?.error);
+      showAlert(
+        "error",
+        err.response?.data?.error || "Erro ao atualizar senha"
+      );
       setLoading(false);
     }
   }
@@ -316,8 +335,13 @@ function Login() {
                 label="E-mail"
                 type="email"
                 variant="outlined"
-                value={emailRecuperacao}
-                onChange={(e) => setEmailRecuperacao(e.target.value)}
+                value={forgotPayload.email}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
                 disabled={codigoEnviado}
               />
@@ -329,8 +353,13 @@ function Login() {
                   margin="normal"
                   label="Código"
                   variant="outlined"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
+                  value={forgotPayload.code}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      code: e.target.value,
+                    }))
+                  }
                   style={styles.camposForm}
                 />
               )}
@@ -358,8 +387,13 @@ function Login() {
                 label="Nova Senha"
                 type="password"
                 variant="outlined"
-                value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
+                value={forgotPayload.password}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    password: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
               />
               <TextField
@@ -369,8 +403,13 @@ function Login() {
                 label="Confirmar Senha"
                 type="password"
                 variant="outlined"
-                value={confirmSenha}
-                onChange={(e) => setConfirmSenha(e.target.value)}
+                value={forgotPayload.confirmPassword}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    confirmPassword: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
               />
               <Button
