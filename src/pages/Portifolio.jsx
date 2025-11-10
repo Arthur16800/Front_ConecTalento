@@ -394,7 +394,7 @@ function Portfolio() {
                 sx={{
                   backgroundColor: "#6A22F0",
                   color: "#fff",
-                  "&:hover": { backgroundColor: "#54007aff" },
+                  "&:hover": { backgroundColor: "#5617cbff" },
                   borderRadius: "50%",
                   width: 56,
                   height: 56,

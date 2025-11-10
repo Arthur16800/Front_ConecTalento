@@ -145,7 +145,7 @@ const sheets = {
 
   updateExtraInfo: (data) => api.put("/extrainfo", data),
   getExtraInfo: (id_user) => api.get(`/extrainfo/${id_user}`),
-  
+  getProjectsLikedUser:(id_user) => api.get(`/projectsliked/${id_user}`)
 };
 
 export default sheets;

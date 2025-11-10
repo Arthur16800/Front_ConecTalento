@@ -11,6 +11,7 @@ import DefaultLayout from "./Components/DefaultLayout";
 import UpdateProjeto from "./pages/UpdateProjeto";
 import Pagamento from "./pages/Pagameto";
 import NotFound from "./pages/NotFound";
+import ProjetosCurtidos from "./pages/ProjetosCurtidos";
 import ProtectedRoute from "./Components/ProtectedRoutes";
 
 function App() {
@@ -100,6 +101,17 @@ function App() {
             <DefaultLayout>
               <NotFound />
             </DefaultLayout>
+          }
+        />
+
+        <Route
+          path="/projetosCurtidos"
+          element={
+            <ProtectedRoute>
+              <DefaultLayout>
+                <ProjetosCurtidos/>
+              </DefaultLayout>
+            </ProtectedRoute>
           }
         />
       </Routes>
