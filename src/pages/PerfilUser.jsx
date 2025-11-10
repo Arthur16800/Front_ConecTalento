@@ -42,7 +42,7 @@ function PerfilUser() {
 
   const [formData, setFormData] = useState({
     name: "",
-    username: "",
+    username_: "",
     email: "",
     biografia: "",
     imagem: null,
@@ -102,7 +102,7 @@ function PerfilUser() {
 
         setFormData({
           name: data.name,
-          username: data.username,
+          username_: data.username, // mantém no estado com underscore
           email: data.email,
           biografia: data.biografia,
           imagem: base64Src,
@@ -143,8 +143,13 @@ function PerfilUser() {
     setAlert({ open: true, severity, message });
   const handleCloseAlert = () => setAlert((prev) => ({ ...prev, open: false }));
 
-  const handleInputChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  // mapeamento defensivo: se algum campo vier com name="username", grava em username_
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    const key = name === "username" ? "username_" : name;
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSenhaChange = (e) =>
     setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -194,7 +199,7 @@ function PerfilUser() {
 
       data.append("email", formData.email);
       data.append("biografia", biografiaToSend);
-      data.append("username", formData.username);
+      data.append("username_", formData.username_); // mantém o underscore para a API
       data.append("name", formData.name);
 
       let imageToSend = formData.imagem;
@@ -217,7 +222,7 @@ function PerfilUser() {
       setFormData((prev) => ({
         ...prev,
         name: formData.name,
-        username: formData.username,
+        username_: formData.username_,
         email: formData.email,
         biografia: biografiaToSend,
         imagem: updatedAvatar,
@@ -335,7 +340,7 @@ function PerfilUser() {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setSelectedImage(imageURL);
-    setImageKey((prev) => prev + 1); 
+    setImageKey((prev) => prev + 1);
     setOpenCropModal(true);
 
     event.target.value = null;
@@ -555,8 +560,8 @@ function PerfilUser() {
           <TextField
             fullWidth
             label="Username"
-            name="username"
-            value={formData.username}
+            name="username_"          // corrigido: usa a key do estado esperada pela API
+            value={formData.username_}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
@@ -946,7 +951,7 @@ function Styles() {
       display: "flex",
       justifyContent: "center",
       gap: 30,
-      padding:"30px",
+      padding: "30px",
       width: "80%",
       maxWidth: "100%",
       margin: "0 auto",
