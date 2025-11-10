@@ -167,7 +167,10 @@ const Header = ({ onSearch }) => {
         <MenuItem onClick={() => navigate("/" + userData?.username)}>
           Meu Portifólio
         </MenuItem>
+        <MenuItem onClick={() => navigate("/projetosCurtidos")}>Favoritos</MenuItem>
+
         <MenuItem onClick={handleLogout}>Sair</MenuItem>
+
       </Menu>
 
       <Box sx={styles.box_logo_pesquisa} className="box-logo-pesquisa">
