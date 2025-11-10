@@ -12,10 +12,13 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useEffect, useState } from "react";
 import api from "../axios/axios";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import { useNavigate } from "react-router-dom";
 
 function CriarProjeto() {
   const styles = Styles();
+  const navigate = useNavigate();
   const ID_user = localStorage.getItem("id_usuario");
+  const [username, setUsername] = useState("");
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
   const [form, setForm] = useState({ titulo: "", descricao: "" });
@@ -52,9 +55,7 @@ function CriarProjeto() {
     );
 
     Promise.all(readers)
-      .then((base64Images) =>
-        setPreviews((prev) => [...prev, ...base64Images])
-      )
+      .then((base64Images) => setPreviews((prev) => [...prev, ...base64Images]))
       .catch((err) => console.error("Erro ao gerar prévias:", err));
   };
 
@@ -86,6 +87,8 @@ function CriarProjeto() {
     }
     try {
       const response = await api.getUserById(ID_user);
+      const usernameFromAPI = response.data.profile.username;
+      setUsername(usernameFromAPI);
       const plan = Boolean(response.data.profile.plano);
       setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
     } catch (error) {
@@ -96,6 +99,15 @@ function CriarProjeto() {
   useEffect(() => {
     getUserById();
   }, []);
+  useEffect(() => {
+    if (snackbar.open && snackbar.severity === "success") {
+      const timer = setTimeout(() => {
+        navigate(`/${username}`);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [snackbar, navigate, username]);
 
   return (
     <>
@@ -175,14 +187,24 @@ function CriarProjeto() {
               onChange={handleFileChange}
             />
             <label htmlFor="upload-images">
-              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
+              <Button
+                component="span"
+                sx={styles.uploadBtn}
+                className="upload-btn"
+              >
                 <UploadFileIcon fontSize="small" />
                 Selecionar imagens
               </Button>
             </label>
           </Box>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
+          <Box
+            mt={2}
+            display="flex"
+            flexWrap="wrap"
+            gap={2}
+            className="preview-list"
+          >
             {previews.map((src, index) => (
               <Box
                 key={index}
