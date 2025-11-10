@@ -6,6 +6,7 @@ import {
   Snackbar,
   Alert,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -20,11 +21,10 @@ function CriarProjeto() {
   const ID_user = localStorage.getItem("id_usuario");
   const [username, setUsername] = useState("");
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
-
   const [form, setForm] = useState({ titulo: "", descricao: "" });
   const [imagens, setImagens] = useState([]);
   const [previews, setPreviews] = useState([]);
-
+  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -43,7 +43,6 @@ function CriarProjeto() {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setImagens((prev) => [...prev, ...files]);
-
     const readers = files.map(
       (file) =>
         new Promise((resolve, reject) => {
@@ -53,7 +52,6 @@ function CriarProjeto() {
           reader.readAsDataURL(file);
         })
     );
-
     Promise.all(readers)
       .then((base64Images) => setPreviews((prev) => [...prev, ...base64Images]))
       .catch((err) => console.error("Erro ao gerar prévias:", err));
@@ -66,6 +64,7 @@ function CriarProjeto() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await api.createProjeto(ID_user, form, imagens);
       setSnackbar({
@@ -73,9 +72,14 @@ function CriarProjeto() {
         message: response.data.message,
         severity: "success",
       });
+      setTimeout(() => {
+        if (username) navigate(`/${username}`);
+      }, 1500);
     } catch (error) {
       const msg = error.response?.data?.error || "Erro ao criar projeto";
       setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,9 +91,9 @@ function CriarProjeto() {
     }
     try {
       const response = await api.getUserById(ID_user);
+      const plan = Boolean(response.data.profile.plano);
       const usernameFromAPI = response.data.profile.username;
       setUsername(usernameFromAPI);
-      const plan = Boolean(response.data.profile.plano);
       setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
@@ -99,33 +103,19 @@ function CriarProjeto() {
   useEffect(() => {
     getUserById();
   }, []);
-  useEffect(() => {
-    if (snackbar.open && snackbar.severity === "success") {
-      const timer = setTimeout(() => {
-        navigate(`/${username}`);
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [snackbar, navigate, username]);
 
   return (
     <>
       <style>{`
-        /* Base refinada (desktop médio) */
         .criar-projeto { padding-left: 12px; padding-right: 12px; }
         .form-projeto { max-width: 1100px; }
         .thumb { width: 120px; height: 120px; }
-        .campo { max-width: 720px; } /* acompanha seu width:50% (quando a tela é larga) */
-
-        /* <= 1024px: inputs mais largos e thumbs menores */
+        .campo { max-width: 720px; }
         @media (max-width: 1024px) {
           .campo { width: 70% !important; max-width: 640px !important; }
           .thumb { width: 110px !important; height: 110px !important; }
           .preview-list { gap: 12px !important; }
         }
-
-        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
         @media (max-width: 768px) {
           .form-projeto {
             margin: 16px auto !important;
@@ -134,7 +124,6 @@ function CriarProjeto() {
           }
           .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
           .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
-
           .campo {
             width: 100% !important;
             max-width: 100% !important;
@@ -145,15 +134,12 @@ function CriarProjeto() {
           .preview-list { gap: 10px !important; }
           .btn-submit { width: 100px !important; padding: 12px 20px !important; }
         }
-
-        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
         @media (max-width: 480px) {
           .titulo-pagina { font-size: 24px !important; }
           .label-padrao { font-size: 14px !important; }
           .thumb { width: 88px !important; height: 88px !important; }
           .btn-submit { font-size: 15px !important;}
         }
-
         @media (max-width: 400px){
           .btn-submit {margin: auto}
         }
@@ -274,8 +260,17 @@ function CriarProjeto() {
             }}
           />
 
-          <Button type="submit" style={styles.button} className="btn-submit">
-            Criar
+          <Button
+            type="submit"
+            style={styles.button}
+            className="btn-submit"
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Criar"
+            )}
           </Button>
         </form>
 
