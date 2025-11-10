@@ -48,6 +48,7 @@ function DetalhesProjeto({ imagesCount = 4 }) {
         setProjeto(dadosProjeto);
         const imgs = res.data?.projeto?.imagens || [];
         setImagens(imgs);
+        console.log("Imagens carregadas:", imgs);
       } catch (err) {
         console.error("Erro ao buscar imagens:", err);
         if (ativo) setErro(err);

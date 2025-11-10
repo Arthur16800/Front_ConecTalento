@@ -7,6 +7,7 @@ import {
   Alert,
   IconButton,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useEffect, useState } from "react";
@@ -19,21 +20,19 @@ function UpdateProjeto() {
   const styles = Styles();
   const { ID_projeto } = useParams();
   const ID_user = localStorage.getItem("id_usuario");
-
   const [form, setForm] = useState({ titulo: "", descricao: "" });
   const [imagensExistentes, setImagensExistentes] = useState([]);
   const [imagensNovas, setImagensNovas] = useState([]);
   const [previewsNovas, setPreviewsNovas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
-
   const navigate = useNavigate();
-
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
+  const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
   const handleSnackbarClose = (_, reason) => {
     if (reason === "clickaway") return;
@@ -46,19 +45,21 @@ function UpdateProjeto() {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setImagensNovas(files);
-
-    const readers = files.map((file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
+    if (files.length === 0) return;
+    setImagensNovas((prev) => [...prev, ...files]);
+    const readers = files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+    );
     Promise.all(readers)
-      .then((base64Images) => setPreviewsNovas(base64Images))
+      .then((base64Images) =>
+        setPreviewsNovas((prev) => [...prev, ...base64Images])
+      )
       .catch((err) => console.error("Erro ao gerar prévias:", err));
   };
 
@@ -71,8 +72,7 @@ function UpdateProjeto() {
     setPreviewsNovas((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
-
+  // Função para converter DataURL em arquivo
   function dataURLToFile(dataUrl, filenameFallback = "imagem_existente") {
     try {
       const arr = dataUrl.split(",");
@@ -101,22 +101,18 @@ function UpdateProjeto() {
 
   useEffect(() => {
     let ativo = true;
-
     const fetchProjeto = async () => {
       try {
         setLoading(true);
         const res = await api.getProjectDetails(ID_projeto);
         if (!ativo) return;
-
         const projeto = res.data?.projeto;
         if (projeto) {
           setForm({
             titulo: projeto.titulo || "",
             descricao: projeto.descricao || "",
           });
-
           setUsername(projeto.autor?.username);
-
           const imgs = projeto.imagens
             ?.map((img) => {
               if (typeof img === "string") return img;
@@ -127,7 +123,6 @@ function UpdateProjeto() {
               return null;
             })
             .filter(Boolean);
-
           setImagensExistentes(imgs || []);
         }
         setLoading(false);
@@ -136,17 +131,39 @@ function UpdateProjeto() {
         setLoading(false);
       }
     };
-
     fetchProjeto();
     return () => {
       ativo = false;
     };
   }, [ID_projeto]);
 
+  // Drag and drop
+  const [draggingIndex, setDraggingIndex] = useState(null);
+
+  const handleDragStart = (index) => setDraggingIndex(index);
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    const total = [...imagensExistentes, ...previewsNovas];
+    if (draggingIndex === null || draggingIndex === index) return;
+
+    const draggedItem = total[draggingIndex];
+    const newList = total.filter((_, i) => i !== draggingIndex);
+    newList.splice(index, 0, draggedItem);
+
+    const novasExistentes = newList.slice(0, imagensExistentes.length);
+    const novasNovas = newList.slice(imagensExistentes.length);
+
+    setImagensExistentes(novasExistentes);
+    setPreviewsNovas(novasNovas);
+    setDraggingIndex(index);
+  };
+
+  const handleDragEnd = () => setDraggingIndex(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const formData = new FormData();
       formData.append("titulo", form.titulo);
@@ -154,16 +171,14 @@ function UpdateProjeto() {
       formData.append("ID_user", ID_user);
 
       const arquivosDeExistentes = imagensExistentes
-        .map((src, idx) => {
-          if (typeof src === "string" && src.startsWith("data:")) {
-            return dataURLToFile(src, `imagem_existente_${idx + 1}`);
-          }
-          return null;
-        })
+        .map((src, idx) =>
+          typeof src === "string" && src.startsWith("data:")
+            ? dataURLToFile(src, `imagem_existente_${idx + 1}`)
+            : null
+        )
         .filter(Boolean);
 
       const arquivosParaEnviar = [...arquivosDeExistentes, ...imagensNovas];
-
       if (arquivosParaEnviar.length === 0) {
         setSnackbar({
           open: true,
@@ -176,9 +191,7 @@ function UpdateProjeto() {
       }
 
       arquivosParaEnviar.forEach((file) => formData.append("imagens", file));
-
       const response = await api.updateProjeto(ID_projeto, formData);
-
       setSnackbar({
         open: true,
         message: response.data?.message,
@@ -201,7 +214,6 @@ function UpdateProjeto() {
       const timer = setTimeout(() => {
         navigate(`/${username}`);
       }, 1500);
-
       return () => clearTimeout(timer);
     }
   }, [snackbar, navigate, username]);
@@ -227,106 +239,53 @@ function UpdateProjeto() {
 
   return (
     <>
-      <style>{`
-        /* Base refinada (desktop médio) */
-        .update-projeto { padding-left: 12px; padding-right: 12px; }
-        .form-projeto { max-width: 1100px; }
-        .thumb { width: 120px; height: 120px; }
-        .campo { max-width: 720px; } /* acompanha width:50% do inline em telas largas */
-
-        /* <= 1024px: inputs mais largos e thumbs menores */
-        @media (max-width: 1024px) {
-          .campo { width: 70% !important; max-width: 640px !important; }
-          .thumb { width: 110px !important; height: 110px !important; }
-          .preview-list { gap: 12px !important; }
-        }
-
-        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
-        @media (max-width: 768px) {
-          .form-projeto {
-            margin: 16px auto !important;
-            align-items: stretch !important;
-            padding-right: 4px;
-          }
-          .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
-          .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
-
-          .campo {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 52px !important;
-          }
-          .upload-btn { width: 200px !important; justify-content: center !important; font-size: 12px; }
-          .thumb { width: 100px !important; height: 100px !important; }
-          .preview-list { gap: 10px !important; }
-          .btn-submit { width: 140px !important; padding: 12px 20px !important; }
-        }
-
-        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
-        @media (max-width: 480px) {
-          .titulo-pagina { font-size: 24px !important; }
-          .label-padrao { font-size: 14px !important; }
-          .thumb { width: 88px !important; height: 88px !important; }
-          .btn-submit { font-size: 15px !important; }
-        }
-
-        @media (max-width: 400px) {
-          .btn-submit { margin: auto; }
-        }
-      `}</style>
-
       {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
       )}
 
-      <Container maxWidth="sx" className="update-projeto">
-        <form
-          style={styles.box_principal}
-          className="form-projeto"
-          onSubmit={handleSubmit}
-        >
-          <Typography style={styles.font_Titulo} className="titulo-pagina">
-            Atualizar projeto
-          </Typography>
+      <Container maxWidth="sx">
+        <form style={styles.box_principal} onSubmit={handleSubmit}>
+          <Typography style={styles.font_Titulo}>Atualizar projeto</Typography>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
-            {previewsNovas.map((src, index) => (
-              <Box key={index} sx={styles.previewBox} className="thumb">
-                <img
-                  src={src}
-                  alt={`preview-nova-${index}`}
-                  style={styles.previewImg}
-                />
-                <IconButton
-                  size="small"
-                  sx={styles.deleteBtn}
-                  onClick={() => removerImagemNova(index)}
+          <Box
+            mt={2}
+            display="flex"
+            flexWrap="wrap"
+            gap={2}
+            sx={{ cursor: "grab" }}
+          >
+            {[...imagensExistentes, ...previewsNovas].map((src, index) => {
+              const isNova = index >= imagensExistentes.length;
+              const removeFn = isNova
+                ? () => removerImagemNova(index - imagensExistentes.length)
+                : () => removerImagemExistente(index);
+
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    ...styles.previewBox,
+                    opacity: draggingIndex === index ? 0.4 : 1,
+                  }}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
                 >
-                  <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
-                </IconButton>
-              </Box>
-            ))}
-            {imagensExistentes.map((img, index) => (
-              <Box key={index} sx={styles.previewBox} className="thumb">
-                <img
-                  src={img}
-                  alt={`Imagem existente ${index + 1}`}
-                  style={styles.previewImg}
-                />
-                <IconButton
-                  size="small"
-                  sx={styles.deleteBtn}
-                  onClick={() => removerImagemExistente(index)}
-                >
-                  <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
-                </IconButton>
-              </Box>
-            ))}
+                  <img src={src} alt={`img-${index}`} style={styles.previewImg} />
+                  <IconButton
+                    size="small"
+                    sx={styles.deleteBtn}
+                    onClick={removeFn}
+                  >
+                    <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
+                  </IconButton>
+                </Box>
+              );
+            })}
           </Box>
 
-          <Typography style={styles.label} className="label-padrao">
-            Adicione ou remova as imagens:
-          </Typography>
+          <Typography style={styles.label}>Adicione ou remova as imagens:</Typography>
           <Box>
             <input
               type="file"
@@ -337,7 +296,7 @@ function UpdateProjeto() {
               onChange={handleFileChange}
             />
             <label htmlFor="upload-novas">
-              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
+              <Button component="span" sx={styles.uploadBtn}>
                 <UploadFileIcon fontSize="small" />
                 Selecionar imagens
               </Button>
@@ -350,15 +309,10 @@ function UpdateProjeto() {
             margin="normal"
             label="Título"
             name="titulo"
-            id="titulo"
             variant="outlined"
             value={form.titulo}
             onChange={handleChange}
             style={styles.textfield}
-            className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
           <TextField
@@ -367,19 +321,14 @@ function UpdateProjeto() {
             margin="normal"
             label="Descrição"
             name="descricao"
-            id="descricao"
             variant="outlined"
             value={form.descricao}
             onChange={handleChange}
             style={styles.textfield}
-            className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
-          <Button type="submit" style={styles.button} className="btn-submit" disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar"}
+          <Button type="submit" style={styles.button} disabled={loading}>
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Atualizar"}
           </Button>
         </form>
 
@@ -401,6 +350,7 @@ function UpdateProjeto() {
     </>
   );
 }
+
 function Styles() {
   return {
     box_principal: {
@@ -439,12 +389,10 @@ function Styles() {
     uploadBtn: {
       backgroundColor: "rgb(133, 0, 194)",
       color: "white",
-      fontWeight: 100,
       borderRadius: "8px",
       padding: "12px 28px",
       textTransform: "none",
       fontSize: "16px",
-      cursor: "pointer",
       display: "flex",
       alignItems: "center",
       gap: "8px",
@@ -461,14 +409,15 @@ function Styles() {
       height: 120,
       borderRadius: 2,
       overflow: "hidden",
-      boxShadow: 1,
       border: "1px solid #ccc",
-      mb: 3
+      boxShadow: 1,
+      transition: "opacity 0.2s",
     },
     previewImg: {
       width: "100%",
       height: "100%",
       objectFit: "cover",
+      userSelect: "none",
     },
     deleteBtn: {
       position: "absolute",
