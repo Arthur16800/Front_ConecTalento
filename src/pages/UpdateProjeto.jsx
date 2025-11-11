@@ -43,25 +43,32 @@ function UpdateProjeto() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    setImagensNovas((prev) => [...prev, ...files]);
-    const readers = files.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    );
-    Promise.all(readers)
-      .then((base64Images) =>
-        setPreviewsNovas((prev) => [...prev, ...base64Images])
-      )
-      .catch((err) => console.error("Erro ao gerar prévias:", err));
-  };
+  const handleFileChange = async (e) => {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+
+  setImagensNovas((prev) => [...prev, ...files]);
+
+  const readFileSequentially = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  for (const file of files) {
+    try {
+      const result = await readFileSequentially(file);
+      setPreviewsNovas((prev) => [...prev, result]);
+    } catch (err) {
+      console.error("Erro ao gerar prévia:", err);
+    }
+  }
+
+  e.target.value = null;
+};
+
 
   const removerImagemExistente = (index) => {
     setImagensExistentes((prev) => prev.filter((_, i) => i !== index));

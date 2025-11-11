@@ -41,24 +41,32 @@ function CriarProjeto() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
     setImagens((prev) => [...prev, ...files]);
 
-    const readers = files.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    );
+    const readFileSequentially = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-    Promise.all(readers)
-      .then((base64Images) => setPreviews((prev) => [...prev, ...base64Images]))
-      .catch((err) => console.error("Erro ao gerar prévias:", err));
+    for (const file of files) {
+      try {
+        const result = await readFileSequentially(file);
+        setPreviews((prev) => [...prev, result]);
+      } catch (err) {
+        console.error("Erro ao gerar prévia:", err);
+      }
+    }
+
+    e.target.value = null;
   };
+
 
   const handleRemoveImage = (indexToRemove) => {
     setImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
