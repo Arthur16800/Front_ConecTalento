@@ -211,7 +211,6 @@ function PerfilUser() {
 
   const handleEditClick = () => setEditing(true);
 
-  // Mantido: botão Salvar chama updateUser; a própria updateUser agora resolve o 2-pass do email
   const handleSaveClick = () => {
     updateUser();
   };
@@ -264,8 +263,6 @@ function PerfilUser() {
 
       const temCodigo = (formData.code || "").trim() !== "";
 
-      // Passo 1: se o email mudou e ainda não há código, NÃO envia 'code' no payload.
-      // A API responderá 202 e enviará o código ao novo e-mail.
       if (emailMudou && !temCodigo) {
         const res = await api.updateUser(id_user, fd);
         showAlert("success", res.data?.message || "Código enviado ao email.");
@@ -274,7 +271,6 @@ function PerfilUser() {
         return;
       }
 
-      // Passo 2: se tem código (ou o email não mudou), segue com a atualização.
       if (temCodigo) {
         fd.append("code", formData.code);
       }
@@ -311,6 +307,17 @@ function PerfilUser() {
       );
       setEditing(false);
       setOpenModalEmail(false);
+      showAlert(
+        "success",
+        response.data.message || "Perfil atualizado com sucesso!"
+      );
+      setEditing(false);
+      setOpenModalEmail(false);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
     } catch (error) {
       console.error("Erro no updateUser:", error);
       showAlert(
@@ -356,7 +363,7 @@ function PerfilUser() {
       showAlert(
         "error",
         error.response?.data?.error ||
-          "Erro ao atualizar informações de contato."
+        "Erro ao atualizar informações de contato."
       );
     }
   }
