@@ -339,7 +339,7 @@ function UpdateProjeto() {
           </Box>
 
           <Typography style={styles.label}>
-            Adicione ou remova as imagens:
+            Adicione ou remova as imagens (resolução recomendada: 1920x1080):
           </Typography>
           <Box>
             <input

@@ -237,7 +237,7 @@ function CriarProjeto() {
           </Typography>
 
           <Typography style={styles.label} className="label-padrao">
-            Adicionar imagens:
+            Adicionar imagens (resolução recomendada: 1920x1080):
           </Typography>
 
           <Box>
