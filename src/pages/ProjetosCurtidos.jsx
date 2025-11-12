@@ -66,14 +66,10 @@ function ProjetosCurtidos() {
             ID_projeto: p.ID_projeto,
             titulo: p.titulo || "Sem título",
             total_curtidas: p.total_curtidas ?? 0,
-            imagem: p.imagem
-              ? `data:${p.tipo_imagem};base64,${p.imagem}`
-              : null,
+            imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
           }));
 
-          const sorted = formattedProjects.sort(
-            (a, b) => b.ID_projeto - a.ID_projeto
-          );
+          const sorted = formattedProjects.sort((a, b) => b.ID_projeto - a.ID_projeto);
 
           setProjects(sorted);
           setFilteredProjects(sorted);
@@ -92,14 +88,8 @@ function ProjetosCurtidos() {
 
   const indexUltimoProjeto = currentPage * projetosPorPagina;
   const indexPrimeiroProjeto = indexUltimoProjeto - projetosPorPagina;
-  const projetosVisiveis = filteredProjects.slice(
-    indexPrimeiroProjeto,
-    indexUltimoProjeto
-  );
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(filteredProjects.length / projetosPorPagina)
-  );
+  const projetosVisiveis = filteredProjects.slice(indexPrimeiroProjeto, indexUltimoProjeto);
+  const totalPaginas = Math.max(1, Math.ceil(filteredProjects.length / projetosPorPagina));
 
   const handleCardClick = (projectId) => {
     const token = localStorage.getItem("token");
@@ -112,9 +102,7 @@ function ProjetosCurtidos() {
 
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true && (
-        <BottonUpgrade />
-      )}
+      {userPlan.plan === false && userPlan.authenticated === true && <BottonUpgrade />}
 
       {projetosVisiveis.length > 0 && (
         <Box
@@ -137,7 +125,7 @@ function ProjetosCurtidos() {
               textShadow: "1px 1px 4px rgba(0,0,0,0.15)",
               letterSpacing: "0.5px",
               textAlign: "center",
-              mt: 5
+              mt: 5,
             }}
           >
             Projetos Curtidos
@@ -153,6 +141,7 @@ function ProjetosCurtidos() {
           px: { xs: 2, sm: 4 },
           justifyContent: "flex-start",
           mt: 0,
+          overflow: "visible", // evita que elementos absolutos sejam cortados
         }}
       >
         {projetosVisiveis.length > 0 ? (
@@ -170,56 +159,57 @@ function ProjetosCurtidos() {
                   flexDirection: "column",
                   alignItems: "center",
                   transition: "transform 0.3s",
-                  overflow: "visible",
                   maxWidth: 400,
                   "&:hover": { transform: "scale(1.03)" },
+                  position: "relative",
+                  overflow: "visible", // impede corte do botão
                 }}
                 onClick={() => handleCardClick(project.ID_projeto)}
               >
+                {/* Botão de Like fora da capa, com z-index alto */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    zIndex: 20,
+                    backgroundColor: "white",
+                    borderRadius: "50%",
+                    padding: 0.5,
+                    boxShadow: 1,
+                    transition: "all 0.3s ease-in-out",
+                    "@media (max-width:500px)": {
+                      right: "auto",
+                      left: 6,
+                      transform: "scale(0.9)",
+                    },
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <LikeButton
+                    projectId={project.ID_projeto}
+                    userId={localStorage.getItem("id_usuario")}
+                    initialLikes={project.total_curtidas}
+                    onRequireLogin={() => setOpenModal(true)}
+                  />
+                </Box>
+
+                {/* CAPA 16:9 */}
                 <Box
                   sx={{
                     width: "100%",
-                    height: 160,
+                    aspectRatio: "16/9",
                     borderTopLeftRadius: 8,
                     borderTopRightRadius: 8,
                     position: "relative",
                     backgroundColor: project.imagem ? "transparent" : "#f0f0f0",
-                    backgroundImage: project.imagem
-                      ? `url(${project.imagem})`
-                      : "none",
+                    backgroundImage: project.imagem ? `url(${project.imagem})` : "none",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
+                    overflow: "hidden", // recorta a imagem nos cantos sem afetar o botão
                   }}
                 >
-                  {/* Botão Like responsivo como na Home */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 6,
-                      right: 6,
-                      zIndex: 10,
-                      backgroundColor: "white",
-                      borderRadius: "50%",
-                      padding: 0.5,
-                      boxShadow: 1,
-                      transition: "all 0.3s ease-in-out",
-                      "@media (max-width:500px)": {
-                        right: "auto",
-                        left: 6,
-                        transform: "scale(0.9)",
-                      },
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <LikeButton
-                      projectId={project.ID_projeto}
-                      userId={localStorage.getItem("id_usuario")}
-                      initialLikes={project.total_curtidas}
-                      onRequireLogin={() => setOpenModal(true)}
-                    />
-                  </Box>
-
                   {!project.imagem && (
                     <Typography
                       variant="body2"
@@ -247,22 +237,12 @@ function ProjetosCurtidos() {
                   <Typography variant="h6" color="#000" sx={{ mb: 1 }}>
                     {project.titulo}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ textAlign: "center" }}
-                  >
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))
         ) : (
-          <Typography
-            variant="body1"
-            align="center"
-            sx={{ width: "100%", mt: 3 }}
-          >
+          <Typography variant="body1" align="center" sx={{ width: "100%", mt: 3 }}>
             Nenhum projeto curtido ainda.
           </Typography>
         )}
