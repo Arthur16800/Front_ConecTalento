@@ -10,11 +10,13 @@ import {
   CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import api from "../axios/axios";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import Cropper from "react-easy-crop";
+import ModalBase from "../Components/ModalBase";
 
 function UpdateProjeto() {
   const styles = Styles();
@@ -34,6 +36,78 @@ function UpdateProjeto() {
   });
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
+  // ---- corte de imagem ----
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [openCropModal, setOpenCropModal] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const fileInputRef = useRef(null);
+
+  const getCroppedImg = (imageSrc, cropPixels) =>
+    new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = cropPixels.width;
+        canvas.height = cropPixels.height;
+        ctx.drawImage(
+          image,
+          cropPixels.x,
+          cropPixels.y,
+          cropPixels.width,
+          cropPixels.height,
+          0,
+          0,
+          cropPixels.width,
+          cropPixels.height
+        );
+        canvas.toBlob((blob) => {
+          resolve({ blob, base64: canvas.toDataURL("image/jpeg") });
+        }, "image/jpeg");
+      };
+    });
+
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setSelectedImages(urls);
+    setCurrentIndex(0);
+    setOpenCropModal(true);
+    e.target.value = null;
+  };
+
+  const handleConfirmCrop = async () => {
+    const currentImg = selectedImages[currentIndex];
+    const { blob, base64 } = await getCroppedImg(currentImg, croppedAreaPixels);
+
+    setImagensNovas((prev) => [...prev, blob]);
+    setPreviewsNovas((prev) => [...prev, base64]);
+
+    if (currentIndex < selectedImages.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } else {
+      setOpenCropModal(false);
+    }
+  };
+
+  const handleCancelCrop = () => {
+    setSelectedImages([]);
+    setCurrentIndex(0);
+    setOpenCropModal(false);
+  };
+  // ---- fim do corte ----
+
   const handleSnackbarClose = (_, reason) => {
     if (reason === "clickaway") return;
     setSnackbar((s) => ({ ...s, open: false }));
@@ -42,33 +116,6 @@ function UpdateProjeto() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
-  const handleFileChange = async (e) => {
-  const files = Array.from(e.target.files);
-  if (files.length === 0) return;
-
-  setImagensNovas((prev) => [...prev, ...files]);
-
-  const readFileSequentially = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-  for (const file of files) {
-    try {
-      const result = await readFileSequentially(file);
-      setPreviewsNovas((prev) => [...prev, result]);
-    } catch (err) {
-      console.error("Erro ao gerar prévia:", err);
-    }
-  }
-
-  e.target.value = null;
-};
-
 
   const removerImagemExistente = (index) => {
     setImagensExistentes((prev) => prev.filter((_, i) => i !== index));
@@ -79,7 +126,6 @@ function UpdateProjeto() {
     setPreviewsNovas((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Função para converter DataURL em arquivo
   function dataURLToFile(dataUrl, filenameFallback = "imagem_existente") {
     try {
       const arr = dataUrl.split(",");
@@ -292,9 +338,12 @@ function UpdateProjeto() {
             })}
           </Box>
 
-          <Typography style={styles.label}>Adicione ou remova as imagens:</Typography>
+          <Typography style={styles.label}>
+            Adicione ou remova as imagens:
+          </Typography>
           <Box>
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept="image/*"
@@ -335,7 +384,11 @@ function UpdateProjeto() {
           />
 
           <Button type="submit" style={styles.button} disabled={loading}>
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Atualizar"}
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Atualizar"
+            )}
           </Button>
         </form>
 
@@ -354,6 +407,73 @@ function UpdateProjeto() {
           </Alert>
         </Snackbar>
       </Container>
+
+      {/* Modal de corte 16:9 */}
+      <ModalBase open={openCropModal} onClose={handleCancelCrop}>
+        {selectedImages.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              overflowY: "auto",
+              p: 2,
+            }}
+          >
+            <Typography fontWeight={600}>
+              Cortar imagem {currentIndex + 1} de {selectedImages.length}
+            </Typography>
+
+            <Box
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: 260,
+                borderRadius: 2,
+                overflow: "hidden",
+                mt: 2,
+                mb: 2,
+              }}
+            >
+              <Cropper
+                image={selectedImages[currentIndex]}
+                crop={crop}
+                zoom={zoom}
+                aspect={16 / 9}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                width: "100%",
+                mt: 1,
+              }}
+            >
+              <Button variant="outlined" onClick={handleCancelCrop}>
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmCrop}
+                sx={{
+                  background:
+                    "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                  color: "#fff",
+                }}
+              >
+                Confirmar
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </ModalBase>
     </>
   );
 }
