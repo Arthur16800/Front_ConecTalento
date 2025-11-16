@@ -392,71 +392,62 @@ function CriarProjeto() {
         </Snackbar>
       </Container>
 
-      {/* Modal de corte 16:9 */}
       <ModalBase open={openCropModal} onClose={handleCancelCrop}>
-        {selectedImages.length > 0 && (
+        <Box
+          sx={{
+            position: "relative",
+            height: "320px",
+            width: { xs: "200px", sm: "90vw" },
+            mt: 2,
+            maxWidth: "100%",
+          }}
+        >
+          <Typography fontWeight={600} textAlign="center" mb={1}>
+            Cortar imagem {currentIndex + 1} de {selectedImages.length}
+          </Typography>
           <Box
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-              overflowY: "auto",
-              p: 2,
+              width: "100%",
+              height: { xs: 180, sm: 220 },
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 3,
+              position: "relative",
             }}
           >
-            <Typography fontWeight={600}>
-              Cortar imagem {currentIndex + 1} de {selectedImages.length}
-            </Typography>
-
-            <Box
-              sx={{
-                position: "relative",
-                width: "100%",
-                height: 260,
-                borderRadius: 2,
-                overflow: "hidden",
-                mt: 2,
-                mb: 2,
+            <Cropper
+              image={selectedImages[currentIndex]}
+              crop={crop}
+              zoom={zoom}
+              aspect={16 / 9}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              style={{
+                containerStyle: { width: "100%", height: "100%" },
+                mediaStyle: { maxHeight: "100%", objectFit: "cover" },
               }}
-            >
-              <Cropper
-                image={selectedImages[currentIndex]}
-                crop={crop}
-                zoom={zoom}
-                aspect={16 / 9}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-                mt: 1,
-              }}
-            >
-              <Button variant="outlined" onClick={handleCancelCrop}>
-                Cancelar
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleConfirmCrop}
-                sx={{
-                  background:
-                    "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
-                  color: "#fff",
-                }}
-              >
-                Confirmar
-              </Button>
-            </Box>
+            />
           </Box>
-        )}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+            }}
+          >
+            <Button variant="contained" onClick={handleConfirmCrop} sx={{ background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)", }}>
+              Confirmar
+            </Button>
+            <Button variant="outlined" onClick={handleCancelCrop}>
+              Cancelar
+            </Button>
+          </Box>
+        </Box>
       </ModalBase>
     </>
   );
