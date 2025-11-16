@@ -688,23 +688,25 @@ function PerfilUser() {
           {selectedImage && (
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                height: "100%",
-                overflowY: "auto",
+                position: "relative",
+                height: "320px",
+                width: { xs: "200px", sm: "90vw" },
+                mt: 2,
+                maxWidth: "100%",
               }}
             >
+              <Typography fontWeight={600} textAlign="center" mb={1}>
+                Cortar imagem
+              </Typography>
+
               <Box
                 sx={{
-                  position: "relative",
                   width: "100%",
-                  height: 200,
+                  height: { xs: 180, sm: 220 },
                   borderRadius: 2,
                   overflow: "hidden",
-                  mt: 2,
-                  mb: 2,
+                  mb: 3,
+                  position: "relative",
                 }}
               >
                 <Cropper
@@ -717,17 +719,38 @@ function PerfilUser() {
                   onZoomChange={setZoom}
                   onCropComplete={onCropComplete}
                   zoomWithScroll
+                  style={{
+                    containerStyle: { width: "100%", height: "100%" },
+                    mediaStyle: { maxHeight: "100%", objectFit: "cover" },
+                  }}
                 />
               </Box>
 
               <Box
                 sx={{
+                  position: "absolute",
+                  bottom: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
                   display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  mt: "auto",
+                  gap: 2,
+                  justifyContent: "center",
                 }}
               >
+                <Button
+                  variant="contained"
+                  onClick={handleConfirmCrop}
+                  sx={{
+                    background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    px: 2,
+                  }}
+                >
+                  Confirmar
+                </Button>
+
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -744,21 +767,6 @@ function PerfilUser() {
                   }}
                 >
                   Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleConfirmCrop}
-                  sx={{
-                    textTransform: "none",
-                    borderRadius: 2,
-                    background:
-                      "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
-                    color: "#fff",
-                    fontWeight: 600,
-                    px: 2,
-                  }}
-                >
-                  Confirmar
                 </Button>
               </Box>
             </Box>
