@@ -22,10 +22,9 @@ function UpdateProjeto() {
   const styles = Styles();
   const { ID_projeto } = useParams();
   const ID_user = localStorage.getItem("id_usuario");
+
   const [form, setForm] = useState({ titulo: "", descricao: "" });
-  const [imagensExistentes, setImagensExistentes] = useState([]);
-  const [imagensNovas, setImagensNovas] = useState([]);
-  const [previewsNovas, setPreviewsNovas] = useState([]);
+  const [listaImagens, setListaImagens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
   const navigate = useNavigate();
@@ -89,8 +88,15 @@ function UpdateProjeto() {
     const currentImg = selectedImages[currentIndex];
     const { blob, base64 } = await getCroppedImg(currentImg, croppedAreaPixels);
 
-    setImagensNovas((prev) => [...prev, blob]);
-    setPreviewsNovas((prev) => [...prev, base64]);
+    setListaImagens((prev) => [
+      ...prev,
+      {
+        id: `nova-${Date.now()}-${currentIndex}-${Math.random()}`,
+        tipo: "nova",
+        src: base64,
+        file: blob,
+      },
+    ]);
 
     if (currentIndex < selectedImages.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -98,6 +104,8 @@ function UpdateProjeto() {
       setZoom(1);
     } else {
       setOpenCropModal(false);
+      setSelectedImages([]);
+      setCurrentIndex(0);
     }
   };
 
@@ -117,13 +125,8 @@ function UpdateProjeto() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const removerImagemExistente = (index) => {
-    setImagensExistentes((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removerImagemNova = (index) => {
-    setImagensNovas((prev) => prev.filter((_, i) => i !== index));
-    setPreviewsNovas((prev) => prev.filter((_, i) => i !== index));
+  const removerImagem = (index) => {
+    setListaImagens((prev) => prev.filter((_, i) => i !== index));
   };
 
   function dataURLToFile(dataUrl, filenameFallback = "imagem_existente") {
@@ -176,7 +179,14 @@ function UpdateProjeto() {
               return null;
             })
             .filter(Boolean);
-          setImagensExistentes(imgs || []);
+
+          setListaImagens(
+            (imgs || []).map((src, index) => ({
+              id: `existente-${index}`,
+              tipo: "existente",
+              src,
+            }))
+          );
         }
         setLoading(false);
       } catch (err) {
@@ -197,18 +207,15 @@ function UpdateProjeto() {
 
   const handleDragOver = (e, index) => {
     e.preventDefault();
-    const total = [...imagensExistentes, ...previewsNovas];
     if (draggingIndex === null || draggingIndex === index) return;
 
-    const draggedItem = total[draggingIndex];
-    const newList = total.filter((_, i) => i !== draggingIndex);
-    newList.splice(index, 0, draggedItem);
+    setListaImagens((prev) => {
+      const newList = [...prev];
+      const [moved] = newList.splice(draggingIndex, 1);
+      newList.splice(index, 0, moved);
+      return newList;
+    });
 
-    const novasExistentes = newList.slice(0, imagensExistentes.length);
-    const novasNovas = newList.slice(imagensExistentes.length);
-
-    setImagensExistentes(novasExistentes);
-    setPreviewsNovas(novasNovas);
     setDraggingIndex(index);
   };
 
@@ -223,15 +230,15 @@ function UpdateProjeto() {
       formData.append("descricao", form.descricao);
       formData.append("ID_user", ID_user);
 
-      const arquivosDeExistentes = imagensExistentes
-        .map((src, idx) =>
-          typeof src === "string" && src.startsWith("data:")
-            ? dataURLToFile(src, `imagem_existente_${idx + 1}`)
-            : null
-        )
+      const arquivosParaEnviar = listaImagens
+        .map((item, idx) => {
+          if (item.file) return item.file;
+          if (typeof item.src === "string" && item.src.startsWith("data:"))
+            return dataURLToFile(item.src, `imagem_${idx + 1}`);
+          return null;
+        })
         .filter(Boolean);
 
-      const arquivosParaEnviar = [...arquivosDeExistentes, ...imagensNovas];
       if (arquivosParaEnviar.length === 0) {
         setSnackbar({
           open: true,
@@ -254,7 +261,7 @@ function UpdateProjeto() {
       console.error(error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error,
+        message: error.response?.data?.error || "Erro ao atualizar projeto.",
         severity: "error",
       });
     } finally {
@@ -307,35 +314,32 @@ function UpdateProjeto() {
             gap={2}
             sx={{ cursor: "grab" }}
           >
-            {[...imagensExistentes, ...previewsNovas].map((src, index) => {
-              const isNova = index >= imagensExistentes.length;
-              const removeFn = isNova
-                ? () => removerImagemNova(index - imagensExistentes.length)
-                : () => removerImagemExistente(index);
-
-              return (
-                <Box
-                  key={index}
-                  sx={{
-                    ...styles.previewBox,
-                    opacity: draggingIndex === index ? 0.4 : 1,
-                  }}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
+            {listaImagens.map((item, index) => (
+              <Box
+                key={item.id || index}
+                sx={{
+                  ...styles.previewBox,
+                  opacity: draggingIndex === index ? 0.4 : 1,
+                }}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <img
+                  src={item.src}
+                  alt={`img-${index}`}
+                  style={styles.previewImg}
+                />
+                <IconButton
+                  size="small"
+                  sx={styles.deleteBtn}
+                  onClick={() => removerImagem(index)}
                 >
-                  <img src={src} alt={`img-${index}`} style={styles.previewImg} />
-                  <IconButton
-                    size="small"
-                    sx={styles.deleteBtn}
-                    onClick={removeFn}
-                  >
-                    <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
-                  </IconButton>
-                </Box>
-              );
-            })}
+                  <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
+                </IconButton>
+              </Box>
+            ))}
           </Box>
 
           <Typography style={styles.label}>

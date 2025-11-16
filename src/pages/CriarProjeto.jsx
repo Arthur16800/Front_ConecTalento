@@ -23,9 +23,11 @@ function CriarProjeto() {
   const ID_user = localStorage.getItem("id_usuario");
   const [username, setUsername] = useState("");
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
+
   const [form, setForm] = useState({ titulo: "", descricao: "" });
-  const [imagens, setImagens] = useState([]); // imagens finais cortadas
-  const [previews, setPreviews] = useState([]); // base64 das cortadas
+
+  const [listaImagens, setListaImagens] = useState([]);
+
   const [draggingIndex, setDraggingIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -35,7 +37,7 @@ function CriarProjeto() {
   });
 
   // ---- corte de imagem ----
-  const [selectedImages, setSelectedImages] = useState([]); // imagens originais
+  const [selectedImages, setSelectedImages] = useState([]); // URLs das imagens originais para crop
   const [currentIndex, setCurrentIndex] = useState(0);
   const [openCropModal, setOpenCropModal] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -87,9 +89,14 @@ function CriarProjeto() {
     const currentImg = selectedImages[currentIndex];
     const { blob, base64 } = await getCroppedImg(currentImg, croppedAreaPixels);
 
-    // Adiciona o arquivo e a prévia
-    setImagens((prev) => [...prev, blob]);
-    setPreviews((prev) => [...prev, base64]);
+    setListaImagens((prev) => [
+      ...prev,
+      {
+        id: `nova-${Date.now()}-${currentIndex}-${Math.random()}`,
+        src: base64,
+        file: blob,
+      },
+    ]);
 
     if (currentIndex < selectedImages.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -97,6 +104,10 @@ function CriarProjeto() {
       setZoom(1);
     } else {
       setOpenCropModal(false);
+      setSelectedImages([]);
+      setCurrentIndex(0);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
     }
   };
 
@@ -104,37 +115,50 @@ function CriarProjeto() {
     setSelectedImages([]);
     setCurrentIndex(0);
     setOpenCropModal(false);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   // ---- remover, arrastar e enviar ----
   const handleRemoveImage = (indexToRemove) => {
-    setImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
-    setPreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
+    setListaImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
   const handleDragStart = (index) => setDraggingIndex(index);
+
   const handleDragOver = (e, index) => {
     e.preventDefault();
     if (draggingIndex === null || draggingIndex === index) return;
-    const newPreviews = [...previews];
-    const newImagens = [...imagens];
-    const draggedPreview = newPreviews[draggingIndex];
-    const draggedImagem = newImagens[draggingIndex];
-    newPreviews.splice(draggingIndex, 1);
-    newImagens.splice(draggingIndex, 1);
-    newPreviews.splice(index, 0, draggedPreview);
-    newImagens.splice(index, 0, draggedImagem);
-    setPreviews(newPreviews);
-    setImagens(newImagens);
+
+    setListaImagens((prev) => {
+      const newList = [...prev];
+      const [moved] = newList.splice(draggingIndex, 1);
+      newList.splice(index, 0, moved);
+      return newList;
+    });
+
     setDraggingIndex(index);
   };
+
   const handleDragEnd = () => setDraggingIndex(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await api.createProjeto(ID_user, form, imagens);
+      const arquivos = listaImagens.map((item) => item.file).filter(Boolean);
+
+      if (arquivos.length === 0) {
+        setSnackbar({
+          open: true,
+          message: "Adicione pelo menos uma imagem ao projeto.",
+          severity: "error",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.createProjeto(ID_user, form, arquivos);
       setSnackbar({
         open: true,
         message: response.data.message,
@@ -251,7 +275,7 @@ function CriarProjeto() {
               onChange={handleFileChange}
             />
             <label htmlFor="upload-images">
-              <Button component="span" sx={styles.uploadBtn}>
+              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
                 <UploadFileIcon fontSize="small" />
                 Selecionar imagens
               </Button>
@@ -266,9 +290,9 @@ function CriarProjeto() {
             className="preview-list"
             sx={{ cursor: "grab" }}
           >
-            {previews.map((src, index) => (
+            {listaImagens.map((item, index) => (
               <Box
-                key={index}
+                key={item.id || index}
                 className="thumb"
                 draggable
                 onDragStart={() => handleDragStart(index)}
@@ -285,7 +309,7 @@ function CriarProjeto() {
                 }}
               >
                 <img
-                  src={src}
+                  src={item.src}
                   alt={`preview-${index}`}
                   style={{
                     width: "100%",
