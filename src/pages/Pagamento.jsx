@@ -97,8 +97,8 @@ function Pagamento() {
   }
 
   const theme = useTheme();
-  const downSm = useMediaQuery(theme.breakpoints.down("sm"));  
-  const downMd = useMediaQuery(theme.breakpoints.down("md")); 
+  const downSm = useMediaQuery(theme.breakpoints.down("sm"));
+  const downMd = useMediaQuery(theme.breakpoints.down("md"));
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
 
   const styles = Styles({ downSm, downMd, upMd });
@@ -194,7 +194,7 @@ function Pagamento() {
   );
 }
 
-function Styles() {
+function Styles({ downSm, downMd, upMd }) {
   return {
     container: {
       width: "100%",
@@ -246,11 +246,15 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      justifyContent: "center",
       textAlign: "center",
       gap: "clamp(12px, 2.2vw, 18px)",
-      paddingTop: 16,
-      maxWidth: "min(92vw, 520px)",
-      margin: "0 auto",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      paddingTop: 8,
+      paddingBottom: 8,
+      overflowY: "auto",
     },
     modalTitle: {
       fontSize: "clamp(20px, 2.8vw, 22px)",
@@ -265,6 +269,7 @@ function Styles() {
       lineHeight: 1.7,
       fontSize: "clamp(14px, 1.8vw, 16px)",
       textAlign: "left",
+      width: "100%",
     },
     modalCta: {
       marginTop: 6,
@@ -273,8 +278,9 @@ function Styles() {
       fontWeight: 700,
       borderRadius: 9999,
       padding: "clamp(10px, 1.2vw, 12px) clamp(16px, 2.4vw, 18px)",
-      width: "min(92vw, 360px)",
+      width: downSm ? "100%" : "min(92vw, 360px)",
     },
+
     successWrapper: {
       width: "80%",
       minHeight: "60vh",
@@ -330,11 +336,10 @@ function Styles() {
       textTransform: "none",
       borderRadius: 8,
       padding: "clamp(10px, 1.2vw, 12px) clamp(20px, 2vw, 24px)",
-      boxShadow: "0 4px 12px rgba(122, 44, 246, 0.3)",
+      boxShadow: "0 4px, 12px rgba(122, 44, 246, 0.3)",
       width: "min(75vw, 420px)",
     },
   };
 }
-
 
 export default Pagamento;

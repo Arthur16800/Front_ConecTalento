@@ -9,7 +9,7 @@ import PerfilUser from "./pages/PerfilUser";
 import Portfolio from "./pages/Portifolio";
 import DefaultLayout from "./Components/DefaultLayout";
 import UpdateProjeto from "./pages/UpdateProjeto";
-import Pagamento from "./pages/Pagameto";
+import Pagamento from "./pages/Pagamento";
 import NotFound from "./pages/NotFound";
 import ProjetosCurtidos from "./pages/ProjetosCurtidos";
 import ProtectedRoute from "./Components/ProtectedRoutes";
