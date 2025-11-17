@@ -31,7 +31,7 @@ function Cadastro() {
   });
 
   const [openModal, setOpenModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); 
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
   const [alert, setAlert] = useState({
@@ -42,6 +42,9 @@ function Cadastro() {
 
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
+  // TIMER: conta regressiva
   useEffect(() => {
     let timer;
 
@@ -51,15 +54,17 @@ function Cadastro() {
       }, 1000);
     }
 
-    if (timeLeft === 0) {
-      clearInterval(timer);
-      setIsTimerActive(false);
-    }
-
     return () => clearInterval(timer);
   }, [openModal, isTimerActive, timeLeft]);
 
-  const navigate = useNavigate();
+  // QUANDO CHEGAR EM 00:00 → recarrega a página
+  useEffect(() => {
+    if (!openModal) return;
+    if (timeLeft === 0) {
+      setIsTimerActive(false);
+      window.location.reload();
+    }
+  }, [timeLeft, openModal]);
 
   const showAlert = (severity, message) => {
     setAlert({ open: true, severity, message });
@@ -104,14 +109,14 @@ function Cadastro() {
         setLoading(false);
       },
       (error) => {
-        showAlert("error", error.response.data.error);
+        showAlert("error", error.response?.data?.error || "Erro ao cadastrar.");
         setLoading(false);
       }
     );
   }
 
   async function validateCode() {
-    if(user.code.trim() === "") {
+    if (user.code.trim() === "") {
       showAlert("error", "Por favor, insira o código de verificação.");
       return;
     }
@@ -126,7 +131,7 @@ function Cadastro() {
         navigate("/");
       },
       (error) => {
-        showAlert("error", error.response.data.error);
+        showAlert("error", error.response?.data?.error || "Código inválido.");
       }
     );
   }
@@ -149,15 +154,14 @@ function Cadastro() {
             min-height: 520px;
           }
           .ct-box-img {
-            display: none !important; /* oculta a imagem lateral */
+            display: none !important;
           }
           .ct-box-cadastro {
             width: 100% !important;
             height: auto !important;
             border-radius: 5px !important;
-            position: relative !important; /* para posicionar o logo dentro deste bloco */
+            position: relative !important;
           }
-          /* Mantém o logo visível no canto superior esquerdo no mobile */
           .ct-box-logo {
             display: flex !important;
             position: absolute !important;
@@ -168,12 +172,11 @@ function Cadastro() {
             justify-content: flex-start !important;
           }
           .ct-box-form {
-            margin: 0 !important; /* remove o margin negativo no mobile */
-            padding: 56px 0 16px !important; /* espaço para o logo acima do título */
+            margin: 0 !important;
+            padding: 56px 0 16px !important;
           }
         }
 
-        /* Entre 845px e 1200px, diminuir o texto do banner lateral para 22px */
         @media screen and (min-width: 845px) and (max-width: 1200px) {
           .ct-welcome-text {
             font-size: 22px !important;
@@ -351,10 +354,7 @@ function Cadastro() {
         </Box>
 
         <Box style={styles.box_IMG_02} className="ct-box-img">
-          <Typography
-            style={styles.style_Font}
-            className="ct-welcome-text"
-          >
+          <Typography style={styles.style_Font} className="ct-welcome-text">
             Seja bem-vindo ao ConecTalento!
           </Typography>
         </Box>

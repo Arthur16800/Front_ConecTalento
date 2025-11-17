@@ -84,6 +84,7 @@ function PerfilUser() {
   });
 
   const [avatarPreview, setAvatarPreview] = useState(null);
+
   const [alert, setAlert] = useState({
     open: false,
     severity: "",
@@ -97,6 +98,8 @@ function PerfilUser() {
     plan: null,
     authenticated: null,
   });
+
+  const [removeImage, setRemoveImage] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -178,7 +181,11 @@ function PerfilUser() {
 
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
-  const handleCloseAlert = () => setAlert((prev) => ({ ...prev, open: false }));
+  const handleCloseAlert = () =>
+    setAlert((prev) => ({
+      ...prev,
+      open: false,
+    }));
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -253,16 +260,22 @@ function PerfilUser() {
       fd.append("username_", formData.username_);
       fd.append("name", formData.name);
 
-      let imageToSend = formData.imagem;
-      if (imageToSend && typeof imageToSend === "string") {
-        imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
-      }
-      if (imageToSend) fd.append("imagens", imageToSend);
-
       const emailMudou = formData.email !== originalEmail;
-
       const temCodigo = (formData.code || "").trim() !== "";
 
+      if (removeImage) {
+        fd.append("deleteImage", "true");
+      } else {
+        let imageToSend = formData.imagem;
+        if (imageToSend && typeof imageToSend === "string") {
+          imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
+        }
+        if (imageToSend) {
+          fd.append("imagens", imageToSend);
+        }
+      }
+
+      // Se email mudou e ainda não foi enviado código → envia código e abre modal
       if (emailMudou && !temCodigo) {
         const res = await api.updateUser(id_user, fd);
         showAlert("success", res.data?.message || "Código enviado ao email.");
@@ -280,7 +293,10 @@ function PerfilUser() {
       const img = response.data?.profile?.imagem;
       let updatedAvatar = avatarPreview;
 
-      if (img) {
+      if (removeImage) {
+        // se removeu, força limpar o avatar
+        updatedAvatar = null;
+      } else if (img) {
         const isBase64 = img.startsWith("data:image");
         const base64Src = isBase64 ? img : `data:image/jpeg;base64,${img}`;
         updatedAvatar = base64Src;
@@ -301,12 +317,9 @@ function PerfilUser() {
         setOriginalEmail(formData.email);
       }
 
-      showAlert(
-        "success",
-        response.data.message || "Perfil atualizado com sucesso!"
-      );
-      setEditing(false);
-      setOpenModalEmail(false);
+      // reset da flag de remoção
+      setRemoveImage(false);
+
       showAlert(
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
@@ -317,7 +330,6 @@ function PerfilUser() {
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-
     } catch (error) {
       console.error("Erro no updateUser:", error);
       showAlert(
@@ -363,7 +375,7 @@ function PerfilUser() {
       showAlert(
         "error",
         error.response?.data?.error ||
-        "Erro ao atualizar informações de contato."
+          "Erro ao atualizar informações de contato."
       );
     }
   }
@@ -419,6 +431,8 @@ function PerfilUser() {
     setImageKey((prev) => prev + 1);
     setOpenCropModal(true);
 
+    setRemoveImage(false);
+
     event.target.value = null;
   };
 
@@ -452,7 +466,14 @@ function PerfilUser() {
     const croppedImage = await getCroppedImg(selectedImage, croppedAreaPixels);
     setAvatarPreview(croppedImage);
     setFormData((prev) => ({ ...prev, imagem: croppedImage }));
+    setRemoveImage(false);
     setOpenCropModal(false);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    setFormData((prev) => ({ ...prev, imagem: null }));
+    setRemoveImage(true);
   };
 
   const handleOpenModalEsqueciSenha = () => setOpenModalEsqueci(true);
@@ -551,7 +572,7 @@ function PerfilUser() {
         <Box
           style={{
             ...styles.leftCard,
-            height: editing ? 250 : 380,
+            height: editing ? 280 : 410,
           }}
         >
           <Box style={styles.box_IMG} />
@@ -584,7 +605,7 @@ function PerfilUser() {
                   justifyContent: "center",
                   alignItems: "center",
                   color: "white",
-                  opacity: hover ? 1 : 0,
+                  opacity: hover && editing ? 1 : 0,
                   transition: "opacity 0.3s",
                 }}
               >
@@ -599,6 +620,28 @@ function PerfilUser() {
                 disabled={!editing}
               />
             </Box>
+
+            {editing && avatarPreview && (
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleRemoveAvatar}
+                sx={{
+                  mt: 1,
+                  textTransform: "none",
+                  color: "#D12F2F",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                  backgroundColor: "transparent",
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                Remover foto
+              </Button>
+            )}
+
             <Box style={styles.name_user}>
               <span style={styles.user_name}>{formData.name}</span>
               <DeleteIcon style={styles.removeIcon} onClick={handleOpenModal} />
@@ -741,7 +784,8 @@ function PerfilUser() {
                   variant="contained"
                   onClick={handleConfirmCrop}
                   sx={{
-                    background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                    background:
+                      "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
                     textTransform: "none",
                     borderRadius: 2,
                     fontWeight: 600,
@@ -808,10 +852,7 @@ function PerfilUser() {
           </Box>
         </ModalBase>
 
-        <ModalBase
-          open={openModalContato}
-          onClose={handleCloseModalContato}
-        >
+        <ModalBase open={openModalContato} onClose={handleCloseModalContato}>
           <Box textAlign="center" p={3} mt={-2}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Informações de Contato
@@ -876,7 +917,6 @@ function PerfilUser() {
           </Box>
         </ModalBase>
 
-        {/* Modal para confirmar código quando email muda */}
         <ModalBase open={openModalEmail} onClose={handleCloseModalEmail}>
           <Box textAlign="center" p={3} mt={-4}>
             <Typography variant="h6" fontWeight={600} mb={2}>
