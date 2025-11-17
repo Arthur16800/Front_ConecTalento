@@ -6,78 +6,176 @@ import {
   Snackbar,
   Alert,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "../axios/axios";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import { useNavigate } from "react-router-dom";
+import Cropper from "react-easy-crop";
+import ModalBase from "../Components/ModalBase";
 
 function CriarProjeto() {
   const styles = Styles();
+  const navigate = useNavigate();
   const ID_user = localStorage.getItem("id_usuario");
+  const [username, setUsername] = useState("");
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
   const [form, setForm] = useState({ titulo: "", descricao: "" });
-  const [imagens, setImagens] = useState([]);
-  const [previews, setPreviews] = useState([]);
 
+  const [listaImagens, setListaImagens] = useState([]);
+
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  const handleSnackbarClose = (_, reason) => {
-    if (reason === "clickaway") return;
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  };
+  // ---- corte de imagem ----
+  const [selectedImages, setSelectedImages] = useState([]); // URLs das imagens originais para crop
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [openCropModal, setOpenCropModal] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
+  const getCroppedImg = (imageSrc, cropPixels) =>
+    new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = cropPixels.width;
+        canvas.height = cropPixels.height;
+        ctx.drawImage(
+          image,
+          cropPixels.x,
+          cropPixels.y,
+          cropPixels.width,
+          cropPixels.height,
+          0,
+          0,
+          cropPixels.width,
+          cropPixels.height
+        );
+        canvas.toBlob((blob) => {
+          resolve({ blob, base64: canvas.toDataURL("image/jpeg") });
+        }, "image/jpeg");
+      };
+    });
+
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels);
+
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
-    setImagens((prev) => [...prev, ...files]);
+    if (files.length === 0) return;
 
-    const readers = files.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        })
-    );
-
-    Promise.all(readers)
-      .then((base64Images) =>
-        setPreviews((prev) => [...prev, ...base64Images])
-      )
-      .catch((err) => console.error("Erro ao gerar prévias:", err));
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setSelectedImages(urls);
+    setCurrentIndex(0);
+    setOpenCropModal(true);
+    e.target.value = null;
   };
 
+  const handleConfirmCrop = async () => {
+    const currentImg = selectedImages[currentIndex];
+    const { blob, base64 } = await getCroppedImg(currentImg, croppedAreaPixels);
+
+    setListaImagens((prev) => [
+      ...prev,
+      {
+        id: `nova-${Date.now()}-${currentIndex}-${Math.random()}`,
+        src: base64,
+        file: blob,
+      },
+    ]);
+
+    if (currentIndex < selectedImages.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } else {
+      setOpenCropModal(false);
+      setSelectedImages([]);
+      setCurrentIndex(0);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    }
+  };
+
+  const handleCancelCrop = () => {
+    setSelectedImages([]);
+    setCurrentIndex(0);
+    setOpenCropModal(false);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
+
+  // ---- remover, arrastar e enviar ----
   const handleRemoveImage = (indexToRemove) => {
-    setImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
-    setPreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
+    setListaImagens((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
+
+  const handleDragStart = (index) => setDraggingIndex(index);
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return;
+
+    setListaImagens((prev) => {
+      const newList = [...prev];
+      const [moved] = newList.splice(draggingIndex, 1);
+      newList.splice(index, 0, moved);
+      return newList;
+    });
+
+    setDraggingIndex(index);
+  };
+
+  const handleDragEnd = () => setDraggingIndex(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const response = await api.createProjeto(ID_user, form, imagens);
+      const arquivos = listaImagens.map((item) => item.file).filter(Boolean);
+
+      if (arquivos.length === 0) {
+        setSnackbar({
+          open: true,
+          message: "Adicione pelo menos uma imagem ao projeto.",
+          severity: "error",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.createProjeto(ID_user, form, arquivos);
       setSnackbar({
         open: true,
         message: response.data.message,
         severity: "success",
       });
+      setTimeout(() => {
+        if (username) navigate(`/${username}`);
+      }, 1500);
     } catch (error) {
       const msg = error.response?.data?.error || "Erro ao criar projeto";
       setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ---- dados do usuário ----
   async function getUserById() {
     const authenticated = localStorage.getItem("authenticated");
     if (!authenticated) {
@@ -87,6 +185,8 @@ function CriarProjeto() {
     try {
       const response = await api.getUserById(ID_user);
       const plan = Boolean(response.data.profile.plano);
+      const usernameFromAPI = response.data.profile.username;
+      setUsername(usernameFromAPI);
       setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
@@ -97,23 +197,26 @@ function CriarProjeto() {
     getUserById();
   }, []);
 
+  const handleSnackbarClose = (_, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
   return (
     <>
       <style>{`
-        /* Base refinada (desktop médio) */
         .criar-projeto { padding-left: 12px; padding-right: 12px; }
         .form-projeto { max-width: 1100px; }
         .thumb { width: 120px; height: 120px; }
-        .campo { max-width: 720px; } /* acompanha seu width:50% (quando a tela é larga) */
-
-        /* <= 1024px: inputs mais largos e thumbs menores */
+        .campo { max-width: 720px; }
         @media (max-width: 1024px) {
           .campo { width: 70% !important; max-width: 640px !important; }
           .thumb { width: 110px !important; height: 110px !important; }
           .preview-list { gap: 12px !important; }
         }
-
-        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
         @media (max-width: 768px) {
           .form-projeto {
             margin: 16px auto !important;
@@ -122,7 +225,6 @@ function CriarProjeto() {
           }
           .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
           .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
-
           .campo {
             width: 100% !important;
             max-width: 100% !important;
@@ -133,15 +235,12 @@ function CriarProjeto() {
           .preview-list { gap: 10px !important; }
           .btn-submit { width: 100px !important; padding: 12px 20px !important; }
         }
-
-        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
         @media (max-width: 480px) {
           .titulo-pagina { font-size: 24px !important; }
           .label-padrao { font-size: 14px !important; }
           .thumb { width: 88px !important; height: 88px !important; }
           .btn-submit { font-size: 15px !important;}
         }
-
         @media (max-width: 400px){
           .btn-submit {margin: auto}
         }
@@ -162,11 +261,12 @@ function CriarProjeto() {
           </Typography>
 
           <Typography style={styles.label} className="label-padrao">
-            Adicionar imagens:
+            Adicionar imagens (resolução recomendada: 1920x1080):
           </Typography>
 
           <Box>
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept="image/*"
@@ -182,25 +282,41 @@ function CriarProjeto() {
             </label>
           </Box>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
-            {previews.map((src, index) => (
+          <Box
+            mt={2}
+            display="flex"
+            flexWrap="wrap"
+            gap={2}
+            className="preview-list"
+            sx={{ cursor: "grab" }}
+          >
+            {listaImagens.map((item, index) => (
               <Box
-                key={index}
+                key={item.id || index}
+                className="thumb"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
                 sx={{
                   position: "relative",
                   borderRadius: 2,
                   overflow: "hidden",
                   boxShadow: 1,
                   border: "1px solid #ccc",
-                  width: 120,
-                  height: 120,
+                  opacity: draggingIndex === index ? 0.4 : 1,
+                  transition: "opacity 0.2s ease",
                 }}
-                className="thumb"
               >
                 <img
-                  src={src}
+                  src={item.src}
                   alt={`preview-${index}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    userSelect: "none",
+                  }}
                 />
                 <DeleteIcon
                   onClick={() => handleRemoveImage(index)}
@@ -231,9 +347,6 @@ function CriarProjeto() {
             onChange={handleChange}
             style={styles.textfield}
             className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
           <TextField
@@ -247,13 +360,19 @@ function CriarProjeto() {
             onChange={handleChange}
             style={styles.textfield}
             className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
-          <Button type="submit" style={styles.button} className="btn-submit">
-            Criar
+          <Button
+            type="submit"
+            style={styles.button}
+            className="btn-submit"
+            disabled={loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Criar"
+            )}
           </Button>
         </form>
 
@@ -272,6 +391,64 @@ function CriarProjeto() {
           </Alert>
         </Snackbar>
       </Container>
+
+      <ModalBase open={openCropModal} onClose={handleCancelCrop}>
+        <Box
+          sx={{
+            position: "relative",
+            height: "320px",
+            width: { xs: "200px", sm: "90vw" },
+            mt: 2,
+            maxWidth: "100%",
+          }}
+        >
+          <Typography fontWeight={600} textAlign="center" mb={1}>
+            Cortar imagem {currentIndex + 1} de {selectedImages.length}
+          </Typography>
+          <Box
+            sx={{
+              width: "100%",
+              height: { xs: 180, sm: 220 },
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 3,
+              position: "relative",
+            }}
+          >
+            <Cropper
+              image={selectedImages[currentIndex]}
+              crop={crop}
+              zoom={zoom}
+              aspect={16 / 9}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              style={{
+                containerStyle: { width: "100%", height: "100%" },
+                mediaStyle: { maxHeight: "100%", objectFit: "cover" },
+              }}
+            />
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+            }}
+          >
+            <Button variant="contained" onClick={handleConfirmCrop} sx={{ background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)", }}>
+              Confirmar
+            </Button>
+            <Button variant="outlined" onClick={handleCancelCrop}>
+              Cancelar
+            </Button>
+          </Box>
+        </Box>
+      </ModalBase>
     </>
   );
 }
@@ -315,7 +492,6 @@ function Styles() {
     uploadBtn: {
       backgroundColor: "rgb(133, 0, 194)",
       color: "white",
-      fontWeight: 100,
       borderRadius: "8px",
       padding: "12px 28px",
       textTransform: "none",

@@ -7,13 +7,16 @@ import {
   Alert,
   IconButton,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import api from "../axios/axios";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import Cropper from "react-easy-crop";
+import ModalBase from "../Components/ModalBase";
 
 function UpdateProjeto() {
   const styles = Styles();
@@ -21,19 +24,97 @@ function UpdateProjeto() {
   const ID_user = localStorage.getItem("id_usuario");
 
   const [form, setForm] = useState({ titulo: "", descricao: "" });
-  const [imagensExistentes, setImagensExistentes] = useState([]);
-  const [imagensNovas, setImagensNovas] = useState([]);
-  const [previewsNovas, setPreviewsNovas] = useState([]);
+  const [listaImagens, setListaImagens] = useState([]);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
-
   const navigate = useNavigate();
-
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
+  const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
+
+  // ---- corte de imagem ----
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [openCropModal, setOpenCropModal] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const fileInputRef = useRef(null);
+
+  const getCroppedImg = (imageSrc, cropPixels) =>
+    new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = cropPixels.width;
+        canvas.height = cropPixels.height;
+        ctx.drawImage(
+          image,
+          cropPixels.x,
+          cropPixels.y,
+          cropPixels.width,
+          cropPixels.height,
+          0,
+          0,
+          cropPixels.width,
+          cropPixels.height
+        );
+        canvas.toBlob((blob) => {
+          resolve({ blob, base64: canvas.toDataURL("image/jpeg") });
+        }, "image/jpeg");
+      };
+    });
+
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setSelectedImages(urls);
+    setCurrentIndex(0);
+    setOpenCropModal(true);
+    e.target.value = null;
+  };
+
+  const handleConfirmCrop = async () => {
+    const currentImg = selectedImages[currentIndex];
+    const { blob, base64 } = await getCroppedImg(currentImg, croppedAreaPixels);
+
+    setListaImagens((prev) => [
+      ...prev,
+      {
+        id: `nova-${Date.now()}-${currentIndex}-${Math.random()}`,
+        tipo: "nova",
+        src: base64,
+        file: blob,
+      },
+    ]);
+
+    if (currentIndex < selectedImages.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } else {
+      setOpenCropModal(false);
+      setSelectedImages([]);
+      setCurrentIndex(0);
+    }
+  };
+
+  const handleCancelCrop = () => {
+    setSelectedImages([]);
+    setCurrentIndex(0);
+    setOpenCropModal(false);
+  };
+  // ---- fim do corte ----
 
   const handleSnackbarClose = (_, reason) => {
     if (reason === "clickaway") return;
@@ -44,34 +125,9 @@ function UpdateProjeto() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImagensNovas(files);
-
-    const readers = files.map((file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readers)
-      .then((base64Images) => setPreviewsNovas(base64Images))
-      .catch((err) => console.error("Erro ao gerar prévias:", err));
+  const removerImagem = (index) => {
+    setListaImagens((prev) => prev.filter((_, i) => i !== index));
   };
-
-  const removerImagemExistente = (index) => {
-    setImagensExistentes((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removerImagemNova = (index) => {
-    setImagensNovas((prev) => prev.filter((_, i) => i !== index));
-    setPreviewsNovas((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
 
   function dataURLToFile(dataUrl, filenameFallback = "imagem_existente") {
     try {
@@ -101,34 +157,35 @@ function UpdateProjeto() {
 
   useEffect(() => {
     let ativo = true;
-
     const fetchProjeto = async () => {
       try {
         setLoading(true);
         const res = await api.getProjectDetails(ID_projeto);
         if (!ativo) return;
-
         const projeto = res.data?.projeto;
         if (projeto) {
           setForm({
             titulo: projeto.titulo || "",
             descricao: projeto.descricao || "",
           });
-
           setUsername(projeto.autor?.username);
-
           const imgs = projeto.imagens
             ?.map((img) => {
               if (typeof img === "string") return img;
               if (img?.imagem)
-                return `data:${img.tipo_imagem || "image/jpeg"};base64,${
-                  img.imagem
-                }`;
+                return `data:${img.tipo_imagem || "image/jpeg"};base64,${img.imagem
+                  }`;
               return null;
             })
             .filter(Boolean);
 
-          setImagensExistentes(imgs || []);
+          setListaImagens(
+            (imgs || []).map((src, index) => ({
+              id: `existente-${index}`,
+              tipo: "existente",
+              src,
+            }))
+          );
         }
         setLoading(false);
       } catch (err) {
@@ -136,33 +193,50 @@ function UpdateProjeto() {
         setLoading(false);
       }
     };
-
     fetchProjeto();
     return () => {
       ativo = false;
     };
   }, [ID_projeto]);
 
+  // Drag and drop
+  const [draggingIndex, setDraggingIndex] = useState(null);
+
+  const handleDragStart = (index) => setDraggingIndex(index);
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return;
+
+    setListaImagens((prev) => {
+      const newList = [...prev];
+      const [moved] = newList.splice(draggingIndex, 1);
+      newList.splice(index, 0, moved);
+      return newList;
+    });
+
+    setDraggingIndex(index);
+  };
+
+  const handleDragEnd = () => setDraggingIndex(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const formData = new FormData();
       formData.append("titulo", form.titulo);
       formData.append("descricao", form.descricao);
       formData.append("ID_user", ID_user);
 
-      const arquivosDeExistentes = imagensExistentes
-        .map((src, idx) => {
-          if (typeof src === "string" && src.startsWith("data:")) {
-            return dataURLToFile(src, `imagem_existente_${idx + 1}`);
-          }
+      const arquivosParaEnviar = listaImagens
+        .map((item, idx) => {
+          if (item.file) return item.file;
+          if (typeof item.src === "string" && item.src.startsWith("data:"))
+            return dataURLToFile(item.src, `imagem_${idx + 1}`);
           return null;
         })
         .filter(Boolean);
-
-      const arquivosParaEnviar = [...arquivosDeExistentes, ...imagensNovas];
 
       if (arquivosParaEnviar.length === 0) {
         setSnackbar({
@@ -176,9 +250,7 @@ function UpdateProjeto() {
       }
 
       arquivosParaEnviar.forEach((file) => formData.append("imagens", file));
-
       const response = await api.updateProjeto(ID_projeto, formData);
-
       setSnackbar({
         open: true,
         message: response.data?.message,
@@ -188,7 +260,7 @@ function UpdateProjeto() {
       console.error(error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.error,
+        message: error.response?.data?.error || "Erro ao atualizar projeto.",
         severity: "error",
       });
     } finally {
@@ -201,7 +273,6 @@ function UpdateProjeto() {
       const timer = setTimeout(() => {
         navigate(`/${username}`);
       }, 1500);
-
       return () => clearTimeout(timer);
     }
   }, [snackbar, navigate, username]);
@@ -227,96 +298,42 @@ function UpdateProjeto() {
 
   return (
     <>
-      <style>{`
-        /* Base refinada (desktop médio) */
-        .update-projeto { padding-left: 12px; padding-right: 12px; }
-        .form-projeto { max-width: 1100px; }
-        .thumb { width: 120px; height: 120px; }
-        .campo { max-width: 720px; } /* acompanha width:50% do inline em telas largas */
-
-        /* <= 1024px: inputs mais largos e thumbs menores */
-        @media (max-width: 1024px) {
-          .campo { width: 70% !important; max-width: 640px !important; }
-          .thumb { width: 110px !important; height: 110px !important; }
-          .preview-list { gap: 12px !important; }
-        }
-
-        /* <= 768px: empilha melhor, inputs full, botão ocupa linha */
-        @media (max-width: 768px) {
-          .form-projeto {
-            margin: 16px auto !important;
-            align-items: stretch !important;
-            padding-right: 4px;
-          }
-          .titulo-pagina { font-size: 28px !important; margin-bottom: 16px !important; }
-          .label-padrao { font-size: 15px !important; margin-bottom: 8px !important; }
-
-          .campo {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 52px !important;
-          }
-          .upload-btn { width: 200px !important; justify-content: center !important; font-size: 12px; }
-          .thumb { width: 100px !important; height: 100px !important; }
-          .preview-list { gap: 10px !important; }
-          .btn-submit { width: 140px !important; padding: 12px 20px !important; }
-        }
-
-        /* <= 480px: tipografia compacta, thumbs menores, margens menores */
-        @media (max-width: 480px) {
-          .titulo-pagina { font-size: 24px !important; }
-          .label-padrao { font-size: 14px !important; }
-          .thumb { width: 88px !important; height: 88px !important; }
-          .btn-submit { font-size: 15px !important; }
-        }
-
-        @media (max-width: 400px) {
-          .btn-submit { margin: auto; }
-        }
-      `}</style>
-
       {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
       )}
 
-      <Container maxWidth="sx" className="update-projeto">
-        <form
-          style={styles.box_principal}
-          className="form-projeto"
-          onSubmit={handleSubmit}
-        >
-          <Typography style={styles.font_Titulo} className="titulo-pagina">
-            Atualizar projeto
-          </Typography>
+      <Container maxWidth="sx">
+        <form style={styles.box_principal} onSubmit={handleSubmit}>
+          <Typography style={styles.font_Titulo}>Atualizar projeto</Typography>
 
-          <Box mt={2} display="flex" flexWrap="wrap" gap={2} className="preview-list">
-            {previewsNovas.map((src, index) => (
-              <Box key={index} sx={styles.previewBox} className="thumb">
+          <Box
+            mt={2}
+            display="flex"
+            flexWrap="wrap"
+            gap={2}
+            sx={{ cursor: "grab" }}
+          >
+            {listaImagens.map((item, index) => (
+              <Box
+                key={item.id || index}
+                sx={{
+                  ...styles.previewBox,
+                  opacity: draggingIndex === index ? 0.4 : 1,
+                }}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+              >
                 <img
-                  src={src}
-                  alt={`preview-nova-${index}`}
+                  src={item.src}
+                  alt={`img-${index}`}
                   style={styles.previewImg}
                 />
                 <IconButton
                   size="small"
                   sx={styles.deleteBtn}
-                  onClick={() => removerImagemNova(index)}
-                >
-                  <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
-                </IconButton>
-              </Box>
-            ))}
-            {imagensExistentes.map((img, index) => (
-              <Box key={index} sx={styles.previewBox} className="thumb">
-                <img
-                  src={img}
-                  alt={`Imagem existente ${index + 1}`}
-                  style={styles.previewImg}
-                />
-                <IconButton
-                  size="small"
-                  sx={styles.deleteBtn}
-                  onClick={() => removerImagemExistente(index)}
+                  onClick={() => removerImagem(index)}
                 >
                   <DeleteIcon fontSize="small" sx={{ color: "#d32f2f" }} />
                 </IconButton>
@@ -324,11 +341,12 @@ function UpdateProjeto() {
             ))}
           </Box>
 
-          <Typography style={styles.label} className="label-padrao">
-            Adicione ou remova as imagens:
+          <Typography style={styles.label}>
+            Adicione ou remova as imagens (resolução recomendada: 1920x1080):
           </Typography>
           <Box>
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept="image/*"
@@ -337,7 +355,7 @@ function UpdateProjeto() {
               onChange={handleFileChange}
             />
             <label htmlFor="upload-novas">
-              <Button component="span" sx={styles.uploadBtn} className="upload-btn">
+              <Button component="span" sx={styles.uploadBtn}>
                 <UploadFileIcon fontSize="small" />
                 Selecionar imagens
               </Button>
@@ -350,15 +368,10 @@ function UpdateProjeto() {
             margin="normal"
             label="Título"
             name="titulo"
-            id="titulo"
             variant="outlined"
             value={form.titulo}
             onChange={handleChange}
             style={styles.textfield}
-            className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
           <TextField
@@ -367,19 +380,18 @@ function UpdateProjeto() {
             margin="normal"
             label="Descrição"
             name="descricao"
-            id="descricao"
             variant="outlined"
             value={form.descricao}
             onChange={handleChange}
             style={styles.textfield}
-            className="campo"
-            sx={{
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "black" },
-            }}
           />
 
-          <Button type="submit" style={styles.button} className="btn-submit" disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar"}
+          <Button type="submit" style={styles.button} disabled={loading}>
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Atualizar"
+            )}
           </Button>
         </form>
 
@@ -398,9 +410,69 @@ function UpdateProjeto() {
           </Alert>
         </Snackbar>
       </Container>
+
+      {/* Modal de corte 16:9 */}
+      <ModalBase open={openCropModal} onClose={handleCancelCrop}>
+        <Box
+          sx={{
+            position: "relative",
+            height: "320px",
+            width: { xs: "200px", sm: "90vw" },
+            mt: 2,
+            maxWidth: "100%",
+          }}
+        >
+          <Typography fontWeight={600} textAlign="center" mb={1}>
+            Cortar imagem {currentIndex + 1} de {selectedImages.length}
+          </Typography>
+          <Box
+            sx={{
+              width: "100%",
+              height: { xs: 180, sm: 220 },
+              borderRadius: 2,
+              overflow: "hidden",
+              mb: 3,
+              position: "relative",
+            }}
+          >
+            <Cropper
+              image={selectedImages[currentIndex]}
+              crop={crop}
+              zoom={zoom}
+              aspect={16 / 9}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              style={{
+                containerStyle: { width: "100%", height: "100%" },
+                mediaStyle: { maxHeight: "100%", objectFit: "cover" },
+              }}
+            />
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 16,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+            }}
+          >
+            <Button variant="contained" onClick={handleConfirmCrop} sx={{ background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)", }}>
+              Confirmar
+            </Button>
+            <Button variant="outlined" onClick={handleCancelCrop}>
+              Cancelar
+            </Button>
+          </Box>
+        </Box>
+      </ModalBase>
     </>
   );
 }
+
 function Styles() {
   return {
     box_principal: {
@@ -439,12 +511,10 @@ function Styles() {
     uploadBtn: {
       backgroundColor: "rgb(133, 0, 194)",
       color: "white",
-      fontWeight: 100,
       borderRadius: "8px",
       padding: "12px 28px",
       textTransform: "none",
       fontSize: "16px",
-      cursor: "pointer",
       display: "flex",
       alignItems: "center",
       gap: "8px",
@@ -461,14 +531,15 @@ function Styles() {
       height: 120,
       borderRadius: 2,
       overflow: "hidden",
-      boxShadow: 1,
       border: "1px solid #ccc",
-      mb: 3
+      boxShadow: 1,
+      transition: "opacity 0.2s",
     },
     previewImg: {
       width: "100%",
       height: "100%",
       objectFit: "cover",
+      userSelect: "none",
     },
     deleteBtn: {
       position: "absolute",

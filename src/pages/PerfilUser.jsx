@@ -61,7 +61,7 @@ function PerfilUser() {
   const [formContatoData, setFormContatoData] = useState({
     telefone: "",
     instagram: "",
-    linkedin: "",
+    facebook: "",
     github: "",
     pinterest: "",
   });
@@ -148,7 +148,7 @@ function PerfilUser() {
         setFormContatoData({
           telefone: data.numero_telefone || "",
           instagram: data.link_insta || "",
-          linkedin: data.link_facebook || "",
+          facebook: data.link_facebook || "",
           github: data.link_github || "",
           pinterest: data.link_pinterest || "",
         });
@@ -164,7 +164,7 @@ function PerfilUser() {
   useEffect(() => {
     setExtraInfoPayload({
       link_insta: formContatoData.instagram,
-      link_facebook: formContatoData.linkedin,
+      link_facebook: formContatoData.facebook,
       link_github: formContatoData.github,
       link_pinterest: formContatoData.pinterest,
       numero_telefone: formContatoData.telefone,
@@ -211,7 +211,6 @@ function PerfilUser() {
 
   const handleEditClick = () => setEditing(true);
 
-  // Mantido: botão Salvar chama updateUser; a própria updateUser agora resolve o 2-pass do email
   const handleSaveClick = () => {
     updateUser();
   };
@@ -264,8 +263,6 @@ function PerfilUser() {
 
       const temCodigo = (formData.code || "").trim() !== "";
 
-      // Passo 1: se o email mudou e ainda não há código, NÃO envia 'code' no payload.
-      // A API responderá 202 e enviará o código ao novo e-mail.
       if (emailMudou && !temCodigo) {
         const res = await api.updateUser(id_user, fd);
         showAlert("success", res.data?.message || "Código enviado ao email.");
@@ -274,7 +271,6 @@ function PerfilUser() {
         return;
       }
 
-      // Passo 2: se tem código (ou o email não mudou), segue com a atualização.
       if (temCodigo) {
         fd.append("code", formData.code);
       }
@@ -311,6 +307,17 @@ function PerfilUser() {
       );
       setEditing(false);
       setOpenModalEmail(false);
+      showAlert(
+        "success",
+        response.data.message || "Perfil atualizado com sucesso!"
+      );
+      setEditing(false);
+      setOpenModalEmail(false);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
     } catch (error) {
       console.error("Erro no updateUser:", error);
       showAlert(
@@ -356,7 +363,7 @@ function PerfilUser() {
       showAlert(
         "error",
         error.response?.data?.error ||
-          "Erro ao atualizar informações de contato."
+        "Erro ao atualizar informações de contato."
       );
     }
   }
@@ -681,23 +688,25 @@ function PerfilUser() {
           {selectedImage && (
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                height: "100%",
-                overflowY: "auto",
+                position: "relative",
+                height: "320px",
+                width: { xs: "200px", sm: "90vw" },
+                mt: 2,
+                maxWidth: "100%",
               }}
             >
+              <Typography fontWeight={600} textAlign="center" mb={1}>
+                Cortar imagem
+              </Typography>
+
               <Box
                 sx={{
-                  position: "relative",
                   width: "100%",
-                  height: 200,
+                  height: { xs: 180, sm: 220 },
                   borderRadius: 2,
                   overflow: "hidden",
-                  mt: 2,
-                  mb: 2,
+                  mb: 3,
+                  position: "relative",
                 }}
               >
                 <Cropper
@@ -710,17 +719,38 @@ function PerfilUser() {
                   onZoomChange={setZoom}
                   onCropComplete={onCropComplete}
                   zoomWithScroll
+                  style={{
+                    containerStyle: { width: "100%", height: "100%" },
+                    mediaStyle: { maxHeight: "100%", objectFit: "cover" },
+                  }}
                 />
               </Box>
 
               <Box
                 sx={{
+                  position: "absolute",
+                  bottom: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
                   display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  mt: "auto",
+                  gap: 2,
+                  justifyContent: "center",
                 }}
               >
+                <Button
+                  variant="contained"
+                  onClick={handleConfirmCrop}
+                  sx={{
+                    background: "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    px: 2,
+                  }}
+                >
+                  Confirmar
+                </Button>
+
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -737,21 +767,6 @@ function PerfilUser() {
                   }}
                 >
                   Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleConfirmCrop}
-                  sx={{
-                    textTransform: "none",
-                    borderRadius: 2,
-                    background:
-                      "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
-                    color: "#fff",
-                    fontWeight: 600,
-                    px: 2,
-                  }}
-                >
-                  Confirmar
                 </Button>
               </Box>
             </Box>
@@ -819,9 +834,9 @@ function PerfilUser() {
             />
             <TextField
               fullWidth
-              label="LinkedIn"
-              name="linkedin"
-              value={formContatoData.linkedin}
+              label="Facebook"
+              name="facebook"
+              value={formContatoData.facebook}
               onChange={handleContatoChange}
               sx={{ mb: 2 }}
             />
