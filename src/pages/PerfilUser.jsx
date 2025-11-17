@@ -16,6 +16,7 @@ import background2 from "../assets/background2.png";
 import api from "../axios/axios";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
+import Cropper from "react-easy-crop";
 
 function PerfilUser() {
   const styles = Styles();
@@ -26,18 +27,29 @@ function PerfilUser() {
   const [openModalSenha, setOpenModalSenha] = useState(false);
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [openModalContato, setOpenModalContato] = useState(false);
+  const [openModalEmail, setOpenModalEmail] = useState(false);
+
+  const [openCropModal, setOpenCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [imageKey, setImageKey] = useState(0);
 
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingSenha, setLoadingSenha] = useState(false);
 
+  const [originalEmail, setOriginalEmail] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
-    username: "",
+    username_: "",
     email: "",
     biografia: "",
     imagem: null,
+    code: "",
   });
 
   const [senhaData, setSenhaData] = useState({
@@ -49,32 +61,53 @@ function PerfilUser() {
   const [formContatoData, setFormContatoData] = useState({
     telefone: "",
     instagram: "",
-    linkedin: "",
+    facebook: "",
     github: "",
     pinterest: "",
   });
 
+  const [extraInfoPayload, setExtraInfoPayload] = useState({
+    link_insta: "",
+    link_facebook: "",
+    link_github: "",
+    link_pinterest: "",
+    numero_telefone: "",
+    ID_user: id_user,
+  });
+
+  const [forgotPayload, setForgotPayload] = useState({
+    email: "",
+    code: "",
+    password: "",
+    confirmPassword: "",
+    atualizar: false,
+  });
+
   const [avatarPreview, setAvatarPreview] = useState(null);
+
   const [alert, setAlert] = useState({
     open: false,
     severity: "",
     message: "",
   });
 
-  const [emailRecuperacao, setEmailRecuperacao] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoValidado, setCodigoValidado] = useState(false);
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmSenha, setConfirmSenha] = useState("");
 
   const [userPlan, setUserPlan] = useState({
     plan: null,
     authenticated: null,
   });
 
+  const [removeImage, setRemoveImage] = useState(false);
+
   useEffect(() => {
-    async function getUserById() {
+    async function fetchUser() {
+      const authenticated = localStorage.getItem("authenticated");
+      if (!authenticated) {
+        setUserPlan((prev) => ({ ...prev, authenticated: false }));
+        return;
+      }
       try {
         const response = await api.getUserById(id_user);
         const data = response.data.profile;
@@ -86,14 +119,22 @@ function PerfilUser() {
             : `data:image/jpeg;base64,${data.imagem}`
           : null;
 
-        setFormData({
-          name: data.name,
-          username: data.username,
-          email: data.email,
-          biografia: data.biografia,
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          username_: data.username || "",
+          email: data.email || "",
+          biografia: data.biografia || "",
           imagem: base64Src,
-        });
+          code: "",
+        }));
         setAvatarPreview(base64Src);
+
+        setForgotPayload((prev) => ({ ...prev, email: data.email || "" }));
+
+        const plan = Boolean(response.data.profile.plano);
+        setUserPlan({ plan, authenticated: true });
+        setOriginalEmail(data.email || "");
       } catch (error) {
         console.error("Erro ao buscar usuário:", error);
         showAlert(
@@ -102,31 +143,56 @@ function PerfilUser() {
         );
       }
     }
-    async function getContactInfo() {
+
+    async function fetchContactInfo() {
       try {
         const response = await api.getExtraInfo(id_user);
-        const data = response.data
+        const data = response.data;
         setFormContatoData({
-          telefone: data.numero_telefone ,
-          instagram: data.link_insta,
-          linkedin: data.link_facebook,
-          github: data.link_github,
-          pinterest: data.link_pinterest,
+          telefone: data.numero_telefone || "",
+          instagram: data.link_insta || "",
+          facebook: data.link_facebook || "",
+          github: data.link_github || "",
+          pinterest: data.link_pinterest || "",
         });
       } catch (error) {
         console.error("Erro ao buscar informações de contato:", error);
       }
     }
-    getUserById();
-    getContactInfo();
+
+    fetchUser();
+    fetchContactInfo();
   }, [id_user]);
+
+  useEffect(() => {
+    setExtraInfoPayload({
+      link_insta: formContatoData.instagram,
+      link_facebook: formContatoData.facebook,
+      link_github: formContatoData.github,
+      link_pinterest: formContatoData.pinterest,
+      numero_telefone: formContatoData.telefone,
+      ID_user: id_user,
+    });
+  }, [formContatoData, id_user]);
+
+  useEffect(() => {
+    setForgotPayload((prev) => ({ ...prev, email: formData.email || "" }));
+  }, [formData.email]);
 
   const showAlert = (severity, message) =>
     setAlert({ open: true, severity, message });
-  const handleCloseAlert = () => setAlert({ ...alert, open: false });
+  const handleCloseAlert = () =>
+    setAlert((prev) => ({
+      ...prev,
+      open: false,
+    }));
 
-  const handleInputChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    const key = name === "username" ? "username_" : name;
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSenhaChange = (e) =>
     setSenhaData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -142,6 +208,8 @@ function PerfilUser() {
   const handleCloseModalSenha = () => setOpenModalSenha(false);
   const handleOpenModalContato = () => setOpenModalContato(true);
   const handleCloseModalContato = () => setOpenModalContato(false);
+  const handleOpenModalEmail = () => setOpenModalEmail(true);
+  const handleCloseModalEmail = () => setOpenModalEmail(false);
 
   const handleDeleteUser = () => {
     deleteUser();
@@ -149,7 +217,22 @@ function PerfilUser() {
   };
 
   const handleEditClick = () => setEditing(true);
-  const handleSaveClick = () => updateUser();
+
+  const handleSaveClick = () => {
+    updateUser();
+  };
+
+  const handleConfirmEmailCode = () => {
+    const code = (formData.code || "").trim();
+
+    if (!code) {
+      showAlert("error", "Por favor, insira o código de verificação.");
+      return;
+    }
+
+    // se tiver código preenchido, segue o fluxo normal
+    updateUser();
+  };
 
   function base64ToFile(base64, filename) {
     if (!base64) return null;
@@ -158,42 +241,95 @@ function PerfilUser() {
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
     return new File([u8arr], filename, { type: mime });
   }
 
   async function updateUser() {
     setLoading(true);
     try {
-      const data = new FormData();
-      data.append("email", formData.email);
-      data.append("biografia", formData.biografia);
-      data.append("username", formData.username);
-      data.append("name", formData.name);
+      const fd = new FormData();
 
-      let imageToSend = formData.imagem;
-      if (imageToSend && typeof imageToSend === "string") {
-        imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
+      const biografiaToSend =
+        !formData.biografia || formData.biografia.trim() === ""
+          ? "Nenhuma biografia cadastrada."
+          : formData.biografia;
+
+      fd.append("email", formData.email);
+      fd.append("biografia", biografiaToSend);
+      fd.append("username_", formData.username_);
+      fd.append("name", formData.name);
+
+      const emailMudou = formData.email !== originalEmail;
+      const temCodigo = (formData.code || "").trim() !== "";
+
+      if (removeImage) {
+        fd.append("deleteImage", "true");
+      } else {
+        let imageToSend = formData.imagem;
+        if (imageToSend && typeof imageToSend === "string") {
+          imageToSend = base64ToFile(imageToSend, "perfil_atual.jpg");
+        }
+        if (imageToSend) {
+          fd.append("imagens", imageToSend);
+        }
       }
-      if (imageToSend) data.append("imagens", imageToSend);
 
-      const response = await api.updateUser(id_user, data);
+      // Se email mudou e ainda não foi enviado código → envia código e abre modal
+      if (emailMudou && !temCodigo) {
+        const res = await api.updateUser(id_user, fd);
+        showAlert("success", res.data?.message || "Código enviado ao email.");
+        setOpenModalEmail(true);
+        setLoading(false);
+        return;
+      }
+
+      if (temCodigo) {
+        fd.append("code", formData.code);
+      }
+
+      const response = await api.updateUser(id_user, fd);
 
       const img = response.data?.profile?.imagem;
-      if (img) {
+      let updatedAvatar = avatarPreview;
+
+      if (removeImage) {
+        // se removeu, força limpar o avatar
+        updatedAvatar = null;
+      } else if (img) {
         const isBase64 = img.startsWith("data:image");
         const base64Src = isBase64 ? img : `data:image/jpeg;base64,${img}`;
-        setAvatarPreview(base64Src);
-        setFormData((prev) => ({ ...prev, imagem: base64Src }));
+        updatedAvatar = base64Src;
       }
+
+      setFormData((prev) => ({
+        ...prev,
+        name: formData.name,
+        username_: formData.username_,
+        email: formData.email,
+        biografia: biografiaToSend,
+        code: "",
+        imagem: updatedAvatar,
+      }));
+      setAvatarPreview(updatedAvatar);
+
+      if (emailMudou) {
+        setOriginalEmail(formData.email);
+      }
+
+      // reset da flag de remoção
+      setRemoveImage(false);
 
       showAlert(
         "success",
         response.data.message || "Perfil atualizado com sucesso!"
       );
       setEditing(false);
+      setOpenModalEmail(false);
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error("Erro no updateUser:", error);
       showAlert(
@@ -228,14 +364,7 @@ function PerfilUser() {
 
   async function handleUpdateContactInfo() {
     try {
-      const response = await api.updateExtraInfo({
-        link_insta: formContatoData.instagram,
-        link_facebook: formContatoData.linkedin,
-        link_github: formContatoData.github,
-        link_pinterest: formContatoData.pinterest,
-        numero_telefone: formContatoData.telefone,
-        ID_user: id_user,
-      });
+      const response = await api.updateExtraInfo(extraInfoPayload);
       showAlert(
         "success",
         response.data.message || "Informações de contato atualizadas!"
@@ -245,7 +374,8 @@ function PerfilUser() {
       console.error("Erro ao atualizar informações de contato:", error);
       showAlert(
         "error",
-        error.response?.data?.error || "Erro ao atualizar informações de contato."
+        error.response?.data?.error ||
+          "Erro ao atualizar informações de contato."
       );
     }
   }
@@ -288,11 +418,62 @@ function PerfilUser() {
   }
 
   const handleAvatarClick = () => editing && fileInputRef.current.click();
+
   const handleImageChange = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
     if (!file) return;
-    setAvatarPreview(URL.createObjectURL(file));
-    setFormData((prev) => ({ ...prev, imagem: file }));
+
+    const imageURL = URL.createObjectURL(file);
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setSelectedImage(imageURL);
+    setImageKey((prev) => prev + 1);
+    setOpenCropModal(true);
+
+    setRemoveImage(false);
+
+    event.target.value = null;
+  };
+
+  const getCroppedImg = (imageSrc, cropPixels) =>
+    new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = cropPixels.width;
+        canvas.height = cropPixels.height;
+        ctx.drawImage(
+          image,
+          cropPixels.x,
+          cropPixels.y,
+          cropPixels.width,
+          cropPixels.height,
+          0,
+          0,
+          cropPixels.width,
+          cropPixels.height
+        );
+        resolve(canvas.toDataURL("image/jpeg"));
+      };
+    });
+
+  const onCropComplete = (_, areaPixels) => setCroppedAreaPixels(areaPixels);
+
+  const handleConfirmCrop = async () => {
+    const croppedImage = await getCroppedImg(selectedImage, croppedAreaPixels);
+    setAvatarPreview(croppedImage);
+    setFormData((prev) => ({ ...prev, imagem: croppedImage }));
+    setRemoveImage(false);
+    setOpenCropModal(false);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    setFormData((prev) => ({ ...prev, imagem: null }));
+    setRemoveImage(true);
   };
 
   const handleOpenModalEsqueciSenha = () => setOpenModalEsqueci(true);
@@ -300,16 +481,21 @@ function PerfilUser() {
     setOpenModalEsqueci(false);
     setCodigoEnviado(false);
     setCodigoValidado(false);
-    setEmailRecuperacao("");
-    setCodigo("");
-    setNovaSenha("");
-    setConfirmSenha("");
+    setForgotPayload({
+      email: formData.email || "",
+      code: "",
+      password: "",
+      confirmPassword: "",
+      atualizar: false,
+    });
   };
 
   const forgotPasswordSendCode = async () => {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({ email: emailRecuperacao });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoEnviado(true);
     } catch (err) {
@@ -323,11 +509,14 @@ function PerfilUser() {
   const validarCodigo = async () => {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        atualizar: false,
-      });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      if (!payload.code || payload.code.toString().trim() === "") {
+        setLoading(false);
+        showAlert("error", "Por favor, insira o código de verificação.");
+        return;
+      }
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoValidado(true);
     } catch (err) {
@@ -339,20 +528,16 @@ function PerfilUser() {
   };
 
   const atualizarSenhaEsquecida = async () => {
-    if (novaSenha !== confirmSenha) {
+    if (forgotPayload.password !== forgotPayload.confirmPassword) {
       showAlert("error", "As senhas não coincidem.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        password: novaSenha,
-        confirmPassword: confirmSenha,
-        atualizar: true,
-      });
+      const payload = { ...forgotPayload, atualizar: true };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       handleCloseModalEsqueciSenha();
     } catch (err) {
@@ -366,33 +551,11 @@ function PerfilUser() {
     }
   };
 
-  async function getUserById() {
-    const authenticated = localStorage.getItem("authenticated");
-    if (!authenticated) {
-      setUserPlan((prev) => ({ ...prev, authenticated: false }));
-      return null;
-    }
-    const id_user = localStorage.getItem("id_usuario");
-    try {
-      const response = await api.getUserById(id_user);
-      const plan = Boolean(response.data.profile.plano);
-      setUserPlan((prev) => ({ ...prev, plan, authenticated: true }));
-      return plan;
-    } catch (error) {
-      console.error("Erro ao buscar usuário:", error);
-      alert("error");
-    }
-  }
-
-  useEffect(() => {
-    getUserById();
-  }, []);
-
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true ? (
+      {userPlan.plan === false && userPlan.authenticated === true && (
         <BottonUpgrade />
-      ) : null}
+      )}
 
       <Box style={styles.container}>
         <Snackbar
@@ -406,7 +569,12 @@ function PerfilUser() {
           </Alert>
         </Snackbar>
 
-        <Box style={styles.leftCard}>
+        <Box
+          style={{
+            ...styles.leftCard,
+            height: editing ? 280 : 410,
+          }}
+        >
           <Box style={styles.box_IMG} />
           <Box style={styles.user_perfil}>
             <Box
@@ -437,7 +605,7 @@ function PerfilUser() {
                   justifyContent: "center",
                   alignItems: "center",
                   color: "white",
-                  opacity: hover ? 1 : 0,
+                  opacity: hover && editing ? 1 : 0,
                   transition: "opacity 0.3s",
                 }}
               >
@@ -452,6 +620,28 @@ function PerfilUser() {
                 disabled={!editing}
               />
             </Box>
+
+            {editing && avatarPreview && (
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleRemoveAvatar}
+                sx={{
+                  mt: 1,
+                  textTransform: "none",
+                  color: "#D12F2F",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                  backgroundColor: "transparent",
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                Remover foto
+              </Button>
+            )}
+
             <Box style={styles.name_user}>
               <span style={styles.user_name}>{formData.name}</span>
               <DeleteIcon style={styles.removeIcon} onClick={handleOpenModal} />
@@ -466,19 +656,6 @@ function PerfilUser() {
               <Button style={styles.editBtn} onClick={handleOpenModalContato}>
                 Informações de Contato
               </Button>
-              <Typography
-                variant="body2"
-                sx={{
-                  mt: 2,
-                  textDecoration: "underline",
-                  color: "#6D2AF0",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-                onClick={handleOpenModalEsqueciSenha}
-              >
-                Esqueci Minha Senha
-              </Typography>
             </>
           )}
         </Box>
@@ -498,8 +675,8 @@ function PerfilUser() {
           <TextField
             fullWidth
             label="Username"
-            name="username"
-            value={formData.username}
+            name="username_"
+            value={formData.username_}
             onChange={handleInputChange}
             disabled={!editing}
             style={styles.camposForm}
@@ -550,6 +727,96 @@ function PerfilUser() {
           )}
         </Box>
 
+        <ModalBase open={openCropModal} onClose={() => setOpenCropModal(false)}>
+          {selectedImage && (
+            <Box
+              sx={{
+                position: "relative",
+                height: "320px",
+                width: { xs: "200px", sm: "90vw" },
+                mt: 2,
+                maxWidth: "100%",
+              }}
+            >
+              <Typography fontWeight={600} textAlign="center" mb={1}>
+                Cortar imagem
+              </Typography>
+
+              <Box
+                sx={{
+                  width: "100%",
+                  height: { xs: 180, sm: 220 },
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  mb: 3,
+                  position: "relative",
+                }}
+              >
+                <Cropper
+                  key={imageKey}
+                  image={selectedImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                  zoomWithScroll
+                  style={{
+                    containerStyle: { width: "100%", height: "100%" },
+                    mediaStyle: { maxHeight: "100%", objectFit: "cover" },
+                  }}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 16,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "center",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  onClick={handleConfirmCrop}
+                  sx={{
+                    background:
+                      "linear-gradient(90deg, #7A2CF6 0%, #6D2AF0 100%)",
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    px: 2,
+                  }}
+                >
+                  Confirmar
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setOpenCropModal(false);
+                    setSelectedImage(null);
+                    setCrop({ x: 0, y: 0 });
+                    setZoom(1);
+                  }}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    px: 2,
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </ModalBase>
+
         <ModalBase open={openModal} onClose={handleCloseModal}>
           <Box textAlign="center" p={3}>
             <Typography variant="h6" fontWeight={600}>
@@ -586,71 +853,107 @@ function PerfilUser() {
         </ModalBase>
 
         <ModalBase open={openModalContato} onClose={handleCloseModalContato}>
-          <Box textAlign="center" p={3} mt={-6}>
-            <Typography variant="h6" fontWeight={600} mb={1}>
+          <Box textAlign="center" p={3} mt={-2}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
               Informações de Contato
             </Typography>
+            <TextField
+              fullWidth
+              label="Telefone"
+              name="telefone"
+              value={formContatoData.telefone}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Instagram"
+              name="instagram"
+              value={formContatoData.instagram}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Facebook"
+              name="facebook"
+              value={formContatoData.facebook}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="GitHub"
+              name="github"
+              value={formContatoData.github}
+              onChange={handleContatoChange}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Pinterest"
+              name="pinterest"
+              value={formContatoData.pinterest}
+              onChange={handleContatoChange}
+              sx={{ mb: 3 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                borderRadius: 1,
+                width: "80%",
+                background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+              }}
+              onClick={handleUpdateContactInfo}
+              disabled={loading}
+            >
+              {loading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                "Salvar Informações"
+              )}
+            </Button>
+          </Box>
+        </ModalBase>
 
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Telefone"
-                name="telefone"
-                value={formContatoData.telefone}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Instagram"
-                name="instagram"
-                value={formContatoData.instagram || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="LinkedIn"
-                name="linkedin"
-                value={formContatoData.linkedin || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="GitHub"
-                name="github"
-                value={formContatoData.github || ""}
-                onChange={handleContatoChange}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Pinterest"
-                name="pinterest"
-                value={formContatoData.pinterest || ""}
-                onChange={handleContatoChange}
-              />
-
-              <Button
-                variant="contained"
-                sx={{
-                  mt: 2,
-                  borderRadius: 5,
-                  background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
-                }}
-                onClick={handleUpdateContactInfo}
-              >
-                Salvar Informações
-              </Button>
-            </Box>
+        <ModalBase open={openModalEmail} onClose={handleCloseModalEmail}>
+          <Box textAlign="center" p={3} mt={-4}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Alterar E-mail
+            </Typography>
+            <TextField
+              fullWidth
+              label="Código de Verificação"
+              type="text"
+              name="code"
+              value={formData.code}
+              onChange={handleInputChange}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                borderRadius: 1,
+                width: "65%",
+                background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
+              }}
+              onClick={handleConfirmEmailCode}
+              disabled={loading}
+            >
+              {loading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                "Confirmar Código"
+              )}
+            </Button>
           </Box>
         </ModalBase>
 
         <ModalBase open={openModalSenha} onClose={handleCloseModalSenha}>
-          <Box textAlign="center" p={2}>
-            <Typography variant="h6" fontWeight={600} mb={2}>
+          <Box textAlign="center" p={2} mt={-4}>
+            <Typography variant="h6" fontWeight={600} mb={1}>
               Alterar Senha
             </Typography>
             <TextField
@@ -684,7 +987,8 @@ function PerfilUser() {
               fullWidth
               variant="contained"
               sx={{
-                borderRadius: 5,
+                borderRadius: 1,
+                width: "65%",
                 background: "linear-gradient(90deg,#7A2CF6,#6D2AF0)",
               }}
               onClick={handleUpdatePassword}
@@ -696,6 +1000,19 @@ function PerfilUser() {
                 "Salvar Nova Senha"
               )}
             </Button>
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 2,
+                textDecoration: "underline",
+                color: "#6D2AF0",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              onClick={handleOpenModalEsqueciSenha}
+            >
+              Esqueci Minha Senha
+            </Typography>
           </Box>
         </ModalBase>
 
@@ -712,17 +1029,22 @@ function PerfilUser() {
                 <TextField
                   fullWidth
                   label="E-mail"
-                  value={emailRecuperacao}
-                  onChange={(e) => setEmailRecuperacao(e.target.value)}
-                  disabled={codigoEnviado}
+                  value={forgotPayload.email}
+                  disabled
                   sx={{ mb: 2 }}
                 />
+
                 {codigoEnviado && (
                   <TextField
                     fullWidth
                     label="Código"
-                    value={codigo}
-                    onChange={(e) => setCodigo(e.target.value)}
+                    value={forgotPayload.code}
+                    onChange={(e) =>
+                      setForgotPayload((prev) => ({
+                        ...prev,
+                        code: e.target.value,
+                      }))
+                    }
                     sx={{ mb: 2 }}
                   />
                 )}
@@ -749,16 +1071,26 @@ function PerfilUser() {
                   fullWidth
                   label="Nova Senha"
                   type="password"
-                  value={novaSenha}
-                  onChange={(e) => setNovaSenha(e.target.value)}
+                  value={forgotPayload.password}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   sx={{ mb: 2 }}
                 />
                 <TextField
                   fullWidth
                   label="Confirmar Senha"
                   type="password"
-                  value={confirmSenha}
-                  onChange={(e) => setConfirmSenha(e.target.value)}
+                  value={forgotPayload.confirmPassword}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
                   sx={{ mb: 3 }}
                 />
                 <Button
@@ -786,32 +1118,35 @@ function Styles() {
   return {
     container: {
       display: "flex",
-      justifyContent: "space-between",
+      justifyContent: "center",
       gap: 30,
-      padding: "24px 16px",
-      maxWidth: "70%",
+      padding: "30px",
+      width: "80%",
+      maxWidth: "100%",
       margin: "0 auto",
+      flexWrap: "wrap",
     },
     leftCard: {
-      maxWidth: 280,
-      minWidth: 250,
       flex: 2,
-      width: "100%",
+      maxWidth: "250px",
+      minWidth: "150px",
       backgroundColor: "#fff",
       border: "1px solid #E5E5E5",
       borderRadius: 16,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      transition: "height 0.3s ease",
     },
     box_IMG: {
-      height: 50,
+      width: "100%",
+      minHeight: "50px",
+      maxHeight: "200px",
       borderRadius: "16px 16px 0 0",
       backgroundImage: `url(${background2})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       marginBottom: 16,
-      width: "100%",
     },
     user_perfil: {
       display: "flex",
@@ -828,7 +1163,7 @@ function Styles() {
       gap: 8,
       flexDirection: "row",
     },
-    removeIcon: { color: "#7e7e7ea9", cursor: "pointer" },
+    removeIcon: { color: "#ff0000a9", cursor: "pointer" },
     editBtn: {
       marginTop: 12,
       marginBottom: 12,
@@ -840,6 +1175,8 @@ function Styles() {
       color: "#fff",
       border: "none",
       width: "90%",
+      minWidth: "120px",
+      maxWidth: "250px",
     },
     formPanel: {
       flex: 1,
@@ -850,11 +1187,12 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      minWidth: 400,
-      maxWidth: 800,
+      minWidth: "200px",
+      maxWidth: "500px",
+      width: "100%",
     },
     formTitle: {
-      fontSize: 20,
+      fontSize: "clamp(16px, 2vw, 20px)",
       fontWeight: 600,
       marginBottom: 8,
       textAlign: "center",
@@ -871,6 +1209,8 @@ function Styles() {
       color: "#fff",
       border: "none",
       width: "60%",
+      minWidth: "150px",
+      maxWidth: "300px",
     },
   };
 }

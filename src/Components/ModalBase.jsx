@@ -9,8 +9,8 @@ function Styles() {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      width: 400,
-      height: 300,
+      maxWidth: 400,
+      minWidth: 200,
       bgcolor: "background.paper",
       borderRadius: 2,
       boxShadow: 24,
@@ -29,7 +29,7 @@ function Styles() {
 const ModalBase = ({ open, onClose, children }) => {
   const styles = Styles();
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} disableScrollLock>
       <Box sx={styles.modalStyle}>
         <img src={logo} alt="Logo" style={styles.logo} />
         {children}

@@ -31,7 +31,7 @@ function Cadastro() {
   });
 
   const [openModal, setOpenModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutos em segundos
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
   const [alert, setAlert] = useState({
@@ -40,8 +40,11 @@ function Cadastro() {
     message: "",
   });
 
-  const [loading, setLoading] = useState(false); // Novo estado para ícone de carregamento
+  const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
+  // TIMER: conta regressiva
   useEffect(() => {
     let timer;
 
@@ -51,15 +54,17 @@ function Cadastro() {
       }, 1000);
     }
 
-    if (timeLeft === 0) {
-      clearInterval(timer);
-      setIsTimerActive(false);
-    }
-
     return () => clearInterval(timer);
   }, [openModal, isTimerActive, timeLeft]);
 
-  const navigate = useNavigate();
+  // QUANDO CHEGAR EM 00:00 → recarrega a página
+  useEffect(() => {
+    if (!openModal) return;
+    if (timeLeft === 0) {
+      setIsTimerActive(false);
+      window.location.reload();
+    }
+  }, [timeLeft, openModal]);
 
   const showAlert = (severity, message) => {
     setAlert({ open: true, severity, message });
@@ -96,33 +101,37 @@ function Cadastro() {
   };
 
   async function cadastro() {
-    setLoading(true); // Ativa o ícone de carregamento
+    setLoading(true);
     await api.postCadastro(user).then(
       (response) => {
         showAlert("success", response.data.message);
         handleOpenModal();
-        setLoading(false); // Desativa o ícone após resposta
+        setLoading(false);
       },
       (error) => {
-        showAlert("error", error.response.data.error);
-        setLoading(false); // Desativa o ícone após erro
+        showAlert("error", error.response?.data?.error || "Erro ao cadastrar.");
+        setLoading(false);
       }
     );
   }
 
   async function validateCode() {
+    if (user.code.trim() === "") {
+      showAlert("error", "Por favor, insira o código de verificação.");
+      return;
+    }
     await api.postCadastro(user).then(
       (response) => {
         showAlert("success", response.data.message);
         localStorage.setItem("authenticated", true);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("id_usuario", response.data.user.ID_user);
-        
+
         handleCloseModal();
         navigate("/");
       },
       (error) => {
-        showAlert("error", error.response.data.error);
+        showAlert("error", error.response?.data?.error || "Código inválido.");
       }
     );
   }
@@ -137,6 +146,44 @@ function Cadastro() {
 
   return (
     <Box style={styles.principal}>
+      <style>{`
+        @media screen and (max-width: 844px) {
+          .ct-container {
+            width: 92% !important;
+            height: auto !important;
+            min-height: 520px;
+          }
+          .ct-box-img {
+            display: none !important;
+          }
+          .ct-box-cadastro {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 5px !important;
+            position: relative !important;
+          }
+          .ct-box-logo {
+            display: flex !important;
+            position: absolute !important;
+            top: 8px !important;
+            left: 8px !important;
+            z-index: 2 !important;
+            width: auto !important;
+            justify-content: flex-start !important;
+          }
+          .ct-box-form {
+            margin: 0 !important;
+            padding: 56px 0 16px !important;
+          }
+        }
+
+        @media screen and (min-width: 845px) and (max-width: 1200px) {
+          .ct-welcome-text {
+            font-size: 22px !important;
+          }
+        }
+      `}</style>
+
       <Snackbar
         open={alert.open}
         autoHideDuration={3000}
@@ -151,9 +198,10 @@ function Cadastro() {
           {alert.message}
         </Alert>
       </Snackbar>
-      <Container style={styles.container}>
-        <Box style={styles.box_Cadastro}>
-          <Box style={styles.box_logo_img}>
+
+      <Container style={styles.container} className="ct-container">
+        <Box style={styles.box_Cadastro} className="ct-box-cadastro">
+          <Box style={styles.box_logo_img} className="ct-box-logo">
             <img style={styles.logo} src={logo} alt="Logo site" />
           </Box>
 
@@ -161,6 +209,7 @@ function Cadastro() {
             style={styles.box_Formulario}
             component="form"
             onSubmit={handleSubmit}
+            className="ct-box-form"
           >
             <Typography style={styles.font_Titulo}>Cadastro</Typography>
 
@@ -304,8 +353,8 @@ function Cadastro() {
           </Box>
         </Box>
 
-        <Box style={styles.box_IMG_02}>
-          <Typography style={styles.style_Font}>
+        <Box style={styles.box_IMG_02} className="ct-box-img">
+          <Typography style={styles.style_Font} className="ct-welcome-text">
             Seja bem-vindo ao ConecTalento!
           </Typography>
         </Box>
@@ -414,7 +463,7 @@ function Styles() {
       fontSize: "35px",
     },
     box_Formulario: {
-      margin:"-25px",
+      margin: "-25px",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -426,9 +475,9 @@ function Styles() {
       gap: "5px",
     },
     camposForm: {
-      width: "75%",   // diminui a largura para caber melhor
+      width: "75%",
       margin: "3.5px 0",
-    },    
+    },
     button: {
       backgroundColor: "#8500C2",
       color: "#fff",

@@ -6,13 +6,13 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import LogoBranca from "../assets/logo_branca.png";
 
 const Membros = [
-  { name: "Arthur", url: "https://instagram.com/arthur.caramori" },
   { name: "Negrijo", url: "https://instagram.com/negrij0" },
+  { name: "Arthur", url: "https://instagram.com/arthur.caramori" },
   { name: "Bonini", url: "https://instagram.com/boninipedro_" },
-  { name: "Rhuan", url: "https://instagram.com/rhuan" },
+  { name: "Rhuan", url: "https://instagram.com/rhuan_silva_lima" },
   { name: "Evelyn", url: "https://instagram.com/everissio" },
   { name: "João Alexandre", url: "https://instagram.com/jotta.slv4" },
-  { name: "Vidal", url: "https://instagram.com/vidal" },
+  { name: "Vidal", url: "https://instagram.com/jaosupar007" },
 ];
 
 const Footer = () => {
@@ -26,7 +26,7 @@ const Footer = () => {
           "linear-gradient(180deg, #6A00B6 0%, #56039A 55%, #35045F 100%)",
         mt: "auto",
         pt: 5,
-        pb: 10, // Espaço extra para a logo não sobrepor o texto
+        pb: 10,
       }}
     >
       {/* Radial Background Effect */}
@@ -117,7 +117,7 @@ const Footer = () => {
         </Box>
       </Box>
 
-      {/* Logo no canto inferior direito */}
+      {/* Logo */}
       <Box
         sx={{
           position: "absolute",
@@ -133,11 +133,13 @@ const Footer = () => {
           sx={{
             width: 100,
             height: "auto",
+            "@media (max-width:610px)": {
+              width: 50,
+            },
           }}
         />
       </Box>
 
-      {/* Copyright */}
       <Typography
         sx={{
           textAlign: "center",

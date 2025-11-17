@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
+  baseURL: "https://api-conectalento.eastus2.cloudapp.azure.com:5000/api/v1",
   headers: {
     accept: "application/json",
   },
@@ -145,7 +145,7 @@ const sheets = {
 
   updateExtraInfo: (data) => api.put("/extrainfo", data),
   getExtraInfo: (id_user) => api.get(`/extrainfo/${id_user}`),
-  
+  getProjectsLikedUser:(id_user) => api.get(`/projectsliked/${id_user}`)
 };
 
 export default sheets;

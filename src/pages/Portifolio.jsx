@@ -20,7 +20,7 @@ import api from "../axios/axios";
 import LikeButton from "../Components/likeButton";
 import ModalBase from "../Components/ModalBase";
 import BottonUpgrade from "../Components/BottonUpgrade";
-import NotFound from "./NotFound"; // para exibir a página 404
+import NotFound from "./NotFound";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import GitHubIcon from "@mui/icons-material/GitHub";
@@ -40,12 +40,10 @@ function Portfolio() {
 
   const isOwner = usernameLocal === username;
 
-  // paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const itemsPerPage = 4;
 
-  // Modal
   const [openModal, setOpenModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -54,7 +52,6 @@ function Portfolio() {
     authenticated: null,
   });
 
-  // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -165,7 +162,7 @@ function Portfolio() {
       return plan;
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
-      alert("error");
+      showAlert("error");
     }
   }
 
@@ -188,14 +185,9 @@ function Portfolio() {
     );
   }
 
-  // Quando usuário não existe ou houve erro na busca
-  if (notFound) {
-    return <NotFound />;
-  }
-
+  if (notFound) return <NotFound />;
   if (!user) return null;
 
-  // lógica de paginação
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedProjects = projects.slice(
     startIndex,
@@ -204,33 +196,116 @@ function Portfolio() {
 
   return (
     <>
+      <style>{`
+  '''''/* Base: leve redução já no desktop médio */
+  .portfolio-container { max-width: 1200px; }
+  .projects-grid { gap: 22px !important; }
+  .card-project { max-width: 340px !important; }
+  .card-project .preview { padding-top: 54% !important; } /* pouco mais baixo */
+
+  /* <= 1100px: diminuir min-width e o max do card */
+  @media (max-width: 1100px) {
+    .projects-grid {
+      grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
+      gap: 20px !important;
+    }
+    .card-project { max-width: 320px !important; }
+    .card-project .preview { padding-top: 52% !important; }
+  }
+
+  /* <= 900px: 1 coluna e cards mais compactos */
+  @media (max-width: 900px) {
+    .projects-grid {
+      grid-template-columns: 1fr !important;
+      gap: 18px !important;
+    }
+    .avatar-img { width: 160px !important; height: 160px !important; }
+    .bio-text { font-size: 15px !important; }
+    .card-project { max-width: 300px !important; margin: 0 auto !important; }
+    .card-project .preview { padding-top: 50% !important; }
+  }
+
+  /* <= 768px: layout em coluna; card ocupa a linha mas com altura menor */
+  @media (max-width: 768px) {
+    .portfolio-container {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 24px !important;
+      padding: 16px 12px !important;
+      width: 95% !important;
+    }
+    .divider-vert { display: none !important; }
+    .user-panel { align-items: center !important; padding: 8px !important; }
+    .projects-panel { padding-bottom: 16px !important; }
+
+    .card-project {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    .card-project .preview { padding-top: 48% !important; }
+  }
+
+  /* <= 765px: centralizar o painel do usuário no meio da página */
+  @media (max-width: 765px) {
+    .user-panel {
+      align-self: center !important;   /* força centralização horizontal no container */
+      margin: 0 auto !important;       /* garante centralização mesmo sem align-items */
+      flex: 0 0 auto !important;       /* evita o estiramento causado por flex:1 do estilo base */
+    }
+  }
+
+  /* <= 600px: mais redução de espaços e botão de like menor */
+  @media (max-width: 600px) {
+    .projects-grid { gap: 14px !important; }
+    .card-project { border-radius: 6px !important; }
+    .card-project .preview { padding-top: 46% !important; }
+    .user-name { font-size: 16px !important; }
+    .bio-text { font-size: 14px !important; line-height: 1.5 !important; }
+    .likeBtn { width: 32px !important; height: 32px !important; top: 6px !important; right: 6px !important; }
+    .caption { font-size: 13px !important; }
+  }
+
+  /* <= 480px: o mais compacto (evita “pular” e barra horizontal) */
+  @media (max-width: 480px) {
+    .projects-grid { gap: 12px !important; }
+    .card-project { max-width: 100% !important; }
+    .card-project .preview { padding-top: 44% !important; }
+    .caption { font-size: 12.5px !important; }
+  }
+`}</style>
+
       {userPlan.plan === false && userPlan.authenticated === true ? (
         <BottonUpgrade />
       ) : null}
 
-      <Box style={styles.container}>
+      <Box style={styles.container} className="portfolio-container">
         {/* Perfil do usuário */}
-        <Box style={styles.box_user}>
+        <Box style={styles.box_user} className="user-panel">
           {user.imagem ? (
-            <Avatar src={user.imagem} alt="Foto do perfil" sx={styles.avatar} />
+            <Avatar
+              src={user.imagem}
+              alt="Foto do perfil"
+              sx={styles.avatar}
+              className="avatar-img"
+            />
           ) : (
             <AccountCircleIcon sx={styles.accountIcon} />
           )}
 
-          <Box style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Typography style={styles.userName}>{user.name}</Typography>
+          <Box style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Typography style={styles.userName} className="user-name">
+              {user.name}
+            </Typography>
             {isOwner && (
-              <IconButton
-                color="primary"
-                size="small"
-                onClick={() => navigate("/perfiluser")}
-              >
-                <EditIcon fontSize="small" />
+              <IconButton size="small" onClick={() => navigate("/perfiluser")}>
+                <EditIcon fontSize="small" sx={{ color: "#6A22F0" }} />
               </IconButton>
             )}
           </Box>
 
-          <Typography style={styles.bio}>{user.biografia}</Typography>
+          <Typography style={styles.bio} className="bio-text">
+            {user.biografia}
+          </Typography>
 
           {/* Contatos */}
           <Box style={styles.box_contatos}>
@@ -239,7 +314,6 @@ function Portfolio() {
               <Typography>{user.email}</Typography>
             </Box>
 
-            {/* 🔹 Extra Info (só exibe o que existir) */}
             {user.extrainfo?.numero_telefone && (
               <Box style={styles.contato}>
                 <PhoneIcon />
@@ -309,18 +383,18 @@ function Portfolio() {
           </Box>
         </Box>
 
-        <Box style={styles.divider} />
+        <Box style={styles.divider} className="divider-vert" />
 
         {/* Projetos */}
-        <Box style={styles.box_projeto}>
+        <Box style={styles.box_projeto} className="projects-panel">
           {isOwner && (
             <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
               <IconButton
                 onClick={() => navigate("/criarProjeto")}
                 sx={{
-                  backgroundColor: "#1976d2",
+                  backgroundColor: "#6A22F0",
                   color: "#fff",
-                  "&:hover": { backgroundColor: "#1565c0" },
+                  "&:hover": { backgroundColor: "#5617cbff" },
                   borderRadius: "50%",
                   width: 56,
                   height: 56,
@@ -332,11 +406,12 @@ function Portfolio() {
             </Box>
           )}
 
-          <Box style={styles.grid}>
+          <Box style={styles.grid} className="projects-grid">
             {displayedProjects.map((p) => (
               <Box
                 key={p.id}
                 style={styles.card}
+                className="card-project"
                 onClick={() => navigate(`/detalhesprojeto/${p.id}`)}
               >
                 <Box
@@ -345,7 +420,7 @@ function Portfolio() {
                     backgroundImage: `url(${p.imagem || background2})`,
                   }}
                 >
-                  <Box style={styles.likeBtn}>
+                  <Box style={styles.likeBtn} className="likeBtn">
                     <LikeButton
                       projectId={p.id}
                       userId={localStorage.getItem("id_usuario")}
@@ -362,10 +437,12 @@ function Portfolio() {
                     padding: "8px 12px",
                   }}
                 >
-                  <Typography style={styles.caption}>{p.title}</Typography>
+                  <Typography style={styles.caption} className="caption">
+                    {p.title}
+                  </Typography>
 
                   {isOwner && (
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box sx={{ display: "flex" }}>
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -408,35 +485,67 @@ function Portfolio() {
           )}
         </Box>
 
-        {/* Modal de confirmação */}
+        {/* Modal, Snackbar */}
         <ModalBase open={openModal} onClose={() => setOpenModal(false)}>
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <Typography variant="h6" sx={{ mt: 9, mb: 2 }}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 3,
+                fontWeight: 600,
+                color: "text.primary",
+              }}
+            >
               Deseja realmente excluir este projeto?
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 2,
+              }}
+            >
               <button
                 onClick={() => setOpenModal(false)}
                 style={{
-                  padding: "8px 16px",
-                  background: "#ccc",
+                  padding: "10px 22px",
+                  background: "#64058fff",
+                  color: "#ffffffff",
                   border: "none",
-                  borderRadius: "4px",
+                  borderRadius: "6px",
+                  fontWeight: "500",
                   cursor: "pointer",
+                  transition: "background 0.2s ease",
                 }}
+                onMouseEnter={(e) => (e.target.style.background = "#5a0283ff")}
+                onMouseLeave={(e) => (e.target.style.background = "#64058fff")}
               >
                 Cancelar
               </button>
+
               <button
                 onClick={handleDeleteProject}
                 style={{
-                  padding: "8px 16px",
-                  background: "#e53935",
+                  padding: "10px 22px",
+                  background: "#d32f2f",
                   color: "#fff",
                   border: "none",
-                  borderRadius: "4px",
+                  borderRadius: "6px",
+                  fontWeight: "500",
                   cursor: "pointer",
+                  transition: "background 0.2s ease",
                 }}
+                onMouseEnter={(e) => (e.target.style.background = "#b71c1c")}
+                onMouseLeave={(e) => (e.target.style.background = "#d32f2f")}
               >
                 Excluir
               </button>
@@ -444,7 +553,6 @@ function Portfolio() {
           </Box>
         </ModalBase>
 
-        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}

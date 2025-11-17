@@ -1,33 +1,41 @@
 import React from "react";
-import { Modal, Box, Button } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import ModalBase from "./ModalBase";
 
 export default function LoginPromptModal({ open, onClose }) {
   const navigate = useNavigate();
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <ModalBase open={open} onClose={onClose}>
       <Box
         sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          bgcolor: "background.paper",
-          p: 4,
-          borderRadius: 2,
-          width: 300,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
           textAlign: "center",
+          gap: 2,
+          paddingTop: 4,
         }}
       >
-        <h2 style={{ marginBottom: 8 }}>Você precisa estar logado</h2>
-        <p style={{ marginBottom: 24 }}>Deseja fazer login ou se cadastrar?</p>
+        <Typography variant="h6" fontWeight={700}>
+          Você precisa estar logado
+        </Typography>
+
+        <Typography sx={{ marginBottom: 2 }}>
+          Deseja fazer login ou se cadastrar?
+        </Typography>
 
         <Button
           variant="contained"
           color="primary"
           fullWidth
-          style={{ marginBottom: 8 }}
+          sx={{
+            background: "#7A2CF6",
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "9999px",
+          }}
           onClick={() => navigate("/login")}
         >
           Login
@@ -37,11 +45,18 @@ export default function LoginPromptModal({ open, onClose }) {
           variant="outlined"
           color="primary"
           fullWidth
+          sx={{
+            borderColor: "#7A2CF6",
+            color: "#7A2CF6",
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "9999px",
+          }}
           onClick={() => navigate("/cadastro")}
         >
           Cadastrar
         </Button>
       </Box>
-    </Modal>
+    </ModalBase>
   );
 }

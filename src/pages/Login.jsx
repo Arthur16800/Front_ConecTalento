@@ -13,8 +13,8 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../axios/axios";
-import { Snackbar, Alert, CircularProgress } from "@mui/material"; // Import do Snackbar e CircularProgress
-import ModalBase from "../Components/ModalBase"; // <-- (adição) Modal idêntico ao PerfilUser
+import { Snackbar, Alert, CircularProgress } from "@mui/material";
+import ModalBase from "../Components/ModalBase";
 
 function Login() {
   const styles = Styles();
@@ -26,22 +26,26 @@ function Login() {
     showPassword: false,
   });
 
-  const [loading, setLoading] = useState(false); // Para o ícone de carregamento
+  const [forgotPayload, setForgotPayload] = useState({
+    email: "",
+    code: "",
+    password: "",
+    confirmPassword: "",
+    atualizar: false, 
+  });
+
+  const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
     open: false,
     severity: "",
     message: "",
-  }); // Para o Snackbar
+  });
 
-  // ===== (adição) Estados idênticos ao PerfilUser para "Esqueci Minha Senha" =====
   const id_user = localStorage.getItem("id_usuario");
+
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
-  const [emailRecuperacao, setEmailRecuperacao] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoValidado, setCodigoValidado] = useState(false);
-  const [novaSenha, setNovaSenha] = useState("");
-  const [confirmSenha, setConfirmSenha] = useState("");
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -53,7 +57,7 @@ function Login() {
   };
 
   const handleCloseAlert = () => {
-    setAlert({ ...alert, open: false });
+    setAlert((prev) => ({ ...prev, open: false }));
   };
 
   const handleSubmit = async (event) => {
@@ -63,11 +67,11 @@ function Login() {
 
   async function loginUser() {
     setLoading(true);
-    await api.postLogin(user).then(
+    await api.postLogin({ email: user.email, password: user.password }).then(
       (response) => {
         showAlert("success", response.data.message);
         setLoading(false);
-        localStorage.setItem("authenticated", true);
+        localStorage.setItem("authenticated", "true");
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("id_usuario", response.data.user.ID_user);
         navigate("/");
@@ -79,28 +83,32 @@ function Login() {
     );
   }
 
-  // ===== (adição) Funções idênticas ao PerfilUser para "Esqueci Minha Senha" =====
   const handleOpenModalEsqueci = () => setOpenModalEsqueci(true);
   const handleCloseModalEsqueciSenha = () => {
     setOpenModalEsqueci(false);
     setCodigoEnviado(false);
     setCodigoValidado(false);
-    setEmailRecuperacao("");
-    setCodigo("");
-    setNovaSenha("");
-    setConfirmSenha("");
+    setForgotPayload({
+      email: "",
+      code: "",
+      password: "",
+      confirmPassword: "",
+      atualizar: false,
+    });
   };
 
   async function forgotPasswordSendCode() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({ email: emailRecuperacao });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoEnviado(true);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      showAlert("error", err.response?.data?.error);
+      showAlert("error", err.response?.data?.error || "Erro ao enviar código");
       setLoading(false);
     }
   }
@@ -108,11 +116,14 @@ function Login() {
   async function validarCodigo() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        atualizar: false,
-      });
+      const payload = { ...forgotPayload, atualizar: false };
+      setForgotPayload(payload);
+      if (!payload.code || payload.code.toString().trim() === "") {
+        setLoading(false);
+        showAlert("error", "Por favor, insira o código de verificação.");
+        return;
+      }
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       setCodigoValidado(true);
       setLoading(false);
@@ -126,25 +137,45 @@ function Login() {
   async function atualizarSenhaEsquecida() {
     setLoading(true);
     try {
-      const res = await api.forgotPassword({
-        email: emailRecuperacao,
-        code: codigo,
-        password: novaSenha,
-        confirmPassword: confirmSenha,
-        atualizar: true,
-      });
+      const payload = { ...forgotPayload, atualizar: true };
+      setForgotPayload(payload);
+      const res = await api.forgotPassword(payload);
       showAlert("success", res.data.message);
       handleCloseModalEsqueciSenha();
       setLoading(false);
     } catch (err) {
       console.error(err);
-      showAlert("error", err.response?.data?.error);
+      showAlert(
+        "error",
+        err.response?.data?.error || "Erro ao atualizar senha"
+      );
       setLoading(false);
     }
   }
 
   return (
     <Box style={styles.main}>
+      <style>{`
+        @media screen and (max-width: 844px) {
+          .ct-container {
+            width: 92% !important;
+            height: auto !important;
+            min-height: 480px;
+          }
+          .ct-box-img {
+            display: none !important;
+          }
+          .ct-box-login {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 5px !important;
+          }
+          .ct-box-form {
+            padding: 16px 0 !important;
+          }
+        }
+      `}</style>
+
       <Snackbar
         open={alert.open}
         autoHideDuration={3000}
@@ -160,14 +191,18 @@ function Login() {
         </Alert>
       </Snackbar>
 
-      <Container style={styles.container} disableGutters>
-        <Box style={styles.box_IMG_02}>
+      <Container
+        style={styles.container}
+        disableGutters
+        className="ct-container"
+      >
+        <Box style={styles.box_IMG_02} className="ct-box-img">
           <Typography style={styles.style_Font}>
             Seja bem-vindo de volta!
           </Typography>
         </Box>
 
-        <Box style={styles.box_Login}>
+        <Box style={styles.box_Login} className="ct-box-login">
           <Box style={styles.box_logo_img}>
             <img style={styles.logo} src={logo} alt="logo site" />
           </Box>
@@ -175,10 +210,11 @@ function Login() {
             component="form"
             onSubmit={handleSubmit}
             style={styles.box_Formulario}
+            className="ct-box-form"
           >
             <Typography style={styles.font_Titulo}>Login</Typography>
             <Typography>Seja bem-vindo(a)!</Typography>
-            <Typography>faça seu login na ConecTalento</Typography>
+            <Typography>faça seu login no ConecTalento</Typography>
 
             <TextField
               required
@@ -248,7 +284,6 @@ function Login() {
               </Typography>
             </Box>
 
-            {/* (adição) Link "Esqueci Minha Senha" idêntico ao PerfilUser */}
             <Typography
               variant="body2"
               sx={{
@@ -266,7 +301,6 @@ function Login() {
         </Box>
       </Container>
 
-      {/* (adição) Modal "Esqueci Minha Senha" idêntico ao PerfilUser */}
       <ModalBase open={openModalEsqueci} onClose={handleCloseModalEsqueciSenha}>
         <Box
           sx={{
@@ -294,8 +328,13 @@ function Login() {
                 label="E-mail"
                 type="email"
                 variant="outlined"
-                value={emailRecuperacao}
-                onChange={(e) => setEmailRecuperacao(e.target.value)}
+                value={forgotPayload.email}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
                 disabled={codigoEnviado}
               />
@@ -307,8 +346,13 @@ function Login() {
                   margin="normal"
                   label="Código"
                   variant="outlined"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
+                  value={forgotPayload.code}
+                  onChange={(e) =>
+                    setForgotPayload((prev) => ({
+                      ...prev,
+                      code: e.target.value,
+                    }))
+                  }
                   style={styles.camposForm}
                 />
               )}
@@ -336,8 +380,13 @@ function Login() {
                 label="Nova Senha"
                 type="password"
                 variant="outlined"
-                value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
+                value={forgotPayload.password}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    password: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
               />
               <TextField
@@ -347,8 +396,13 @@ function Login() {
                 label="Confirmar Senha"
                 type="password"
                 variant="outlined"
-                value={confirmSenha}
-                onChange={(e) => setConfirmSenha(e.target.value)}
+                value={forgotPayload.confirmPassword}
+                onChange={(e) =>
+                  setForgotPayload((prev) => ({
+                    ...prev,
+                    confirmPassword: e.target.value,
+                  }))
+                }
                 style={styles.camposForm}
               />
               <Button
@@ -431,7 +485,6 @@ function Styles() {
       margin: "15px",
       cursor: "pointer",
     },
-    // ===== (adição) estilos usados apenas no Modal "Esqueci Minha Senha" =====
     camposForm: { width: "100%", marginBottom: 16 },
     saveBtn: {
       marginTop: 12,
