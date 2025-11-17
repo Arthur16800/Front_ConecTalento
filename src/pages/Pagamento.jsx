@@ -1,6 +1,14 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, useTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  useTheme,
+  useMediaQuery,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import { useLocation, useParams } from "react-router-dom";
 import NotFound from "./NotFound";
 import ModalBase from "../Components/ModalBase";
@@ -13,6 +21,17 @@ function Pagamento() {
   const [openModal, setOpenModal] = useState(false);
   const id_user = localStorage.getItem("id_usuario");
   const [tick, setTick] = useState(0);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "error",
+  });
+
+  const handleCloseSnackbar = (_, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const [formData, setFormData] = useState(() => {
     if (state) return state;
@@ -51,7 +70,10 @@ function Pagamento() {
 
   useEffect(() => {
     if (formData?.payment_id) {
-      localStorage.setItem(`pix:${formData.payment_id}`, JSON.stringify(formData));
+      localStorage.setItem(
+        `pix:${formData.payment_id}`,
+        JSON.stringify(formData)
+      );
     }
   }, [formData]);
 
@@ -64,14 +86,23 @@ function Pagamento() {
     async function fetchPaymentStatus() {
       if (!formData?.payment_id) return;
       try {
-        const response = await api.getPaymentPixStatus(id_user, formData.payment_id);
+        const response = await api.getPaymentPixStatus(
+          id_user,
+          formData.payment_id
+        );
         const status = response?.data?.status;
         if (!isPollingCancelled && status && status !== formData.status) {
           setFormData((prev) => (prev ? { ...prev, status } : prev));
         }
       } catch (error) {
         console.error("Erro ao consultar status do pagamento:", error);
-        alert(error?.response?.data?.error);
+        setSnackbar({
+          open: true,
+          message:
+            error?.response?.data?.error ||
+            "Erro ao consultar status do pagamento.",
+          severity: "error",
+        });
       }
     }
 
@@ -190,6 +221,21 @@ function Pagamento() {
           </Button>
         </Box>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
@@ -280,7 +326,6 @@ function Styles({ downSm, downMd, upMd }) {
       padding: "clamp(10px, 1.2vw, 12px) clamp(16px, 2.4vw, 18px)",
       width: downSm ? "100%" : "min(92vw, 360px)",
     },
-
     successWrapper: {
       width: "80%",
       minHeight: "60vh",
@@ -336,7 +381,7 @@ function Styles({ downSm, downMd, upMd }) {
       textTransform: "none",
       borderRadius: 8,
       padding: "clamp(10px, 1.2vw, 12px) clamp(20px, 2vw, 24px)",
-      boxShadow: "0 4px, 12px rgba(122, 44, 246, 0.3)",
+      boxShadow: "0 4px 12px rgba(122, 44, 246, 0.3)",
       width: "min(75vw, 420px)",
     },
   };
