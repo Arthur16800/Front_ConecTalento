@@ -1,6 +1,14 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, useTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  useTheme,
+  useMediaQuery,
+  Snackbar,
+  Alert,
+} from "@mui/material";
 import { useLocation, useParams } from "react-router-dom";
 import NotFound from "./NotFound";
 import ModalBase from "../Components/ModalBase";
@@ -13,6 +21,17 @@ function Pagamento() {
   const [openModal, setOpenModal] = useState(false);
   const id_user = localStorage.getItem("id_usuario");
   const [tick, setTick] = useState(0);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "error",
+  });
+
+  const handleCloseSnackbar = (_, reason) => {
+    if (reason === "clickaway") return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const [formData, setFormData] = useState(() => {
     if (state) return state;
@@ -51,7 +70,10 @@ function Pagamento() {
 
   useEffect(() => {
     if (formData?.payment_id) {
-      localStorage.setItem(`pix:${formData.payment_id}`, JSON.stringify(formData));
+      localStorage.setItem(
+        `pix:${formData.payment_id}`,
+        JSON.stringify(formData)
+      );
     }
   }, [formData]);
 
@@ -64,14 +86,23 @@ function Pagamento() {
     async function fetchPaymentStatus() {
       if (!formData?.payment_id) return;
       try {
-        const response = await api.getPaymentPixStatus(id_user, formData.payment_id);
+        const response = await api.getPaymentPixStatus(
+          id_user,
+          formData.payment_id
+        );
         const status = response?.data?.status;
         if (!isPollingCancelled && status && status !== formData.status) {
           setFormData((prev) => (prev ? { ...prev, status } : prev));
         }
       } catch (error) {
         console.error("Erro ao consultar status do pagamento:", error);
-        alert(error?.response?.data?.error);
+        setSnackbar({
+          open: true,
+          message:
+            error?.response?.data?.error ||
+            "Erro ao consultar status do pagamento.",
+          severity: "error",
+        });
       }
     }
 
@@ -97,8 +128,8 @@ function Pagamento() {
   }
 
   const theme = useTheme();
-  const downSm = useMediaQuery(theme.breakpoints.down("sm"));  
-  const downMd = useMediaQuery(theme.breakpoints.down("md")); 
+  const downSm = useMediaQuery(theme.breakpoints.down("sm"));
+  const downMd = useMediaQuery(theme.breakpoints.down("md"));
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
 
   const styles = Styles({ downSm, downMd, upMd });
@@ -190,11 +221,26 @@ function Pagamento() {
           </Button>
         </Box>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
 
-function Styles() {
+function Styles({ downSm, downMd, upMd }) {
   return {
     container: {
       width: "100%",
@@ -246,11 +292,15 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      justifyContent: "center",
       textAlign: "center",
       gap: "clamp(12px, 2.2vw, 18px)",
-      paddingTop: 16,
-      maxWidth: "min(92vw, 520px)",
-      margin: "0 auto",
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+      paddingTop: 8,
+      paddingBottom: 8,
+      overflowY: "auto",
     },
     modalTitle: {
       fontSize: "clamp(20px, 2.8vw, 22px)",
@@ -265,6 +315,7 @@ function Styles() {
       lineHeight: 1.7,
       fontSize: "clamp(14px, 1.8vw, 16px)",
       textAlign: "left",
+      width: "100%",
     },
     modalCta: {
       marginTop: 6,
@@ -273,7 +324,7 @@ function Styles() {
       fontWeight: 700,
       borderRadius: 9999,
       padding: "clamp(10px, 1.2vw, 12px) clamp(16px, 2.4vw, 18px)",
-      width: "min(92vw, 360px)",
+      width: downSm ? "100%" : "min(92vw, 360px)",
     },
     successWrapper: {
       width: "80%",
@@ -335,6 +386,5 @@ function Styles() {
     },
   };
 }
-
 
 export default Pagamento;

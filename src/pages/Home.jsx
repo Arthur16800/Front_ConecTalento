@@ -193,10 +193,9 @@ function Home() {
         spacing={2}
         sx={{
           mb: 5,
-          px: { xs: 2, sm: 4 },
-          justifyContent: "flex-start",
-          mt: 0,
-          overflow: "visible", // garante que elementos absolutos não sejam cortados
+          px: { xs: 2, sm: 4 }, 
+          justifyContent: "flex-start", 
+          mt: 0, 
         }}
       >
         {projetosVisiveis.length > 0 ? (
@@ -234,9 +233,9 @@ function Home() {
                     boxShadow: 1,
                     transition: "all 0.3s ease-in-out",
                     "@media (max-width:500px)": {
-                      right: "auto",
+                      right: "auto", 
                       left: 6,
-                      transform: "scale(0.9)",
+                      transform: "scale(0.9)", 
                     },
                   }}
                   onClick={(e) => e.stopPropagation()}

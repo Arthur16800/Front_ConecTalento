@@ -87,14 +87,14 @@ function BottonUpgrade() {
             padding: 8px !important;
             gap: 0 !important;
             max-width: 48px !important;
+            margin-right: 15px
           }
           .ct-upgrade-icon {
             font-size: 26px !important;
           }
         }
       `}</style>
-
-      {/* Alerts bonitos (Snackbar + Alert) */}
+      
       <Snackbar
         open={alert.open}
         autoHideDuration={3000}
