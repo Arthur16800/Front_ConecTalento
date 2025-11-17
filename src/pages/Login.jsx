@@ -20,20 +20,18 @@ function Login() {
   const styles = Styles();
   const navigate = useNavigate();
 
-  // Todos os dados enviados à API via useState
   const [user, setUser] = useState({
     email: "",
     password: "",
-    showPassword: false, // não é enviado, mas faz parte do estado do formulário
+    showPassword: false,
   });
 
-  // Estado único para todos os payloads do fluxo "esqueci minha senha"
   const [forgotPayload, setForgotPayload] = useState({
     email: "",
     code: "",
     password: "",
     confirmPassword: "",
-    atualizar: false, // controlará quando é atualização de senha
+    atualizar: false, 
   });
 
   const [loading, setLoading] = useState(false);
@@ -45,7 +43,6 @@ function Login() {
 
   const id_user = localStorage.getItem("id_usuario");
 
-  // Estados de UI (não enviados à API)
   const [openModalEsqueci, setOpenModalEsqueci] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoValidado, setCodigoValidado] = useState(false);
@@ -91,7 +88,6 @@ function Login() {
     setOpenModalEsqueci(false);
     setCodigoEnviado(false);
     setCodigoValidado(false);
-    // reset do payload que é enviado à API
     setForgotPayload({
       email: "",
       code: "",
@@ -101,7 +97,6 @@ function Login() {
     });
   };
 
-  // 1) Enviar código – payload vindo do estado forgotPayload
   async function forgotPasswordSendCode() {
     setLoading(true);
     try {
@@ -118,7 +113,6 @@ function Login() {
     }
   }
 
-  // 2) Validar código – payload vindo do estado forgotPayload
   async function validarCodigo() {
     setLoading(true);
     try {
@@ -140,7 +134,6 @@ function Login() {
     }
   }
 
-  // 3) Atualizar senha – payload vindo do estado forgotPayload
   async function atualizarSenhaEsquecida() {
     setLoading(true);
     try {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import ModalBase from "./ModalBase"; // 👈 Importa o modal padrão
+import ModalBase from "./ModalBase";
 
 export default function LoginPromptModal({ open, onClose }) {
   const navigate = useNavigate();

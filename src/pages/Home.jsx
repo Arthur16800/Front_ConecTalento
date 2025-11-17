@@ -205,9 +205,9 @@ function Home() {
         spacing={2}
         sx={{
           mb: 5,
-          px: { xs: 2, sm: 4 }, // Ajustando padding lateral para telas pequenas
-          justifyContent: "flex-start", // Alinhamento para começar do topo
-          mt: 0, // Remover margem superior que pode estar deslocando o conteúdo
+          px: { xs: 2, sm: 4 }, 
+          justifyContent: "flex-start", 
+          mt: 0, 
         }}
       >
         {projetosVisiveis.length > 0 ? (
@@ -260,9 +260,9 @@ function Home() {
                     boxShadow: 1,
                     transition: "all 0.3s ease-in-out",
                     "@media (max-width:500px)": {
-                      right: "auto", // remove o right
-                      left: 6, // coloca no lado esquerdo
-                      transform: "scale(0.9)", // ligeiramente menor em telas pequenas
+                      right: "auto", 
+                      left: 6,
+                      transform: "scale(0.9)", 
                     },
                   }}
                   onClick={(e) => e.stopPropagation()}
