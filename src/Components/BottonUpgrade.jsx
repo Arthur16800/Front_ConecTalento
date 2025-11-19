@@ -87,7 +87,7 @@ function BottonUpgrade() {
             padding: 8px !important;
             gap: 0 !important;
             max-width: 48px !important;
-            margin-right: 15px
+            margin-right: 23px
           }
           .ct-upgrade-icon {
             font-size: 26px !important;
@@ -120,9 +120,6 @@ function BottonUpgrade() {
           Faça um upgrade
         </Typography>
 
-        {/* Loading substitui o ícone. 
-            Em telas grandes, o texto permanece e só o ícone vira spinner.
-            Em telas pequenas, como o texto some via CSS, o spinner ocupa o lugar do ícone. */}
         {loading ? (
           <CircularProgress size={26} color="inherit" className="ct-upgrade-icon" />
         ) : (

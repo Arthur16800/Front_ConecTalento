@@ -31,7 +31,7 @@ function Login() {
     code: "",
     password: "",
     confirmPassword: "",
-    atualizar: false, 
+    atualizar: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -203,9 +203,17 @@ function Login() {
         </Box>
 
         <Box style={styles.box_Login} className="ct-box-login">
-          <Box style={styles.box_logo_img}>
-            <img style={styles.logo} src={logo} alt="logo site" />
+          <Box
+            style={styles.box_logo_img}
+            onClick={() => navigate("/")}
+          >
+            <img
+              style={styles.logo}
+              src={logo}
+              alt="logo site"
+            />
           </Box>
+
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -214,7 +222,7 @@ function Login() {
           >
             <Typography style={styles.font_Titulo}>Login</Typography>
             <Typography>Seja bem-vindo(a)!</Typography>
-            <Typography>faça seu login no ConecTalento</Typography>
+            <Typography>Faça seu login no ConecTalento</Typography>
 
             <TextField
               required
@@ -461,7 +469,12 @@ function Styles() {
       display: "flex",
       flexDirection: "column",
     },
-    box_logo_img: { width: "100%", display: "flex", justifyContent: "end" },
+    box_logo_img: {
+      width: "100%",
+      display: "flex",
+      justifyContent: "end",
+      cursor: "pointer", // alterado aqui
+    },
     logo: { margin: "10px", width: "45px" },
     font_Titulo: { fontWeight: 600, fontSize: "35px", marginBottom: "5px" },
     box_Formulario: {

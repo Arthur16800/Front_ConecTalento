@@ -10,6 +10,7 @@ import {
   Snackbar,
   Alert,
   Pagination,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import LikeButton from "../Components/likeButton";
@@ -25,6 +26,8 @@ function Home() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
   const projetosPorPagina = 6;
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +36,7 @@ function Home() {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      setLoading(true);
       try {
         const response = await api.getAllProjects();
         let rawProjects = response?.data?.profile_projeto ?? [];
@@ -52,6 +56,8 @@ function Home() {
         console.error("Erro ao buscar projetos:", err);
         setSnackbarMessage("Erro ao buscar projetos");
         setSnackbarOpen(true);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -141,8 +147,14 @@ function Home() {
   // Paginação
   const indexUltimoProjeto = currentPage * projetosPorPagina;
   const indexPrimeiroProjeto = indexUltimoProjeto - projetosPorPagina;
-  const projetosVisiveis = filteredProjects.slice(indexPrimeiroProjeto, indexUltimoProjeto);
-  const totalPaginas = Math.max(1, Math.ceil(filteredProjects.length / projetosPorPagina));
+  const projetosVisiveis = filteredProjects.slice(
+    indexPrimeiroProjeto,
+    indexUltimoProjeto
+  );
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(filteredProjects.length / projetosPorPagina)
+  );
 
   return (
     <>
@@ -178,7 +190,9 @@ function Home() {
               fontSize: "0.9rem",
               fontWeight: ordenacao === filtro.value ? 600 : 400,
               boxShadow:
-                ordenacao === filtro.value ? "0px 3px 6px rgba(0, 0, 0, 0.15)" : "none",
+                ordenacao === filtro.value
+                  ? "0px 3px 6px rgba(0, 0, 0, 0.15)"
+                  : "none",
               borderWidth: ordenacao === filtro.value ? 2 : 1,
               borderColor: ordenacao === filtro.value ? "#1976d2" : "#ccc",
               transition: "all 0.2s ease-in-out",
@@ -193,12 +207,23 @@ function Home() {
         spacing={2}
         sx={{
           mb: 5,
-          px: { xs: 2, sm: 4 }, 
-          justifyContent: "flex-start", 
-          mt: 0, 
+          px: { xs: 2, sm: 4 },
+          justifyContent: "flex-start",
+          mt: 0,
         }}
       >
-        {projetosVisiveis.length > 0 ? (
+        {loading ? (
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              mt: 4,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : projetosVisiveis.length > 0 ? (
           projetosVisiveis.map((project) => (
             <Grid key={project.ID_projeto} item xs={12} sm={6} md={4}>
               <Card
@@ -216,11 +241,11 @@ function Home() {
                   maxWidth: 400,
                   "&:hover": { transform: "scale(1.03)" },
                   position: "relative",
-                  overflow: "visible", // impede corte do botão
+                  overflow: "visible",
                 }}
                 onClick={() => handleCardClick(project.ID_projeto)}
               >
-                {/* Botão de Like fora da capa, com z-index alto */}
+                
                 <Box
                   sx={{
                     position: "absolute",
@@ -233,9 +258,9 @@ function Home() {
                     boxShadow: 1,
                     transition: "all 0.3s ease-in-out",
                     "@media (max-width:500px)": {
-                      right: "auto", 
+                      right: "auto",
                       left: 6,
-                      transform: "scale(0.9)", 
+                      transform: "scale(0.9)",
                     },
                   }}
                   onClick={(e) => e.stopPropagation()}
@@ -248,7 +273,6 @@ function Home() {
                   />
                 </Box>
 
-                {/* CAPA 16:9 */}
                 <Box
                   sx={{
                     width: "100%",
@@ -257,11 +281,13 @@ function Home() {
                     borderTopRightRadius: 8,
                     position: "relative",
                     backgroundColor: project.imagem ? "transparent" : "#f0f0f0",
-                    backgroundImage: project.imagem ? `url(${project.imagem})` : "none",
+                    backgroundImage: project.imagem
+                      ? `url(${project.imagem})`
+                      : "none",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    overflow: "hidden", // recorta apenas a imagem nos cantos
+                    overflow: "hidden",
                   }}
                 >
                   {!project.imagem && (
@@ -296,14 +322,18 @@ function Home() {
             </Grid>
           ))
         ) : (
-          <Typography variant="body1" align="center" sx={{ width: "100%", mt: 3 }}>
+          <Typography
+            variant="body1"
+            align="center"
+            sx={{ width: "100%", mt: 3, mb: 6}}
+          >
             Nenhum projeto encontrado.
           </Typography>
         )}
       </Grid>
 
       {/* PAGINAÇÃO */}
-      {totalPaginas > 1 && (
+      {!loading && totalPaginas > 1 && (
         <Stack alignItems="center" mt={4} mb={6}>
           <Pagination
             count={totalPaginas}
@@ -314,9 +344,12 @@ function Home() {
         </Stack>
       )}
 
-      {/* MODAIS / ALERTS */}
       <LoginPromptModal open={openModal} onClose={() => setOpenModal(false)} />
-      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+      >
         <Alert severity="error">{snackbarMessage}</Alert>
       </Snackbar>
     </>

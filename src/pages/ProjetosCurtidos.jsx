@@ -9,6 +9,7 @@ import {
   Stack,
   Snackbar,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import LikeButton from "../Components/likeButton";
@@ -24,6 +25,8 @@ function ProjetosCurtidos() {
   const [currentPage, setCurrentPage] = useState(1);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [loading, setLoading] = useState(true); // loading dos projetos curtidos
+
   const projetosPorPagina = 6;
   const navigate = useNavigate();
   const [userPlan, setUserPlan] = useState({ plan: null, authenticated: null });
@@ -54,6 +57,7 @@ function ProjetosCurtidos() {
 
   useEffect(() => {
     const fetchLikedProjects = async () => {
+      setLoading(true);
       try {
         const response = await api.getProjectsLikedUser(id_user);
         let rawProjects = response?.data?.profile_projeto ?? [];
@@ -69,17 +73,38 @@ function ProjetosCurtidos() {
             imagem: p.imagem ? `data:${p.tipo_imagem};base64,${p.imagem}` : null,
           }));
 
-          const sorted = formattedProjects.sort((a, b) => b.ID_projeto - a.ID_projeto);
+          const sorted = formattedProjects.sort(
+            (a, b) => b.ID_projeto - a.ID_projeto
+          );
 
           setProjects(sorted);
           setFilteredProjects(sorted);
         }
       } catch (err) {
         console.error("Erro ao buscar projetos curtidos:", err);
+
+        const status = err?.response?.status;
+        const backendMsg =
+          err?.response?.data?.error || err?.response?.data?.message;
+
+        // Trata 404 ou mensagem específica como "nenhum projeto curtido" (sem erro visual)
+        if (status === 404 || backendMsg === "Nenhum projeto curtido ainda.") {
+          setProjects([]);
+          setFilteredProjects([]);
+        } else {
+          setSnackbarMessage("Erro ao buscar projetos curtidos");
+          setSnackbarOpen(true);
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchLikedProjects();
+    if (id_user) {
+      fetchLikedProjects();
+    } else {
+      setLoading(false);
+    }
   }, [id_user]);
 
   useEffect(() => {
@@ -88,8 +113,14 @@ function ProjetosCurtidos() {
 
   const indexUltimoProjeto = currentPage * projetosPorPagina;
   const indexPrimeiroProjeto = indexUltimoProjeto - projetosPorPagina;
-  const projetosVisiveis = filteredProjects.slice(indexPrimeiroProjeto, indexUltimoProjeto);
-  const totalPaginas = Math.max(1, Math.ceil(filteredProjects.length / projetosPorPagina));
+  const projetosVisiveis = filteredProjects.slice(
+    indexPrimeiroProjeto,
+    indexUltimoProjeto
+  );
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(filteredProjects.length / projetosPorPagina)
+  );
 
   const handleCardClick = (projectId) => {
     const token = localStorage.getItem("token");
@@ -102,16 +133,18 @@ function ProjetosCurtidos() {
 
   return (
     <>
-      {userPlan.plan === false && userPlan.authenticated === true && <BottonUpgrade />}
+      {userPlan.plan === false && userPlan.authenticated === true && (
+        <BottonUpgrade />
+      )}
 
-      {projetosVisiveis.length > 0 && (
+      {projetosVisiveis.length > 0 && !loading && (
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             flexDirection: "column",
-            mt: { xs: -3, sm: -5, md: -7 },
+            mt: 1,
             mb: 4,
             textAlign: "center",
           }}
@@ -125,7 +158,6 @@ function ProjetosCurtidos() {
               textShadow: "1px 1px 4px rgba(0,0,0,0.15)",
               letterSpacing: "0.5px",
               textAlign: "center",
-              mt: 5,
             }}
           >
             Projetos Curtidos
@@ -141,10 +173,22 @@ function ProjetosCurtidos() {
           px: { xs: 2, sm: 4 },
           justifyContent: "flex-start",
           mt: 0,
-          overflow: "visible", // evita que elementos absolutos sejam cortados
+          overflow: "visible",
         }}
       >
-        {projetosVisiveis.length > 0 ? (
+        {loading ? (
+          // Loading enquanto carrega os projetos curtidos
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              mt: 4,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : projetosVisiveis.length > 0 ? (
           projetosVisiveis.map((project) => (
             <Grid key={project.ID_projeto} item xs={12} sm={6} md={4}>
               <Card
@@ -162,7 +206,7 @@ function ProjetosCurtidos() {
                   maxWidth: 400,
                   "&:hover": { transform: "scale(1.03)" },
                   position: "relative",
-                  overflow: "visible", // impede corte do botão
+                  overflow: "visible",
                 }}
                 onClick={() => handleCardClick(project.ID_projeto)}
               >
@@ -203,11 +247,13 @@ function ProjetosCurtidos() {
                     borderTopRightRadius: 8,
                     position: "relative",
                     backgroundColor: project.imagem ? "transparent" : "#f0f0f0",
-                    backgroundImage: project.imagem ? `url(${project.imagem})` : "none",
+                    backgroundImage: project.imagem
+                      ? `url(${project.imagem})`
+                      : "none",
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundRepeat: "no-repeat",
-                    overflow: "hidden", // recorta a imagem nos cantos sem afetar o botão
+                    overflow: "hidden",
                   }}
                 >
                   {!project.imagem && (
@@ -242,13 +288,18 @@ function ProjetosCurtidos() {
             </Grid>
           ))
         ) : (
-          <Typography variant="body1" align="center" sx={{ width: "100%", mt: 3 }}>
+          // Só aparece se não estiver carregando e não tiver projeto curtido
+          <Typography
+            variant="body1"
+            align="center"
+            sx={{ width: "100%", mt: 3, mb: 15 }}
+          >
             Nenhum projeto curtido ainda.
           </Typography>
         )}
       </Grid>
 
-      {totalPaginas > 1 && (
+      {!loading && totalPaginas > 1 && (
         <Stack alignItems="center" mt={4} mb={6}>
           <Pagination
             count={totalPaginas}
