@@ -203,14 +203,12 @@ function Login() {
         </Box>
 
         <Box style={styles.box_Login} className="ct-box-login">
-          <Box
-            style={styles.box_logo_img}
-            onClick={() => navigate("/")}
-          >
+          <Box style={styles.box_logo_img}>
             <img
               style={styles.logo}
               src={logo}
               alt="logo site"
+              onClick={() => navigate("/")}
             />
           </Box>
 
@@ -473,9 +471,8 @@ function Styles() {
       width: "100%",
       display: "flex",
       justifyContent: "end",
-      cursor: "pointer", // alterado aqui
     },
-    logo: { margin: "10px", width: "45px" },
+    logo: { margin: "10px", width: "45px", cursor: "pointer" },
     font_Titulo: { fontWeight: 600, fontSize: "35px", marginBottom: "5px" },
     box_Formulario: {
       display: "flex",

@@ -44,7 +44,6 @@ function Cadastro() {
 
   const navigate = useNavigate();
 
-  // TIMER: conta regressiva
   useEffect(() => {
     let timer;
 
@@ -57,7 +56,6 @@ function Cadastro() {
     return () => clearInterval(timer);
   }, [openModal, isTimerActive, timeLeft]);
 
-  // QUANDO CHEGAR EM 00:00 → recarrega a página
   useEffect(() => {
     if (!openModal) return;
     if (timeLeft === 0) {
@@ -202,7 +200,12 @@ function Cadastro() {
       <Container style={styles.container} className="ct-container">
         <Box style={styles.box_Cadastro} className="ct-box-cadastro">
           <Box style={styles.box_logo_img} className="ct-box-logo">
-            <img style={styles.logo} src={logo} alt="Logo site" />
+            <img
+              style={styles.logo}
+              src={logo}
+              alt="Logo site"
+              onClick={() => navigate("/")}
+            />
           </Box>
 
           <Box
@@ -289,9 +292,7 @@ function Cadastro() {
                   inputProps: { maxLength: 50 },
                 },
               }}
-              sx={{
-                m: 0,
-              }}
+              sx={{ m: 0 }}
             />
 
             <TextField
@@ -331,9 +332,7 @@ function Cadastro() {
                   inputProps: { maxLength: 50 },
                 },
               }}
-              sx={{
-                m: 0,
-              }}
+              sx={{ m: 0 }}
             />
 
             <Button type="submit" style={styles.button} disabled={loading}>
@@ -442,6 +441,7 @@ function Styles() {
       borderRadius: "5px 0px 0px 5px",
       display: "flex",
       flexDirection: "column",
+      position: "relative",
     },
     style_Font: {
       width: "95%",
@@ -452,11 +452,14 @@ function Styles() {
       width: "100%",
       display: "flex",
       justifyContent: "start",
+      position: "relative",
+      zIndex: 2,
     },
     logo: {
       marginTop: "10px",
       marginLeft: "10px",
       width: "45px",
+      cursor: "pointer",
     },
     font_Titulo: {
       fontWeight: "600",
