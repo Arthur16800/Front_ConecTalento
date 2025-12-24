@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Criação da instância do Axios
 const api = axios.create({
-  baseURL: "https://api-conectalento.canadacentral.cloudapp.azure.com:5000/api/v1",
+  baseURL: "https://conectalento-teste.northcentralus.cloudapp.azure.com:5000/api/v1",
   headers: {
     accept: "application/json",
   },
